@@ -19,14 +19,13 @@ cmake --build . 多线程编译使用 cmake --build . -j线程数
 #### MUJOCO Release版本
 替换CMakeLists.txt中寻找mujoco部分
 ```CMake
-set(MUJOCO_FOLDER /opt/mujoco/lib/cmake)
-find_package(mujoco REQUIRED PATHS ${MUJOCO_FOLDER} NO_DEFAULT_PATH)
-if (mujoco_FOUND)
-message(STATUS "Find mujoco")
-endif()
+set(MUJOCO_PATH "your mujoco path")
+include_directories(${MUJOCO_PATH}/include)
+link_directories(${MUJOCO_PATH}/build/bin)
+set(MUJOCO_LIB ${MUJOCO_PATH}/build/lib/libmujoco.so)
 ```
-链接库部分
-`target_link_libraries(your_app mujoco::mujoco glut GL GLU glfw)`
+链接库部分中 ${MUJOCO_LIB}
+`target_link_libraries(your_app ${MUJOCO_LIB} glut GL GLU glfw)`
 #### Libtorch
 **下载**
 `wget https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-2.8.0%2Bcpu.zip`
