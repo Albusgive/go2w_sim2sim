@@ -53,6 +53,13 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
                                             ray_caster_camera.v_ray_num];
   ray_caster_lidar_img = new unsigned char[ray_caster_lidar.h_ray_num *
                                            ray_caster_lidar.v_ray_num];
+
+  // body_track
+  int track_id = mj_name2id(m, mjOBJ_BODY, "base_link");
+  body_track(track_id, 0.05, {0.0, 1.0, 1.0, 0.5}, 50, 30);
+  // track_id = mj_name2id(m, mjOBJ_BODY, "RR_wheel_link");
+  // body_track(track_id, 0.05, {1.0, 1.0, 0.0, 0.5}, 50, 30);
+  
 }
 
 MJ_ENV::~MJ_ENV() {}
@@ -103,10 +110,10 @@ void MJ_ENV::draw() {
   // ray_caster.draw_hip_point(&scn, 1, 0.02);
   // ray_caster.draw_deep(&scn, 4, 20);
   // ray_caster_lidar.draw_deep_ray(&scn, 2, 4, true, color);
-  ray_caster.draw_deep_ray(&scn, 1, 5, false,color1);
+  ray_caster.draw_deep_ray(&scn, 1, 5, false, color1);
   ray_caster.draw_hip_point(&scn, 1, 0.02, color1);
   ray_caster_camera.draw_hip_point(&scn, 1, 0.02, color2);
-  ray_caster_camera.draw_deep_ray(&scn, 1, 5, false,color2);
+  ray_caster_camera.draw_deep_ray(&scn, 1, 5, false, color2);
   ray_caster_lidar.draw_hip_point(&scn, 1, 0.02, color3);
 }
 

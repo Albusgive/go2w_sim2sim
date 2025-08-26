@@ -8,6 +8,7 @@
 #include <mujoco/mjtnum.h>
 #include <mujoco/mujoco.h>
 #include <mutex>
+#include <queue>
 #include <string>
 #include <thread>
 #include <utility>
@@ -28,6 +29,8 @@ public:
   void set_max_FPS(double max_FPS);
   mjtFontScale font_scale = mjtFontScale::mjFONTSCALE_150;
 
+  void reset();
+
   // 键盘回调,继承后可重载后接收键盘事件，可用于自定义cmd
   virtual void keyboard_press(std::string key) {};
   // lable value 绘制在左侧中间位置
@@ -45,12 +48,22 @@ public:
   // 绘制操作
   virtual void draw();
   virtual void draw_windows();
-  void drawRGBPixels(const unsigned char *rgb,int idx,
+  // 在draw函数中使用
+  void drawRGBPixels(const unsigned char *rgb, int idx,
                      const std::array<int, 2> src_size,
                      const std::array<int, 2> dst_size);
-  void drawGrayPixels(const unsigned char *gray,int idx,
+  void drawGrayPixels(const unsigned char *gray, int idx,
                       const std::array<int, 2> src_size,
                       const std::array<int, 2> dst_size);
+  /** @brief 记录body轨迹
+   * @param body_id body id
+   * @param size 轨迹球尺寸
+   * @param rgba 
+   * @param max_len 轨迹球最大数量
+   * @param n_sub_step 每隔多少个最小step记录一次
+   */
+  void body_track(int body_id, mjtNum size, const std::array<float, 4> rgba,
+                       int max_len = 1000, int n_sub_step = 1);
   std::atomic<double> realtime = 1.0;
   int sub_step = 1;
   // 渲染
@@ -107,6 +120,16 @@ private:
                                  int srcHeight, int dstWidth, int dstHeight,
                                  int srcChannels,
                                  bool convertToOpenGLCoords = true);
+  void draw_geom(mjvScene *scn, int type, mjtNum *size, mjtNum *pos,
+                 mjtNum *mat, float rgba[4]);
+  void track();
+  std::vector<std::deque<std::array<mjtNum, 3>>> bodys_tracks;
+  std::vector<std::array<float, 4>> tracks_rgba;
+  std::vector<mjtNum> tracks_size;
+  std::vector<int> tracks_id;
+  std::vector<int> tracks_max_len;
+  std::vector<int> tracks_n_sub_step;
+  std::vector<int> tracks_n_step;
 
   // 窗口操作
   static void static_keyboard(GLFWwindow *window, int key, int scancode,

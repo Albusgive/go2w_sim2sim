@@ -40,6 +40,17 @@ void mujoco_thread::set_max_FPS(double max_FPS) {
   min_render_time = 1000.0 / max_FPS;
 }
 
+void mujoco_thread::reset() {
+  mj_resetData(m, d);
+  mj_forward(m, d);
+  for (auto &q : bodys_tracks) {
+    q.clear();
+  }
+  for(auto &n: tracks_n_step){
+    n = 0;
+  }
+}
+
 void mujoco_thread::connect_windows_sim() { connect_windows.store(true); }
 
 void mujoco_thread::load_model(std::string model_file) {
@@ -69,6 +80,8 @@ void mujoco_thread::sim() {
       step();
       for (int i = 0; i < sub_step; i++) {
         mj_step(m, d);
+        // 记录轨迹
+        track();
       }
     }
     step_unlock();
@@ -107,7 +120,7 @@ void mujoco_thread::drawGrayPixels(const unsigned char *gray, int idx,
                                    const std::array<int, 2> src_size,
                                    const std::array<int, 2> dst_size) {
   if (img_left.size() == idx + 1) {
-    img_left.push_back(img_left[idx] + dst_size[0] +1);
+    img_left.push_back(img_left[idx] + dst_size[0] + 1);
     img_bottom.push_back(0);
   }
   auto img = scaleImageToRGB(gray, src_size[0], src_size[1], dst_size[0],
@@ -115,6 +128,21 @@ void mujoco_thread::drawGrayPixels(const unsigned char *gray, int idx,
   mjrRect viewport = {img_left[idx], img_bottom[idx], dst_size[0], dst_size[1]};
   mjr_drawPixels(img, nullptr, viewport, &con);
   delete[] img;
+}
+
+void mujoco_thread::body_track(int body_id, mjtNum size,
+                               const std::array<float, 4> rgba, int max_len,
+                               int n_sub_step) {
+  std::deque<std::array<mjtNum, 3>> q;
+  mjtNum *pos = d->xpos + 3 * body_id;
+  q.push_back({pos[0], pos[1], pos[2]});
+  bodys_tracks.push_back(q);
+  tracks_id.push_back(body_id);
+  tracks_rgba.push_back({rgba[0], rgba[1], rgba[2], rgba[3]});
+  tracks_size.push_back(size);
+  tracks_max_len.push_back(max_len);
+  tracks_n_sub_step.push_back(n_sub_step);
+  tracks_n_step.push_back(0);
 }
 
 void mujoco_thread::render() {
@@ -248,8 +276,7 @@ void mujoco_thread::keyboard(int key, int scancode, int act, int mods) {
     }
     switch (key) {
     case GLFW_KEY_BACKSPACE: {
-      mj_resetData(m, d);
-      mj_forward(m, d);
+      reset();
     } break;
     case GLFW_KEY_SPACE: {
       if (is_step.load()) {
@@ -394,6 +421,18 @@ void mujoco_thread::updateRender() {
       std::unique_lock<std::mutex> lk(m_mtx);
       mjv_updateScene(m, d, &opt, nullptr, &cam, mjCAT_ALL, &scn);
       draw();
+
+      // 轨迹跟踪
+      if (!bodys_tracks.empty()) {
+        int len = bodys_tracks.size();
+        for (int i = 0; i < len; i++) {
+          mjtNum size[3] = {tracks_size[i], 0.0, 0.0};
+          for (auto &pos : bodys_tracks[i]) {
+            draw_geom(&scn, mjGEOM_SPHERE, size, pos.data(), nullptr,
+                      tracks_rgba[i].data());
+          }
+        }
+      }
 
       lk.unlock();
       mjr_render(viewport, &scn, &con);
@@ -633,4 +672,28 @@ mujoco_thread::scaleImageToRGB(const unsigned char *src, int srcWidth,
   }
 
   return dst;
+}
+
+void mujoco_thread::draw_geom(mjvScene *scn, int type, mjtNum *size,
+                              mjtNum *pos, mjtNum *mat, float rgba[4]) {
+  scn->ngeom += 1;
+  mjvGeom *geom = scn->geoms + scn->ngeom - 1;
+  mjv_initGeom(geom, type, size, pos, mat, rgba);
+}
+
+void mujoco_thread::track() {
+  if (bodys_tracks.empty())
+    return;
+  int len = bodys_tracks.size();
+  for (int j = 0; j < len; j++) {
+    tracks_n_step[j] += 1;
+    if (tracks_n_step[j] % tracks_n_sub_step[j] != 0)
+      continue;
+    int body_id = tracks_id[j];
+    mjtNum *pos = d->xpos + 3 * body_id;
+    bodys_tracks[j].push_back({pos[0], pos[1], pos[2]});
+    if (bodys_tracks[j].size() > tracks_max_len[j]) {
+      bodys_tracks[j].pop_front();
+    }
+  }
 }
