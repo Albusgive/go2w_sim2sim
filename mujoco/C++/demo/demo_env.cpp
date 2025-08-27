@@ -114,10 +114,6 @@ void MJ_ENV::draw() {
 }
 
 void MJ_ENV::draw_windows() {
-  drawGrayPixels(ray_caster_camera_img, 0,
-                 {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
-                 {400, 400});
-
   drawGrayPixels(ray_caster_img, 0,
                  {ray_caster.h_ray_num, ray_caster.v_ray_num}, {200, 400});
   drawGrayPixels(ray_caster_camera_img, 1,
