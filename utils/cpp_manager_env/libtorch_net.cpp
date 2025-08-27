@@ -18,11 +18,24 @@ void Policy::load(std::string filename) {
 }
 
 torch::Tensor Policy::get_action(torch::Tensor obs) {
+  // 确保输入张量有正确的形状 [1, 1153]
+  if (obs.dim() == 1) {
+    // 如果是一维张量 [1153]，添加批次维度变为 [1, 1153]
+    obs = obs.unsqueeze(0);
+  } else if (obs.dim() != 2 || obs.size(0) != 1 || obs.size(1) != 1153) {
+    // 如果不是正确的二维形状，抛出异常
+    throw std::runtime_error("输入张量形状不正确");
+  }
+  
   std::vector<torch::jit::IValue> inputs;
   inputs.push_back(obs);
   try {
-    torch::jit::IValue output = module.forward(inputs);
-    return output.toTensor();
+    torch::Tensor output = module.forward(inputs).toTensor();
+    if (output.dim() == 2 && output.size(0) == 1) {
+      return output.squeeze(0); // 移除批次维度，得到 [16]
+    } else {
+      return output.flatten(); // 展平所有维度
+    }
   } catch (const c10::Error &e) {
     throw std::runtime_error("推理失败: " + std::string(e.what()));
   }

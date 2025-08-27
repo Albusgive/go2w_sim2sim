@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cstddef>
 #include <iomanip>
+#include <mujoco/mjmodel.h>
 #include <mujoco/mujoco.h>
 #include <mutex>
 #include <utility>
@@ -41,12 +42,13 @@ void mujoco_thread::set_max_FPS(double max_FPS) {
 }
 
 void mujoco_thread::reset() {
+  std::lock_guard<std::mutex> lk(m_mtx);
   mj_resetData(m, d);
   mj_forward(m, d);
   for (auto &q : bodys_tracks) {
     q.clear();
   }
-  for(auto &n: tracks_n_step){
+  for (auto &n : tracks_n_step) {
     n = 0;
   }
 }
@@ -130,9 +132,10 @@ void mujoco_thread::drawGrayPixels(const unsigned char *gray, int idx,
   delete[] img;
 }
 
-void mujoco_thread::body_track(int body_id, mjtNum size,
+void mujoco_thread::body_track(std::string body_name, mjtNum size,
                                const std::array<float, 4> rgba, int max_len,
                                int n_sub_step) {
+  int body_id = mj_name2id(m, mjOBJ_BODY, body_name.c_str());
   std::deque<std::array<mjtNum, 3>> q;
   mjtNum *pos = d->xpos + 3 * body_id;
   q.push_back({pos[0], pos[1], pos[2]});
@@ -143,6 +146,17 @@ void mujoco_thread::body_track(int body_id, mjtNum size,
   tracks_max_len.push_back(max_len);
   tracks_n_sub_step.push_back(n_sub_step);
   tracks_n_step.push_back(0);
+}
+
+void mujoco_thread::bind_target_point(std::string body_name) {
+  target_point_id = mj_name2id(m, mjOBJ_BODY, body_name.c_str());
+  if (target_point_id > 0 && m->nmocap > 0)
+    target_point_id = m->body_mocapid[target_point_id];
+  else {
+    std::string msg = "no mocap is " + body_name;
+    mju_error("%s", msg.c_str());
+  }
+  mju_copy3(target_point_pos, d->mocap_pos + 3 * target_point_id);
 }
 
 void mujoco_thread::render() {
@@ -212,7 +226,7 @@ void mujoco_thread::initRender(int width, int height, std::string title) {
   mjv_defaultOption(&opt);
   mjv_defaultScene(&scn);
   mjr_defaultContext(&con);
-
+  mjv_initPerturb(m, d, &scn, &pert);
   // create scene and context
   {
     std::lock_guard<std::mutex> loc(m_mtx);
@@ -311,6 +325,9 @@ void mujoco_thread::keyboard(int key, int scancode, int act, int mods) {
   if (key == GLFW_KEY_LEFT_CONTROL || key == GLFW_KEY_RIGHT_CONTROL) {
     ctrl_pressed = (act == GLFW_PRESS);
   }
+  if (key == GLFW_KEY_LEFT_ALT || key == GLFW_KEY_RIGHT_ALT) {
+    alt_pressed = (act == GLFW_PRESS);
+  }
 }
 
 // mouse button callback
@@ -327,33 +344,21 @@ void mujoco_thread::mouse_button(int button, int act, int mods) {
   glfwGetCursorPos(window, &lastx, &lasty);
 
   // handle double-click selection
-  if (act == GLFW_PRESS && button == GLFW_MOUSE_BUTTON_LEFT) {
+  if (act == GLFW_PRESS) {
     double current_time = glfwGetTime();
     if (current_time - last_click_time < 0.3) {
-      // double-click detected
+
       mjrRect viewport = {0, 0, 0, 0};
       glfwGetFramebufferSize(window, &viewport.width, &viewport.height);
-
-      // unproject screen coordinates to 3D ray
-      mjtNum selpnt[3];
-      int geomid, flexid, skinid;
-      // double click
-      selected_body = mjv_select(
-          m, d, &opt, (mjtNum)viewport.width / viewport.height,
-          lastx / viewport.width, (viewport.height - lasty) / viewport.height,
-          &scn, selpnt, &geomid, &flexid, &skinid);
-      if (selected_body != -1) {
-        // 遍历场景中的几何体
-        for (int i = 0; i < scn.ngeom; ++i) {
-          // 找到与选中 ID 匹配的几何体
-          if (scn.geoms[i].objid == selected_body) {
-            std::cout << "Selected body ID: " << selected_body << std::endl;
-            break;
-          }
-        }
-      }
+      if (button == GLFW_MOUSE_BUTTON_LEFT)
+        select_body(viewport);
+      else if (button == GLFW_MOUSE_BUTTON_RIGHT)
+        select_body(viewport, true);
     }
     last_click_time = current_time;
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
+      is_look_at = !is_look_at;
+    }
   }
 }
 
@@ -387,16 +392,12 @@ void mujoco_thread::mouse_move(double xpos, double ypos) {
   } else {
     action = mjMOUSE_ZOOM;
   }
-
-  // move camera
-  mjv_moveCamera(m, action, dx / height, dy / height, &scn, &cam);
-
   // apply force if Ctrl is pressed
-  if (ctrl_pressed && selected_body != -1) {
-    // Calculate force direction and magnitude
-    mjtNum force[3] = {dx * 0.1, dy * 0.1, 0.0};
-    // Apply force to the center of the selected body
-    mj_applyFT(m, d, force, nullptr, nullptr, selected_body, nullptr);
+  if (ctrl_pressed) {
+    mjv_movePerturb(m, d, action, dx / height, dy / height, &scn, &pert);
+  } else {
+    // move camera
+    mjv_moveCamera(m, action, dx / height, dy / height, &scn, &cam);
   }
 }
 
@@ -404,6 +405,37 @@ void mujoco_thread::mouse_move(double xpos, double ypos) {
 void mujoco_thread::scroll(double xoffset, double yoffset) {
   // emulate vertical mouse motion = 5% of window height
   mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &scn, &cam);
+}
+
+void mujoco_thread::select_body(mjrRect &viewport, bool camera_target) {
+  mjtNum selpnt[3];
+  int selgeom, selflex, selskin;
+  int selbody = mjv_select(
+      m, d, &this->opt, (mjtNum)viewport.width / viewport.height,
+      lastx / viewport.width, (viewport.height - lasty) / viewport.height,
+      &this->scn, selpnt, &selgeom, &selflex, &selskin);
+
+  if (selbody >= 0 && camera_target) {
+    mju_copy3(this->cam.lookat, selpnt);
+  }
+  if (selbody >= 0) {
+    // record selection
+    this->pert.select = selbody;
+    this->pert.flexselect = selflex;
+    this->pert.skinselect = selskin;
+    // compute localpos
+    mju_copy3(pert.refselpos, selpnt);
+    if (alt_pressed)
+      mju_copy3(target_point_pos, selpnt);
+    mjtNum tmp[3];
+    mju_sub3(tmp, selpnt, d->xpos + 3 * this->pert.select);
+    mju_mulMatTVec(this->pert.localpos, d->xmat + 9 * this->pert.select, tmp, 3,
+                   3);
+  } else {
+    this->pert.select = 0;
+    this->pert.flexselect = -1;
+    this->pert.skinselect = -1;
+  }
 }
 
 void mujoco_thread::updateRender() {
@@ -419,7 +451,17 @@ void mujoco_thread::updateRender() {
       // update scene and render
 
       std::unique_lock<std::mutex> lk(m_mtx);
-      mjv_updateScene(m, d, &opt, nullptr, &cam, mjCAT_ALL, &scn);
+      // target_point
+      if (target_point_id >= 0 && alt_pressed) {
+        mjtNum *pos = d->mocap_pos + 3 * target_point_id;
+        mju_copy3(pos, target_point_pos);
+      }
+      // look at
+      if (is_look_at && pert.select > 0) {
+        mju_copy3(cam.lookat, d->xpos + pert.select * 3);
+      }
+
+      mjv_updateScene(m, d, &opt, &pert, &cam, mjCAT_ALL, &scn);
       draw();
 
       // 轨迹跟踪
@@ -512,6 +554,13 @@ void mujoco_thread::draw_line(mjvScene *scn, mjtNum *from, mjtNum *to,
   mjvGeom *geom = scn->geoms + scn->ngeom - 1;
   mjv_initGeom(geom, mjGEOM_SPHERE, nullptr, nullptr, nullptr, rgba);
   mjv_connector(geom, mjGEOM_ARROW, 0.03, from, to);
+}
+
+void mujoco_thread::draw_geom(mjvScene *scn, int type, mjtNum *size,
+                              mjtNum *pos, mjtNum *mat, float rgba[4]) {
+  scn->ngeom += 1;
+  mjvGeom *geom = scn->geoms + scn->ngeom - 1;
+  mjv_initGeom(geom, type, size, pos, mat, rgba);
 }
 
 std::vector<std::string> mujoco_thread::get_names(int num, int *adr) {
@@ -672,13 +721,6 @@ mujoco_thread::scaleImageToRGB(const unsigned char *src, int srcWidth,
   }
 
   return dst;
-}
-
-void mujoco_thread::draw_geom(mjvScene *scn, int type, mjtNum *size,
-                              mjtNum *pos, mjtNum *mat, float rgba[4]) {
-  scn->ngeom += 1;
-  mjvGeom *geom = scn->geoms + scn->ngeom - 1;
-  mjv_initGeom(geom, type, size, pos, mat, rgba);
 }
 
 void mujoco_thread::track() {

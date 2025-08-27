@@ -58,12 +58,18 @@ public:
   /** @brief 记录body轨迹
    * @param body_id body id
    * @param size 轨迹球尺寸
-   * @param rgba 
+   * @param rgba
    * @param max_len 轨迹球最大数量
    * @param n_sub_step 每隔多少个最小step记录一次
    */
-  void body_track(int body_id, mjtNum size, const std::array<float, 4> rgba,
-                       int max_len = 1000, int n_sub_step = 1);
+  void body_track(std::string body_name, mjtNum size,
+                  const std::array<float, 4> rgba, int max_len = 1000,
+                  int n_sub_step = 1);
+  /** @brief 按住ALT + 左键双击防治位置
+   * @param body_name body id要是mocap类型的
+   */
+  void bind_target_point(std::string body_name);
+
   std::atomic<double> realtime = 1.0;
   int sub_step = 1;
   // 渲染
@@ -86,6 +92,7 @@ public:
   mjvOption opt;        // visualization options
   mjvScene scn;         // abstract scene
   mjrContext con;       // custom GPU context
+  mjvPerturb pert;      // perturbation object
 
   mjvFigure figure;
 
@@ -99,7 +106,7 @@ private:
   double last_mouse_x = 0;
   double last_mouse_y = 0;
   bool ctrl_pressed = false;
-  int selected_body = -1;
+  bool alt_pressed = false;
   double last_click_time = 0;
 
   double fps = 0.0;
@@ -113,6 +120,11 @@ private:
   std::atomic_bool is_sim{true};
   std::atomic_bool connect_windows{false}; // 是否关闭窗口停止仿真
 
+  // camera track
+  bool is_look_at = false;
+  // mocap move id
+  int target_point_id = -1;
+
   // 绘制
   std::vector<int> img_left{0};
   std::vector<int> img_bottom{0};
@@ -120,8 +132,6 @@ private:
                                  int srcHeight, int dstWidth, int dstHeight,
                                  int srcChannels,
                                  bool convertToOpenGLCoords = true);
-  void draw_geom(mjvScene *scn, int type, mjtNum *size, mjtNum *pos,
-                 mjtNum *mat, float rgba[4]);
   void track();
   std::vector<std::deque<std::array<mjtNum, 3>>> bodys_tracks;
   std::vector<std::array<float, 4>> tracks_rgba;
@@ -130,6 +140,7 @@ private:
   std::vector<int> tracks_max_len;
   std::vector<int> tracks_n_sub_step;
   std::vector<int> tracks_n_step;
+  mjtNum target_point_pos[3];
 
   // 窗口操作
   static void static_keyboard(GLFWwindow *window, int key, int scancode,
@@ -143,6 +154,8 @@ private:
   void mouse_move(double xpos, double ypos);
   void mouse_button(int button, int act, int mods);
   void scroll(double xoffset, double yoffset);
+
+  void select_body(mjrRect &viewport,bool camera_target=false);
 
   // 可视化
   std::atomic_bool is_show{false};
@@ -160,4 +173,6 @@ private:
 public:
   std::vector<mjtNum> get_sensor_data(const std::string &sensor_name);
   void draw_line(mjvScene *scn, mjtNum *from, mjtNum *to, float rgba[4]);
+  void draw_geom(mjvScene *scn, int type, mjtNum *size, mjtNum *pos,
+                 mjtNum *mat, float rgba[4]);
 };

@@ -109,10 +109,9 @@ public:
   // 初始化时创建射线相对于相机坐标系偏转向量 _ray_vec，非单位向量
   virtual void create_rays();
 
-  void get_image_data(unsigned char *image_data);
-  void get_data(double *data);
-  void get_data(float *data);
-  std::vector<double> get_data();
+  void get_image_data(unsigned char *image_data,bool is_info_max=true);
+  void get_data(double *data,bool is_info_max=true);
+  std::vector<double> get_data(bool is_info_max=true);
 
   void draw_line(mjvScene *scn, mjtNum *from, mjtNum *to, mjtNum width,
                  float *rgba);

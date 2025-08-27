@@ -164,31 +164,47 @@ void RayCaster::compute_distance() {
   }
 }
 
-void RayCaster::get_image_data(unsigned char *image_data) {
-  for (int i = 0; i < v_ray_num; i++) {
-    for (int j = 0; j < h_ray_num; j++) {
-      int idx = _get_idx(i, j);
-      if (geomids[idx] == -1) {
+void RayCaster::get_image_data(unsigned char *image_data, bool is_info_max) {
+  if (is_info_max) {
+    for (int idx = 0; idx < nray; idx++) {
+      image_data[idx] = 255 - dist_ratio[idx] * 255;
+    }
+  } else {
+    for (int idx = 0; idx < v_ray_num; idx++) {
+      if (geomids[idx] < 0)
         image_data[idx] = 0;
-      } else {
+      else
         image_data[idx] = 255 - dist_ratio[idx] * 255;
-      }
     }
   }
 }
 
-void RayCaster::get_data(double *data) {
-  memcpy(data, dist_ratio, nray * sizeof(double));
-}
-
-void RayCaster::get_data(float *data) {
-  for (int i = 0; i < nray; i++) {
-    data[i] = dist_ratio[i];
+void RayCaster::get_data(double *data, bool is_info_max) {
+  if (is_info_max)
+    memcpy(data, dist, nray * sizeof(double));
+  else {
+    for (int i = 0; i < nray; i++) {
+      if (geomids[i] < 0)
+        data[i] = 0.0;
+      else
+        data[i] = dist[i];
+    }
   }
 }
 
-std::vector<double> RayCaster::get_data() {
-  return std::vector<double>(dist_ratio, dist_ratio + nray);
+std::vector<double> RayCaster::get_data(bool is_info_max) {
+  if (is_info_max)
+    return std::vector<double>(dist, dist + nray);
+  else {
+    std::vector<double> vec(nray);
+    for (int i = 0; i < nray; i++) {
+      if (geomids[i] < 0)
+        vec[i] = 0.0;
+      else
+        vec[i] = dist[i];
+    }
+    return vec;
+  }
 }
 
 void RayCaster::draw_line(mjvScene *scn, mjtNum *from, mjtNum *to, mjtNum width,
@@ -234,21 +250,21 @@ void RayCaster::draw_deep_ray(mjvScene *scn, int ratio, int width, bool edge,
   if (edge) {
     for (int i = 0; i < v_ray_num; i += ratio) {
       int idx = _get_idx(i, 0);
-      draw_ary(idx, width, color_, scn,false);
+      draw_ary(idx, width, color_, scn, false);
       idx = _get_idx(i, h_ray_num - 1);
-      draw_ary(idx, width, color_, scn,false);
+      draw_ary(idx, width, color_, scn, false);
     }
     for (int j = 0; j < h_ray_num; j += ratio) {
       int idx = _get_idx(0, j);
-      draw_ary(idx, width, color_, scn,false);
+      draw_ary(idx, width, color_, scn, false);
       idx = _get_idx(v_ray_num - 1, j);
-      draw_ary(idx, width, color_, scn,false);
+      draw_ary(idx, width, color_, scn, false);
     }
   } else {
     for (int i = 0; i < v_ray_num; i += ratio) {
       for (int j = 0; j < h_ray_num; j += ratio) {
         int idx = _get_idx(i, j);
-        draw_ary(idx, width, color_, scn,false);
+        draw_ary(idx, width, color_, scn, false);
       }
     }
   }
@@ -284,7 +300,7 @@ void RayCaster::draw_deep(mjvScene *scn, int ratio, int width, float *color) {
   for (int i = 0; i < v_ray_num; i += ratio) {
     for (int j = 0; j < h_ray_num; j += ratio) {
       int idx = _get_idx(i, j);
-      draw_ary(idx, width, color_, scn,true);
+      draw_ary(idx, width, color_, scn, true);
     }
   }
 }

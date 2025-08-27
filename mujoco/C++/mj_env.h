@@ -57,12 +57,14 @@ private:
   std::shared_ptr<ObservationTerm> command;           // 3
   std::shared_ptr<ObservationTerm> dof_pos;           // 12
   std::shared_ptr<ObservationTerm> dof_vel;           // 16
+  std::shared_ptr<ObservationTerm> ray_caster_term;   // 400
 
   torch::Tensor get_base_ang_vel();
   torch::Tensor get_projected_gravity();
   torch::Tensor get_command();
   torch::Tensor get_dof_pos();
   torch::Tensor get_dof_vel();
+  torch::Tensor get_ray_caster_image();
 
   std::vector<std::pair<int, int>> base_ang_vel_pd;
   std::vector<std::string> base_ang_vel_name;

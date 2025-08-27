@@ -1,4 +1,4 @@
-<mujoco model="go2">
+<mujoco model="go2w">
   <compiler angle="radian" meshdir="assets" autolimits="true" />
 
   <option cone="elliptic" impratio="100" timestep="0.005" />
@@ -68,7 +68,7 @@
         diaginertia="0.107027 0.0980771 0.0244531" />
       <freejoint />
        <camera name="RayCasterCamera" pos="0.31 0 0.02" xyaxes="0 -1 0 0 0 1" fovy="80"/>
-       <camera name="RayCaster" pos="0. 0 0" xyaxes="0 -1 0 1 0 0"/>
+       <camera name="RayCaster" pos="0 0 0" xyaxes="0 -1 0 1 0 0"/>
       <geom mesh="base_0" material="black" class="visual" />
       <geom mesh="base_1" material="black" class="visual" />
       <geom mesh="base_2" material="black" class="visual" />

@@ -1,4 +1,5 @@
 #include "mj_env.h"
+#include "Noise.hpp"
 #include "RayCaster.h"
 #include "RayCasterCamera.h"
 #include "RayCasterLidar.h"
@@ -55,11 +56,8 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
                                            ray_caster_lidar.v_ray_num];
 
   // body_track
-  int track_id = mj_name2id(m, mjOBJ_BODY, "base_link");
-  body_track(track_id, 0.05, {0.0, 1.0, 1.0, 0.5}, 50, 30);
-  // track_id = mj_name2id(m, mjOBJ_BODY, "RR_wheel_link");
-  // body_track(track_id, 0.05, {1.0, 1.0, 0.0, 0.5}, 50, 30);
-  
+  body_track("base_link", 0.05, {0.0, 1.0, 1.0, 0.5}, 50, 30);
+  bind_target_point("red_flaag");
 }
 
 MJ_ENV::~MJ_ENV() {}
@@ -69,8 +67,8 @@ void MJ_ENV::vis_cfg() {
   // opt.flags[mjtVisFlag::mjVIS_CONTACTPOINT] = true;
   // opt.flags[mjtVisFlag::mjVIS_CONTACTFORCE] = true;
   // opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
-  opt.flags[mjtVisFlag::mjVIS_CONVEXHULL] = true;
-  opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
+  // opt.flags[mjtVisFlag::mjVIS_CONVEXHULL] = true;
+  // opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
   // opt.label = mjtLabel::mjLABEL_CAMERA;
   // opt.frame = mjtFrame::mjFRAME_WORLD;
   /*--------可视化配置--------*/
@@ -92,13 +90,13 @@ void MJ_ENV::step() {
 
 void MJ_ENV::step_unlock() {
 
-  ray_caster.compute_distance();
+  // ray_caster.compute_distance();
   ray_caster_camera.compute_distance();
-  ray_caster_lidar.compute_distance();
+  // ray_caster_lidar.compute_distance();
 
-  ray_caster.get_image_data(ray_caster_img);
+  // ray_caster.get_image_data(ray_caster_img);
   ray_caster_camera.get_image_data(ray_caster_camera_img);
-  ray_caster_lidar.get_image_data(ray_caster_lidar_img);
+  // ray_caster_lidar.get_image_data(ray_caster_lidar_img);
 }
 
 void MJ_ENV::draw() {
@@ -110,43 +108,54 @@ void MJ_ENV::draw() {
   // ray_caster.draw_hip_point(&scn, 1, 0.02);
   // ray_caster.draw_deep(&scn, 4, 20);
   // ray_caster_lidar.draw_deep_ray(&scn, 2, 4, true, color);
-  ray_caster.draw_deep_ray(&scn, 1, 5, false, color1);
-  ray_caster.draw_hip_point(&scn, 1, 0.02, color1);
-  ray_caster_camera.draw_hip_point(&scn, 1, 0.02, color2);
-  ray_caster_camera.draw_deep_ray(&scn, 1, 5, false, color2);
-  ray_caster_lidar.draw_hip_point(&scn, 1, 0.02, color3);
+
+  // ray_caster.draw_deep_ray(&scn, 1, 5, false, color1);
+  // ray_caster.draw_hip_point(&scn, 1, 0.02, color1);
+  // ray_caster_camera.draw_deep_ray(&scn, 1, 5, color1);
+  // ray_caster_camera.draw_deep_ray(&scn, 399, 5, color1);
+  // ray_caster_camera.draw_deep_ray(&scn, 1, 5, true, color2);
+  ray_caster_camera.draw_hip_point(&scn, 1, 0.02, color1);
+  // ray_caster_camera.draw_deep_ray(&scn, 1, 5, false, color2);
+  // ray_caster_lidar.draw_hip_point(&scn, 1, 0.02, color3);
 }
 
 void MJ_ENV::draw_windows() {
-  drawGrayPixels(ray_caster_img, 0,
-                 {ray_caster.h_ray_num, ray_caster.v_ray_num}, {200, 400});
-  drawGrayPixels(ray_caster_camera_img, 1,
+  drawGrayPixels(ray_caster_camera_img, 0,
                  {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
                  {400, 400});
-  drawGrayPixels(ray_caster_lidar_img, 2,
-                 {ray_caster_lidar.h_ray_num, ray_caster_lidar.v_ray_num},
-                 {1600, 400});
+
+  // drawGrayPixels(ray_caster_img, 0,
+  //                {ray_caster.h_ray_num, ray_caster.v_ray_num}, {200, 400});
+  // drawGrayPixels(ray_caster_camera_img, 1,
+  //                {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
+  //                {400, 400});
+  // drawGrayPixels(ray_caster_lidar_img, 2,
+  //                {ray_caster_lidar.h_ray_num, ray_caster_lidar.v_ray_num},
+  //                {1600, 400});
 }
 
 void MJ_ENV::initObsManager() {
-  base_ang_vel = std::make_shared<ObservationTerm>("base_angvel", 5);
+  base_ang_vel = std::make_shared<ObservationTerm>("base_angvel", 15);
   base_ang_vel->func = [this]() { return get_base_ang_vel(); };
   base_ang_vel->scale = 0.25;
 
-  projected_gravity = std::make_shared<ObservationTerm>("grivate", 5);
+  projected_gravity = std::make_shared<ObservationTerm>("grivate", 15);
   projected_gravity->func = [this]() { return get_projected_gravity(); };
 
   command = std::make_shared<ObservationTerm>("command", 1);
   command->func = [this]() { return get_command(); };
-  dof_pos = std::make_shared<ObservationTerm>("dof_pos", 5);
+  dof_pos = std::make_shared<ObservationTerm>("dof_pos", 15);
   dof_pos->func = [this]() { return get_dof_pos(); };
 
-  dof_vel = std::make_shared<ObservationTerm>("dof_vel", 5);
+  dof_vel = std::make_shared<ObservationTerm>("dof_vel", 15);
   dof_vel->scale = 0.05;
   dof_vel->func = [this]() { return get_dof_vel(); };
 
-  action_obs_term = std::make_shared<ActionObsTerm>("action_obs_term", 5);
+  action_obs_term = std::make_shared<ActionObsTerm>("action_obs_term", 15);
   action_obs_term->init(16);
+
+  ray_caster_term = std::make_shared<ObservationTerm>("ray_caster", 1);
+  ray_caster_term->func = [this]() { return get_ray_caster_image(); };
 
   obs_terms.push_back(base_ang_vel);
   obs_terms.push_back(projected_gravity);
@@ -154,6 +163,7 @@ void MJ_ENV::initObsManager() {
   obs_terms.push_back(dof_pos);
   obs_terms.push_back(dof_vel);
   obs_terms.push_back(action_obs_term);
+  obs_terms.push_back(ray_caster_term);
 
   action_term = std::make_shared<ActionTerm>();
   action_term->default_action =
@@ -194,6 +204,11 @@ torch::Tensor MJ_ENV::get_dof_vel() {
     dof_pos.push_back(data);
   }
   return fromVector(dof_pos);
+}
+
+torch::Tensor MJ_ENV::get_ray_caster_image() {
+  std::vector<double> image = ray_caster_camera.get_data();
+  return fromVector(image);
 }
 
 void MJ_ENV::keyboard_press(std::string key) {

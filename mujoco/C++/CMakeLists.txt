@@ -34,3 +34,7 @@ file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 add_executable(lab2mj ${SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
 target_link_libraries(lab2mj mujoco::mujoco glut GL GLU glfw udev ${TORCH_LIBRARIES})
 
+set(policy_path "${CMAKE_SOURCE_DIR}/../../policy/raycam/policy.pt")
+add_definitions(-DPOLICY_PATH="${policy_path}")
+set(mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_float_box.xml")
+add_definitions(-DMJCF_PATH="${mjcf_path}")

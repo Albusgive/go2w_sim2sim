@@ -99,6 +99,17 @@ void ActionTerm::init(int batch_size, torch::Dtype dtype) {
 void ManagerBasedEnv::init_manager(std::string filename) {
   load_policy(filename);
   initObsManager();
+  // 删除不需要的obs term
+  for (auto &manager : obs_terms) {
+    for (auto &term_name : remove_obs_term_list) {
+      if (manager->obs_term_name_ == term_name) {
+        obs_terms.erase(
+            std::remove(obs_terms.begin(), obs_terms.end(), manager),
+            obs_terms.end());
+        return;
+      }
+    }
+  }
   if (action_obs_term == nullptr) {
     DebugErr("action_obs_term is nullptr! please "
              "std::make_shared<ActionObsTerm>();");
@@ -115,8 +126,10 @@ void ManagerBasedEnv::init_manager(std::string filename) {
     if (obs_terms[i]->batch_size == 0)
       DebugErr("obs_terms: " + obs_terms[i]->obs_term_name_ + " has no init!");
     Log("obs num " + std::to_string(i) + ": " + obs_terms[i]->obs_term_name_ +
-        "  data length: " + std::to_string(obs_terms[i]->batch_size));
-    obs_num += obs_terms[i]->batch_size;
+        "  data length: " +
+        std::to_string(obs_terms[i]->batch_size *
+                       obs_terms[i]->history_length));
+    obs_num += obs_terms[i]->batch_size * obs_terms[i]->history_length;
   }
   Log("num obs: " + std::to_string(obs_num));
   obs = torch::zeros(obs_num, options_);
@@ -124,9 +137,23 @@ void ManagerBasedEnv::init_manager(std::string filename) {
   // obs之后初始化 action
   if (action_term == nullptr) {
     Warning("the action_term is nullptr,managerenv will declare it")
-    action_term = std::make_shared<ActionTerm>();
+        action_term = std::make_shared<ActionTerm>();
   }
   action_term->init(action_obs_term->batch_size);
+  computeObs();
+  int shape = obs.size(0);
+  Log("obs shape: " + std::to_string(shape));
+}
+
+void ManagerBasedEnv::remove_obs_term(std::string term_name) {
+  for (auto &manager : obs_terms) {
+    if (manager->obs_term_name_ == term_name) {
+      obs_terms.erase(std::remove(obs_terms.begin(), obs_terms.end(), manager),
+                      obs_terms.end());
+      return;
+    }
+  }
+  remove_obs_term_list.push_back(term_name);
 }
 
 torch::Tensor ManagerBasedEnv::manager_step() {

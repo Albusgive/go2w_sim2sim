@@ -100,6 +100,8 @@ public:
 
   // 加载jit模型 初始化环境并且检查各种term是否正确使用,打印输出
   void init_manager(std::string filename);
+  void remove_obs_term(std::string term_name);
+  std::vector<std::string> remove_obs_term_list;
   // 运行环境并返回机器人action
   torch::Tensor manager_step();
 
