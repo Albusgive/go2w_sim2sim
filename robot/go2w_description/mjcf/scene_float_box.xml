@@ -17,7 +17,7 @@
       markrgb="0.8 0.8 0.8" width="300" height="300" />
     <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5"
       reflectance="0.2" />
-      <mesh name="flag" vertex="0 0 0  0.6 0 0  0 0 0.3 0 0.01 0 0 -0.01 0"/>
+    <mesh name="flag" vertex="0 0 0  0.6 0 0  0 0 0.3 0 0.01 0 0 -0.01 0" />
   </asset>
 
   <worldbody>
@@ -26,17 +26,24 @@
     <geom name="floor2" size="20 20 0.05" type="box" pos="0 0 -0.051" material="groundplane" />
 
     <body pos="0 -3 0" name="red_flaag" mocap="true">
-      <site pos="0 0 0.5" type="cylinder" size="0.01 0.5" rgba="1 1 1 1"/>
-      <geom pos="0 0 0.7" type="mesh" mesh="flag" rgba="1 0 0 1"/>
+      <site pos="0 0 0.5" type="cylinder" size="0.01 0.5" rgba="1 1 1 1" />
+      <geom pos="0 0 0.7" type="mesh" mesh="flag" rgba="1 0 0 1" />
     </body>
 
     <replicate count="5" offset="0 2 0">
-      <geom pos="3 -2.5 0.7" type="box" size="1 1 0.3" quat="1.0 0 0 0" />
+      <geom pos="3 -2.5 0.7" type="box" size="1 1 0.3" />
+    </replicate>
+
+    <replicate count="3" offset="1.5 0 0.05">
+      <replicate count="5" offset="0 2 0">
+        <geom pos="5 -2.5 0" type="box" size="0.05 1 0.05" />
+      </replicate>
     </replicate>
 
     <replicate count="5" offset="0 2 0">
-      <geom pos="10 -2.5 0.65" type="box" size="1 1 0.3" quat="1.0 0 0 0" />
+      <geom pos="12 -2.5 0.65" type="box" size="1 1 0.3" />
     </replicate>
+
 
   </worldbody>
 
