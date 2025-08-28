@@ -57,7 +57,6 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
 
   // body_track
   body_track("base_link", 0.05, {0.0, 1.0, 1.0, 0.5}, 50, 30);
-  bind_target_point("red_flaag");
 }
 
 MJ_ENV::~MJ_ENV() {}
@@ -154,7 +153,7 @@ void MJ_ENV::initObsManager() {
   action_obs_term = std::make_shared<ActionObsTerm>("action_obs_term", 15);
   action_obs_term->init(16);
 
-  ray_caster_term = std::make_shared<ObservationTerm>("ray_caster", 1);
+  ray_caster_term = std::make_shared<ObservationTerm>("ray_caster", 1,UniformNoise(-0.1,0.1));
   ray_caster_term->func = [this]() { return get_ray_caster_image(); };
 
   obs_terms.push_back(base_ang_vel);

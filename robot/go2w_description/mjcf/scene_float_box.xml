@@ -25,7 +25,7 @@
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
     <geom name="floor2" size="20 20 0.05" type="box" pos="0 0 -0.051" material="groundplane" />
 
-    <body pos="0 -1 0" name="red_flaag" mocap="true">
+    <body pos="0 -3 0" name="red_flaag" mocap="true">
       <site pos="0 0 0.5" type="cylinder" size="0.01 0.5" rgba="1 1 1 1"/>
       <geom pos="0 0 0.7" type="mesh" mesh="flag" rgba="1 0 0 1"/>
     </body>

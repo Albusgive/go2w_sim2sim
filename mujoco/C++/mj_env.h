@@ -26,7 +26,7 @@ public:
   void keyboard_press(std::string key) override;
   std::vector<std::pair<std::string, std::string>> draw_table() override;
   std::shared_ptr<GamePad> pad;
-  double cmd_pad_scale[3] = {1.0, 1.0, 1.0};
+  double cmd_pad_scale[3] = {1.0, 1.0, 3.14};
   void init_gamepad();
 
   std::vector<double> obs_default_dof_pos_vec = {

@@ -5,28 +5,64 @@
 
 Policy::Policy() {}
 
-Policy::Policy(std::string filename, torch::Dtype dtype) : dtype_(dtype) {
-  load(filename);
+Policy::Policy(std::string filename, torch::Dtype dtype) {
+  load(filename, dtype);
 }
 
 Policy::~Policy() {}
 
-void Policy::load(std::string filename) {
+std::string Policy::load(std::string filename, torch::Dtype dtype) {
+  dtype_ = dtype;
+  if (filename.find(".pt") == std::string::npos) {
+    fs::path dir_path = filename;
+    if (!fs::exists(dir_path) || !fs::is_directory(dir_path)) {
+      throw std::runtime_error("no found .pt in "+filename);
+    }
+    std::vector<fs::path> pt_files;
+    for (const auto &entry : fs::directory_iterator(dir_path)) {
+      if (entry.is_regular_file() && entry.path().extension() == ".pt") {
+        pt_files.push_back(entry.path());
+      }
+    }
+    if (pt_files.empty()) {
+      throw std::runtime_error("no found .pt in "+filename);
+    }
+    std::regex num_pattern("(\\d+)");
+    std::vector<std::pair<int, fs::path>> numbered_files;
+    for (const auto &file : pt_files) {
+      std::string stem = file.stem().string();
+      std::smatch matches;
+      if (std::regex_search(stem, matches, num_pattern)) {
+        int num = std::stoi(matches[1]);
+        numbered_files.emplace_back(num, file);
+      }
+    }
+    if (numbered_files.empty()) {
+      std::sort(pt_files.begin(), pt_files.end(),
+                [](const fs::path &a, const fs::path &b) {
+                  return fs::last_write_time(a) > fs::last_write_time(b);
+                });
+      filename = pt_files[0].string();
+    } else {
+      auto max_file = *std::max_element(
+          numbered_files.begin(), numbered_files.end(),
+          [](const auto &a, const auto &b) { return a.first < b.first; });
+      filename = max_file.second.string();
+    }
+  }
   module = torch::jit::load(filename);
   module.eval();
   options_ = torch::TensorOptions().dtype(dtype_);
+  return filename;
 }
 
 torch::Tensor Policy::get_action(torch::Tensor obs) {
-  // 确保输入张量有正确的形状 [1, 1153]
   if (obs.dim() == 1) {
-    // 如果是一维张量 [1153]，添加批次维度变为 [1, 1153]
     obs = obs.unsqueeze(0);
   } else if (obs.dim() != 2 || obs.size(0) != 1 || obs.size(1) != 1153) {
-    // 如果不是正确的二维形状，抛出异常
     throw std::runtime_error("输入张量形状不正确");
   }
-  
+
   std::vector<torch::jit::IValue> inputs;
   inputs.push_back(obs);
   try {

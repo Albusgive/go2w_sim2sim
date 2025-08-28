@@ -41,12 +41,12 @@ target_link_libraries(lab2mj mujoco::mujoco glut GL GLU glfw udev ${TORCH_LIBRAR
 add_executable(demo ${DEMO_SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
 target_link_libraries(demo mujoco::mujoco glut GL GLU glfw udev ${TORCH_LIBRARIES})
 
-set(policy_path "${CMAKE_SOURCE_DIR}/../../policy/raycam/policy.pt")
+set(policy_path "${CMAKE_SOURCE_DIR}/../../policy/raycam/")
 add_definitions(-DPOLICY_PATH="${policy_path}")
 set(mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_float_box.xml")
 add_definitions(-DMJCF_PATH="${mjcf_path}")
 
-set(demo_policy_path "${CMAKE_SOURCE_DIR}/../../policy/history_5/policy.pt")
+set(demo_policy_path "${CMAKE_SOURCE_DIR}/../../policy/history_5/")
 add_definitions(-DDEMO_POLICY_PATH="${demo_policy_path}")
 set(demo_mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene.xml")
 add_definitions(-DDEMO_MJCF_PATH="${demo_mjcf_path}")

@@ -184,9 +184,8 @@ torch::Tensor ManagerBasedEnv::computeAction() {
 }
 
 void ManagerBasedEnv::load_policy(std::string filename) {
-  policy = Policy(filename, dtype_);
-  std::filesystem::path absolute_path = std::filesystem::absolute(filename);
-  Log("poliy load succeed,from: " << absolute_path);
+  auto path = policy.load(filename, dtype_);
+  Log("poliy load succeed,from: " << path);
 }
 
 void ManagerBasedEnv::set_dtype(torch::Dtype dtype) {
