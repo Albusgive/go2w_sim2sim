@@ -6,6 +6,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <iostream>
 
 enum RayCasterType { base, yaw, world, none };
 
@@ -112,6 +113,10 @@ public:
   void get_image_data(unsigned char *image_data,bool is_info_max=true);
   void get_data(double *data,bool is_info_max=true);
   std::vector<double> get_data(bool is_info_max=true);
+  //世界坐标系命中位置 没命中的返回(-max,-max,-max)
+  void get_data_pos_w(double *data);
+  std::vector<std::vector<double>> get_data_pos_w();
+
 
   void draw_line(mjvScene *scn, mjtNum *from, mjtNum *to, mjtNum width,
                  float *rgba);
@@ -131,7 +136,7 @@ private:
    * @param d mjData
    * @param cam_name 相机名称
    * @param resolution 分辨率
-   * @param size 相机朝向方向画面的y,x宽度 (M)
+   * @param size 相机朝向方向画面的y,x宽度,world则是世界坐标系下按照图像坐标系排列（左上->右下） (M) like isaac sim
    * @param dis_range 距离范围 [最小，最大] (M)
    * @param is_detect_parentbody 是否检测自身
    */

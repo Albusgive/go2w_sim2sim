@@ -1,0 +1,133 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-ad9acb56e574957b524a.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "unitree_ros2_example",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "go2_robot_state_client::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-go2_robot_state_client-Debug-d00d730de2cae301abca.json",
+					"name" : "go2_robot_state_client",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "go2_stand_example::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-go2_stand_example-Debug-a0eaebd15cbee960ca19.json",
+					"name" : "go2_stand_example",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "low_level_ctrl::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-low_level_ctrl-Debug-77d6827751e5c3696cba.json",
+					"name" : "low_level_ctrl",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "read_low_state::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-read_low_state-Debug-44f61b5f75020f6430ba.json",
+					"name" : "read_low_state",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "read_low_state_hg::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-read_low_state_hg-Debug-9fa3a45c66407579b7a6.json",
+					"name" : "read_low_state_hg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "read_motion_state::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-read_motion_state-Debug-c5899bbdaa66c0528f16.json",
+					"name" : "read_motion_state",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "read_wireless_controller::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-read_wireless_controller-Debug-8ddc33d595d46ea66279.json",
+					"name" : "read_wireless_controller",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-Debug-fc6d90375936c5959d74.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "unitree_ros2_example_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-unitree_ros2_example_uninstall-Debug-7aed098a2bf42df11db9.json",
+					"name" : "unitree_ros2_example_uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/albusgive2/go2w_sim2sim/ros2/src/build",
+		"source" : "/home/albusgive2/go2w_sim2sim/ros2/src/src"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

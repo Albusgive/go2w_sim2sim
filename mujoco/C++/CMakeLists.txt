@@ -46,7 +46,7 @@ add_definitions(-DPOLICY_PATH="${policy_path}")
 set(mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_float_box.xml")
 add_definitions(-DMJCF_PATH="${mjcf_path}")
 
-set(demo_policy_path "${CMAKE_SOURCE_DIR}/../../policy/history_5/")
+set(demo_policy_path "${CMAKE_SOURCE_DIR}/../../policy/history_1/")
 add_definitions(-DDEMO_POLICY_PATH="${demo_policy_path}")
 set(demo_mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene.xml")
 add_definitions(-DDEMO_MJCF_PATH="${demo_mjcf_path}")
