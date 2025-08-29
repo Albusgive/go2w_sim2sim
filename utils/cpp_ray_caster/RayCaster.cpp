@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iterator>
 #include <mujoco/mujoco.h>
+#include <utility>
 
 RayCaster::RayCaster() {}
 
@@ -110,21 +111,45 @@ void RayCaster::compute_ray_vec() {
 }
 
 void RayCaster::create_rays() {
-  mjtNum start_x = -size[0] / 2;
-  mjtNum start_y = size[1] / 2;
-  for (int i = 0; i < v_ray_num; i++) {
-    for (int j = 0; j < h_ray_num; j++) {
-      int idx = _get_idx(i, j) * 3;
-      ray_vec[idx + 0] = _ray_vec[idx + 0] = 0.0;
-      ray_vec[idx + 1] = _ray_vec[idx + 1] = 0.0;
-      ray_vec[idx + 2] = _ray_vec[idx + 2] = -deep_max;
-      ray_vec_offset[idx + 0] = _ray_vec_offset[idx + 0] = start_x;
-      ray_vec_offset[idx + 1] = _ray_vec_offset[idx + 1] = start_y;
-      ray_vec_offset[idx + 2] = _ray_vec_offset[idx + 2] = 0.0;
-      start_x += resolution;
+
+  if (type != RayCasterType::world) {
+    mjtNum start_x = -size[0] / 2;
+    mjtNum start_y = size[1] / 2;
+    for (int i = 0; i < v_ray_num; i++) {
+      for (int j = 0; j < h_ray_num; j++) {
+        int idx = _get_idx(i, j) * 3;
+        ray_vec[idx + 0] = _ray_vec[idx + 0] = 0.0;
+        ray_vec[idx + 1] = _ray_vec[idx + 1] = 0.0;
+        ray_vec[idx + 2] = _ray_vec[idx + 2] = -deep_max;
+        ray_vec_offset[idx + 0] = _ray_vec_offset[idx + 0] = start_x;
+        ray_vec_offset[idx + 1] = _ray_vec_offset[idx + 1] = start_y;
+        ray_vec_offset[idx + 2] = _ray_vec_offset[idx + 2] = 0.0;
+        start_x += resolution;
+      }
+      start_x = -size[0] / 2;
+      start_y -= resolution;
     }
-    start_x = -size[0] / 2;
-    start_y -= resolution;
+  } else {
+    // x和y互换
+    mjtNum start_x = size[0] / 2;
+    mjtNum start_y = size[1] / 2;
+    int tmp = h_ray_num;
+    h_ray_num = v_ray_num;
+    v_ray_num = tmp;
+    for (int i = 0; i < v_ray_num; i++) {
+      for (int j = 0; j < h_ray_num; j++) {
+        int idx = _get_idx(i, j) * 3;
+        ray_vec[idx + 0] = _ray_vec[idx + 0] = 0.0;
+        ray_vec[idx + 1] = _ray_vec[idx + 1] = 0.0;
+        ray_vec[idx + 2] = _ray_vec[idx + 2] = -deep_max;
+        ray_vec_offset[idx + 0] = _ray_vec_offset[idx + 0] = start_x;
+        ray_vec_offset[idx + 1] = _ray_vec_offset[idx + 1] = start_y;
+        ray_vec_offset[idx + 2] = _ray_vec_offset[idx + 2] = 0.0;
+        start_y -= resolution;
+      }
+      start_x -= resolution;
+      start_y = size[1] / 2;
+    }
   }
 }
 
@@ -205,6 +230,49 @@ std::vector<double> RayCaster::get_data(bool is_info_max) {
     }
     return vec;
   }
+}
+
+void RayCaster::get_data_pos_w(double *data) {
+  for (int i = 0; i < v_ray_num; i++) {
+    for (int j = 0; j < h_ray_num; j++) {
+      int idx = _get_idx(i, j);
+      if (geomids[idx] == -1) {
+        data[idx] = data[idx + 1] = data[idx + 2] = -deep_max;
+      } else {
+        if (is_offert) {
+          data[idx * 3] = pos[0] + ray_vec_offset[idx * 3];
+          data[idx * 3 + 1] = pos[1] + ray_vec_offset[idx * 3 + 1];
+          data[idx * 3 + 2] = pos[2] + ray_vec_offset[idx * 3 + 2];
+        }
+        mju_addToScl3(data + (idx * 3), ray_vec + (idx * 3), dist_ratio[idx]);
+      }
+    }
+  }
+}
+
+std::vector<std::vector<double>> RayCaster::get_data_pos_w() {
+  std::vector<std::vector<double>> pos_w =
+      std::vector<std::vector<double>>(nray, std::vector<double>(3, 0));
+  for (int i = 0; i < v_ray_num; i++) {
+    for (int j = 0; j < h_ray_num; j++) {
+      int idx = _get_idx(i, j);
+      mjtNum end[3] = {pos[0], pos[1], pos[2]};
+      if (geomids[idx] == -1) {
+        end[0] = end[1] = end[2] = -deep_max;
+      } else {
+        if (is_offert) {
+          end[0] += ray_vec_offset[idx * 3];
+          end[1] += ray_vec_offset[idx * 3 + 1];
+          end[2] += ray_vec_offset[idx * 3 + 2];
+        }
+        mju_addToScl3(end, ray_vec + (idx * 3), dist_ratio[idx]);
+      }
+      pos_w[idx][0] = end[0];
+      pos_w[idx][1] = end[1];
+      pos_w[idx][2] = end[2];
+    }
+  }
+  return pos_w;
 }
 
 void RayCaster::draw_line(mjvScene *scn, mjtNum *from, mjtNum *to, mjtNum width,

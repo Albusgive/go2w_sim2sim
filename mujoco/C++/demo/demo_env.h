@@ -42,11 +42,15 @@ public:
   torch::Tensor obs_default_dof_pos;
 
   // RayCasterCamera
+  RayCaster ray_caster_base;
+  RayCaster ray_caster_yaw;
+  RayCaster ray_caster_world;
   RayCasterCamera ray_caster_camera;
-  RayCaster ray_caster;
   RayCasterLidar ray_caster_lidar;
 
-  unsigned char* ray_caster_img;
+  unsigned char* ray_caster_base_img;
+  unsigned char* ray_caster_yaw_img;
+  unsigned char* ray_caster_world_img;
   unsigned char* ray_caster_camera_img;
   unsigned char* ray_caster_lidar_img;
 

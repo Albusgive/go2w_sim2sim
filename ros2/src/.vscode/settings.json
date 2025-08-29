@@ -1,0 +1,19 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/local/lib/python3.10/dist-packages",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/local/lib/python3.10/dist-packages",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/local/lib/python3.10/dist-packages",
+        "/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/local/lib/python3.10/dist-packages",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/local/lib/python3.10/dist-packages",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/local/lib/python3.10/dist-packages",
+        "/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs/local/lib/python3.10/dist-packages",
+        "/opt/ros/humble/lib/python3.10/site-packages",
+        "/opt/ros/humble/local/lib/python3.10/dist-packages"
+    ],
+    "cmake.sourceDirectory": "/home/albusgive2/go2w_sim2sim/ros2/src/src"
+}
