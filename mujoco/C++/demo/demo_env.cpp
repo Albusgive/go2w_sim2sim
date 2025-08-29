@@ -48,7 +48,7 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
   ray_caster_world = RayCaster(m, d, "RayCaster_world", 0.2, {2.0, 1.0},
                                {0.01, 0.6}, RayCasterType::world);
   ray_caster_camera = RayCasterCamera(m, d, "RayCasterCamera", 24.0, 20.955, 1,
-                                      10, 10, {0.0, 5.0});
+                                      20, 20, {0.0, 5.0});
   ray_caster_lidar =
       RayCasterLidar(m, d, "RayCasterCamera", 200.0, 50.0, 100, 100, {0.01, 6});
   // img
