@@ -1,0 +1,88 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-fe86ceb168bd670c14d6.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "unitree_ros2_example",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "go2w_base_loc::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-go2w_base_loc-2e3d49f44f65ab642b11.json",
+					"name" : "go2w_base_loc",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "go2w_stand_example::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-go2w_stand_example-1e38c0f198932943cbc6.json",
+					"name" : "go2w_stand_example",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-fc6d90375936c5959d74.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "unitree_ros2_example_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-unitree_ros2_example_uninstall-add53e91ea0250d8ebb9.json",
+					"name" : "unitree_ros2_example_uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example",
+		"source" : "/home/albusgive2/go2w_sim2sim/ros2/src"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

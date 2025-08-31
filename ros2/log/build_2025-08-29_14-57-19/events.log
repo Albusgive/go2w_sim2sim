@@ -1,0 +1,366 @@
+[0.000000] (-) TimerEvent: {}
+[0.000122] (unitree_ros2_example) JobQueued: {'identifier': 'unitree_ros2_example', 'dependencies': OrderedDict()}
+[0.000447] (unitree_ros2_example) JobStarted: {'identifier': 'unitree_ros2_example'}
+[0.005371] (unitree_ros2_example) JobProgress: {'identifier': 'unitree_ros2_example', 'progress': 'cmake'}
+[0.005632] (unitree_ros2_example) Command: {'cmd': ['/usr/bin/cmake', '/home/albusgive2/go2w_sim2sim/ros2/src', '-DCMAKE_INSTALL_PREFIX=/home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example'], 'cwd': '/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('HTTPS_PROXY', 'http://127.0.0.1:7897/'), ('no_proxy', 'localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,172.29.0.0/16,::1'), ('LANGUAGE', 'zh_CN:zh'), ('USER', 'albusgive2'), ('all_proxy', 'socks://127.0.0.1:7897/'), ('XDG_SESSION_TYPE', 'x11'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/opt/mujoco/lib:/usr/local/cuda/lib64::/usr/local/cuda-12.4/lib64'), ('HOME', '/home/albusgive2'), ('CONDA_SHLVL', '0'), ('CYCLONEDDS_URI', '<CycloneDDS><Domain><General><Interfaces>\n                            <NetworkInterface name="wlxfc221c1f67ee" priority="default" multicast="default" />\n                        </Interfaces></General></Domain></CycloneDDS>'), ('OLDPWD', '/home/albusgive2/go2w_sim2sim/ros2/build'), ('DESKTOP_SESSION', 'ubuntu'), ('NO_PROXY', 'localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,172.29.0.0/16,::1'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('DBUS_STARTER_BUS_TYPE', 'session'), ('SYSTEMD_EXEC_PID', '1892'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus,guid=cbaaaecb8eb7c5271a59923568aee6fd'), ('COLORTERM', 'truecolor'), ('_CE_M', ''), ('MANDATORY_PATH', '/usr/share/gconf/ubuntu.mandatory.path'), ('https_proxy', 'http://127.0.0.1:7897'), ('COLCON_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install:/home/albusgive2/ros2-gamepad/install:/home/albusgive2/rlfw/rlfw_interface/install'), ('ROS_DISTRO', 'humble'), ('GTK_IM_MODULE', 'ibus'), ('LOGNAME', 'albusgive2'), ('ALL_PROXY', 'socks://127.0.0.1:7897/'), ('http_proxy', 'http://127.0.0.1:7897'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('PKG_CONFIG_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib/x86_64-linux-gnu/pkgconfig:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib/pkgconfig'), ('XDG_SESSION_CLASS', 'user'), ('DEFAULTS_PATH', '/usr/share/gconf/ubuntu.default.path'), ('USERNAME', 'albusgive2'), ('TERM', 'xterm-256color'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('_CE_CONDA', ''), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/bin:/opt/ros/humble/bin:/home/albusgive2/Qt/6.8.2/gcc_64/bin:/usr/local/cuda/bin:/home/albusgive2/anaconda3/condabin:/home/albusgive2/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/usr/local/cuda-12.4/bin'), ('SESSION_MANAGER', 'local/albusgive2:@/tmp/.ICE-unix/1892,unix/albusgive2:/tmp/.ICE-unix/1892'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_TERMINAL_SCREEN', '/org/gnome/Terminal/screen/8c67f5cc_61f3_494a_90ad_ea4be711e0a4'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('DISPLAY', ':1'), ('LANG', 'zh_CN.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp'), ('XMODIFIERS', '@im=ibus'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('GNOME_TERMINAL_SERVICE', ':1.579'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('ROS_DOMAIN_ID', '1'), ('AMENT_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp:/home/albusgive2/ros2-gamepad/install/gamepad:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs:/opt/ros/humble'), ('CONDA_PYTHON_EXE', '/home/albusgive2/anaconda3/bin/python'), ('SHELL', '/bin/bash'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('Torch_DIR', '/home/albusgive2/libtorch'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('CONDA_EXE', '/home/albusgive2/anaconda3/bin/conda'), ('DBUS_STARTER_ADDRESS', 'unix:path=/run/user/1000/bus,guid=cbaaaecb8eb7c5271a59923568aee6fd'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/local/lib/python3.10/dist-packages:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/local/lib/python3.10/dist-packages:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/local/lib/python3.10/dist-packages:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('HTTP_PROXY', 'http://127.0.0.1:7897/'), ('COLCON', '1'), ('VTE_VERSION', '6800'), ('CMAKE_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds:/home/albusgive2/ros2-gamepad/install/gamepad:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs:/opt/ros/humble')]), 'shell': False}
+[0.046657] (unitree_ros2_example) StdoutLine: {'line': b'-- The C compiler identification is GNU 12.3.0\n'}
+[0.094037] (unitree_ros2_example) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 12.3.0\n'}
+[0.098783] (unitree_ros2_example) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.099867] (-) TimerEvent: {}
+[0.165481] (unitree_ros2_example) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.172906] (unitree_ros2_example) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.173047] (unitree_ros2_example) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.173300] (unitree_ros2_example) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.175272] (unitree_ros2_example) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.199957] (-) TimerEvent: {}
+[0.234958] (unitree_ros2_example) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[0.239969] (unitree_ros2_example) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[0.240283] (unitree_ros2_example) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[0.240665] (unitree_ros2_example) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[0.242472] (unitree_ros2_example) StdoutLine: {'line': b'-- Found ament_cmake: 1.3.11 (/opt/ros/humble/share/ament_cmake/cmake)\n'}
+[0.300032] (-) TimerEvent: {}
+[0.343772] (unitree_ros2_example) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter \n'}
+[0.400137] (-) TimerEvent: {}
+[0.403801] (unitree_ros2_example) StdoutLine: {'line': b'-- Found unitree_go: 0.0.0 (/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/share/unitree_go/cmake)\n'}
+[0.437581] (unitree_ros2_example) StdoutLine: {'line': b'-- Found rosidl_generator_c: 3.1.6 (/opt/ros/humble/share/rosidl_generator_c/cmake)\n'}
+[0.440897] (unitree_ros2_example) StdoutLine: {'line': b'-- Found rosidl_adapter: 3.1.6 (/opt/ros/humble/share/rosidl_adapter/cmake)\n'}
+[0.446455] (unitree_ros2_example) StdoutLine: {'line': b'-- Found rosidl_generator_cpp: 3.1.6 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)\n'}
+[0.454264] (unitree_ros2_example) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.464746] (unitree_ros2_example) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.499999] (unitree_ros2_example) StdoutLine: {'line': b'-- Found unitree_hg: 0.0.0 (/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/share/unitree_hg/cmake)\n'}
+[0.500192] (-) TimerEvent: {}
+[0.507902] (unitree_ros2_example) StdoutLine: {'line': b'-- Found unitree_api: 0.0.0 (/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/share/unitree_api/cmake)\n'}
+[0.516512] (unitree_ros2_example) StdoutLine: {'line': b'-- Found rclcpp: 16.0.11 (/opt/ros/humble/share/rclcpp/cmake)\n'}
+[0.542049] (unitree_ros2_example) StdoutLine: {'line': b'-- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)\n'}
+[0.543267] (unitree_ros2_example) StdoutLine: {'line': b'-- Found rmw_cyclonedds_cpp: 1.3.4 (/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp/share/rmw_cyclonedds_cpp/cmake)\n'}
+[0.557557] (unitree_ros2_example) StdoutLine: {'line': b"-- Using RMW implementation 'rmw_cyclonedds_cpp' as default\n"}
+[0.563263] (unitree_ros2_example) StdoutLine: {'line': b'-- Looking for pthread.h\n'}
+[0.600309] (-) TimerEvent: {}
+[0.612624] (unitree_ros2_example) StdoutLine: {'line': b'-- Looking for pthread.h - found\n'}
+[0.612769] (unitree_ros2_example) StdoutLine: {'line': b'-- Performing Test CMAKE_HAVE_LIBC_PTHREAD\n'}
+[0.678052] (unitree_ros2_example) StdoutLine: {'line': b'-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success\n'}
+[0.678872] (unitree_ros2_example) StdoutLine: {'line': b'-- Found Threads: TRUE  \n'}
+[0.700387] (-) TimerEvent: {}
+[0.708190] (unitree_ros2_example) StdoutLine: {'line': b'-- Found rosbag2_cpp: 0.15.13 (/opt/ros/humble/share/rosbag2_cpp/cmake)\n'}
+[0.761531] (unitree_ros2_example) StdoutLine: {'line': b'-- Found Torch: /home/albusgive2/libtorch/lib/libtorch.so  \n'}
+[0.765550] (unitree_ros2_example) StdoutLine: {'line': b'-- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)\n'}
+[0.800485] (-) TimerEvent: {}
+[0.820581] (unitree_ros2_example) StdoutLine: {'line': b"-- Added test 'copyright' to check source files copyright and LICENSE\n"}
+[0.821494] (unitree_ros2_example) StdoutLine: {'line': b"-- Added test 'cppcheck' to perform static code analysis on C / C++ code\n"}
+[0.822014] (unitree_ros2_example) StdoutLine: {'line': b'-- Configured cppcheck include dirs: /home/albusgive2/go2w_sim2sim/ros2/src/include;/home/albusgive2/go2w_sim2sim/ros2/src/include/common;/home/albusgive2/go2w_sim2sim/ros2/src/include/nlohmann;/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_gamepad;/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env;/home/albusgive2/go2w_sim2sim/ros2/src/include/go2w_base_loc\n'}
+[0.822091] (unitree_ros2_example) StdoutLine: {'line': b'-- Configured cppcheck exclude dirs and/or files: \n'}
+[0.822819] (unitree_ros2_example) StdoutLine: {'line': b"-- Added test 'cpplint' to check C / C++ code against the Google style\n"}
+[0.822898] (unitree_ros2_example) StdoutLine: {'line': b'-- Configured cpplint exclude dirs and/or files: \n'}
+[0.823428] (unitree_ros2_example) StdoutLine: {'line': b"-- Added test 'lint_cmake' to check CMake code style\n"}
+[0.824174] (unitree_ros2_example) StdoutLine: {'line': b"-- Added test 'uncrustify' to check C / C++ code style\n"}
+[0.824262] (unitree_ros2_example) StdoutLine: {'line': b'-- Configured uncrustify additional arguments: \n'}
+[0.824618] (unitree_ros2_example) StdoutLine: {'line': b"-- Added test 'xmllint' to check XML markup files\n"}
+[0.825420] (unitree_ros2_example) StdoutLine: {'line': b'-- Configuring done\n'}
+[0.835812] (unitree_ros2_example) StdoutLine: {'line': b'-- Generating done\n'}
+[0.839528] (unitree_ros2_example) StdoutLine: {'line': b'-- Build files have been written to: /home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example\n'}
+[0.846349] (unitree_ros2_example) CommandEnded: {'returncode': 0}
+[0.847011] (unitree_ros2_example) JobProgress: {'identifier': 'unitree_ros2_example', 'progress': 'build'}
+[0.847029] (unitree_ros2_example) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example', '--', '-j12', '-l12'], 'cwd': '/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('HTTPS_PROXY', 'http://127.0.0.1:7897/'), ('no_proxy', 'localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,172.29.0.0/16,::1'), ('LANGUAGE', 'zh_CN:zh'), ('USER', 'albusgive2'), ('all_proxy', 'socks://127.0.0.1:7897/'), ('XDG_SESSION_TYPE', 'x11'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/opt/mujoco/lib:/usr/local/cuda/lib64::/usr/local/cuda-12.4/lib64'), ('HOME', '/home/albusgive2'), ('CONDA_SHLVL', '0'), ('CYCLONEDDS_URI', '<CycloneDDS><Domain><General><Interfaces>\n                            <NetworkInterface name="wlxfc221c1f67ee" priority="default" multicast="default" />\n                        </Interfaces></General></Domain></CycloneDDS>'), ('OLDPWD', '/home/albusgive2/go2w_sim2sim/ros2/build'), ('DESKTOP_SESSION', 'ubuntu'), ('NO_PROXY', 'localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,172.29.0.0/16,::1'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('DBUS_STARTER_BUS_TYPE', 'session'), ('SYSTEMD_EXEC_PID', '1892'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus,guid=cbaaaecb8eb7c5271a59923568aee6fd'), ('COLORTERM', 'truecolor'), ('_CE_M', ''), ('MANDATORY_PATH', '/usr/share/gconf/ubuntu.mandatory.path'), ('https_proxy', 'http://127.0.0.1:7897'), ('COLCON_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install:/home/albusgive2/ros2-gamepad/install:/home/albusgive2/rlfw/rlfw_interface/install'), ('ROS_DISTRO', 'humble'), ('GTK_IM_MODULE', 'ibus'), ('LOGNAME', 'albusgive2'), ('ALL_PROXY', 'socks://127.0.0.1:7897/'), ('http_proxy', 'http://127.0.0.1:7897'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('PKG_CONFIG_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib/x86_64-linux-gnu/pkgconfig:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib/pkgconfig'), ('XDG_SESSION_CLASS', 'user'), ('DEFAULTS_PATH', '/usr/share/gconf/ubuntu.default.path'), ('USERNAME', 'albusgive2'), ('TERM', 'xterm-256color'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('_CE_CONDA', ''), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/bin:/opt/ros/humble/bin:/home/albusgive2/Qt/6.8.2/gcc_64/bin:/usr/local/cuda/bin:/home/albusgive2/anaconda3/condabin:/home/albusgive2/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/usr/local/cuda-12.4/bin'), ('SESSION_MANAGER', 'local/albusgive2:@/tmp/.ICE-unix/1892,unix/albusgive2:/tmp/.ICE-unix/1892'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_TERMINAL_SCREEN', '/org/gnome/Terminal/screen/8c67f5cc_61f3_494a_90ad_ea4be711e0a4'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('DISPLAY', ':1'), ('LANG', 'zh_CN.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp'), ('XMODIFIERS', '@im=ibus'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('GNOME_TERMINAL_SERVICE', ':1.579'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('ROS_DOMAIN_ID', '1'), ('AMENT_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp:/home/albusgive2/ros2-gamepad/install/gamepad:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs:/opt/ros/humble'), ('CONDA_PYTHON_EXE', '/home/albusgive2/anaconda3/bin/python'), ('SHELL', '/bin/bash'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('Torch_DIR', '/home/albusgive2/libtorch'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('CONDA_EXE', '/home/albusgive2/anaconda3/bin/conda'), ('DBUS_STARTER_ADDRESS', 'unix:path=/run/user/1000/bus,guid=cbaaaecb8eb7c5271a59923568aee6fd'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/local/lib/python3.10/dist-packages:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/local/lib/python3.10/dist-packages:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/local/lib/python3.10/dist-packages:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('HTTP_PROXY', 'http://127.0.0.1:7897/'), ('COLCON', '1'), ('VTE_VERSION', '6800'), ('CMAKE_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds:/home/albusgive2/ros2-gamepad/install/gamepad:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs:/opt/ros/humble')]), 'shell': False}
+[0.891264] (unitree_ros2_example) StdoutLine: {'line': b'[ 10%] \x1b[32mBuilding CXX object CMakeFiles/go2w_stand_example.dir/src/go2w_stand/go2w_stand.cpp.o\x1b[0m\n'}
+[0.891760] (unitree_ros2_example) StdoutLine: {'line': b'[ 20%] \x1b[32mBuilding CXX object CMakeFiles/go2w_stand_example.dir/src/common/motor_crc.cpp.o\x1b[0m\n'}
+[0.892044] (unitree_ros2_example) StdoutLine: {'line': b'[ 30%] \x1b[32mBuilding CXX object CMakeFiles/go2w_base_loc.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o\x1b[0m\n'}
+[0.892182] (unitree_ros2_example) StdoutLine: {'line': b'[ 40%] \x1b[32mBuilding CXX object CMakeFiles/go2w_base_loc.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o\x1b[0m\n'}
+[0.894576] (unitree_ros2_example) StdoutLine: {'line': b'[ 60%] \x1b[32mBuilding CXX object CMakeFiles/go2w_base_loc.dir/src/go2w_base_loc/go2w_base_loc_env.cpp.o\x1b[0m\n'}
+[0.894843] (unitree_ros2_example) StdoutLine: {'line': b'[ 60%] \x1b[32mBuilding CXX object CMakeFiles/go2w_base_loc.dir/src/go2w_base_loc/go2w_base_loc.cpp.o\x1b[0m\n'}
+[0.895089] (unitree_ros2_example) StdoutLine: {'line': b'[ 70%] \x1b[32mBuilding CXX object CMakeFiles/go2w_base_loc.dir/src/common/motor_crc.cpp.o\x1b[0m\n'}
+[0.895910] (unitree_ros2_example) StdoutLine: {'line': b'[ 80%] \x1b[32mBuilding CXX object CMakeFiles/go2w_base_loc.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/libtorch_net.cpp.o\x1b[0m\n'}
+[0.900594] (-) TimerEvent: {}
+[1.000927] (-) TimerEvent: {}
+[1.101174] (-) TimerEvent: {}
+[1.201432] (-) TimerEvent: {}
+[1.301727] (-) TimerEvent: {}
+[1.402012] (-) TimerEvent: {}
+[1.502301] (-) TimerEvent: {}
+[1.602632] (-) TimerEvent: {}
+[1.702934] (-) TimerEvent: {}
+[1.803219] (-) TimerEvent: {}
+[1.903491] (-) TimerEvent: {}
+[2.003787] (-) TimerEvent: {}
+[2.104080] (-) TimerEvent: {}
+[2.204355] (-) TimerEvent: {}
+[2.304626] (-) TimerEvent: {}
+[2.404908] (-) TimerEvent: {}
+[2.505195] (-) TimerEvent: {}
+[2.605507] (-) TimerEvent: {}
+[2.705799] (-) TimerEvent: {}
+[2.806096] (-) TimerEvent: {}
+[2.906369] (-) TimerEvent: {}
+[3.006638] (-) TimerEvent: {}
+[3.106906] (-) TimerEvent: {}
+[3.207164] (-) TimerEvent: {}
+[3.307436] (-) TimerEvent: {}
+[3.407760] (-) TimerEvent: {}
+[3.508022] (-) TimerEvent: {}
+[3.608281] (-) TimerEvent: {}
+[3.708544] (-) TimerEvent: {}
+[3.808799] (-) TimerEvent: {}
+[3.909092] (-) TimerEvent: {}
+[4.009364] (-) TimerEvent: {}
+[4.109649] (-) TimerEvent: {}
+[4.209921] (-) TimerEvent: {}
+[4.310216] (-) TimerEvent: {}
+[4.410502] (-) TimerEvent: {}
+[4.510793] (-) TimerEvent: {}
+[4.611072] (-) TimerEvent: {}
+[4.711337] (-) TimerEvent: {}
+[4.811591] (-) TimerEvent: {}
+[4.911803] (-) TimerEvent: {}
+[5.012076] (-) TimerEvent: {}
+[5.112298] (-) TimerEvent: {}
+[5.212530] (-) TimerEvent: {}
+[5.312746] (-) TimerEvent: {}
+[5.412967] (-) TimerEvent: {}
+[5.513235] (-) TimerEvent: {}
+[5.613477] (-) TimerEvent: {}
+[5.713689] (-) TimerEvent: {}
+[5.813948] (-) TimerEvent: {}
+[5.914205] (-) TimerEvent: {}
+[6.014462] (-) TimerEvent: {}
+[6.114681] (-) TimerEvent: {}
+[6.214912] (-) TimerEvent: {}
+[6.315147] (-) TimerEvent: {}
+[6.415376] (-) TimerEvent: {}
+[6.515580] (-) TimerEvent: {}
+[6.615816] (-) TimerEvent: {}
+[6.716060] (-) TimerEvent: {}
+[6.816261] (-) TimerEvent: {}
+[6.916490] (-) TimerEvent: {}
+[7.016721] (-) TimerEvent: {}
+[7.116922] (-) TimerEvent: {}
+[7.217131] (-) TimerEvent: {}
+[7.317364] (-) TimerEvent: {}
+[7.417591] (-) TimerEvent: {}
+[7.461037] (unitree_ros2_example) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:2\x1b[m\x1b[K,\n'}
+[7.461216] (unitree_ros2_example) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp:1\x1b[m\x1b[K:\n'}
+[7.461283] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/Buffer.hpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvoid ObservationBuffer::append(const at::Tensor&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.461333] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/Buffer.hpp:35:50:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kcomparison of integer expressions of different signedness: \xe2\x80\x98\x1b[01m\x1b[Kint64_t\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Klong int\x1b[m\x1b[K\xe2\x80\x99} and \xe2\x80\x98\x1b[01m\x1b[Ksize_t\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Klong unsigned int\x1b[m\x1b[K\xe2\x80\x99} [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare\x07-Wsign-compare\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.461385] (unitree_ros2_example) StderrLine: {'line': b'   35 |     if (data.sizes().size() != 1 || \x1b[01;35m\x1b[Kdata.size(0) != batch_size_\x1b[m\x1b[K) {\n'}
+[7.461433] (unitree_ros2_example) StderrLine: {'line': b'      |                                     \x1b[01;35m\x1b[K~~~~~~~~~~~~~^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.463297] (unitree_ros2_example) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:3\x1b[m\x1b[K:\n'}
+[7.463424] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/Noise.hpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvirtual void Noise::produce_noise(at::Tensor&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.463478] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/Noise.hpp:8:45:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Kinput\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.463526] (unitree_ros2_example) StderrLine: {'line': b'    8 |   virtual void produce_noise(\x1b[01;35m\x1b[Ktorch::Tensor &input\x1b[m\x1b[K) {};\n'}
+[7.463570] (unitree_ros2_example) StderrLine: {'line': b'      |                              \x1b[01;35m\x1b[K~~~~~~~~~~~~~~~^~~~~\x1b[m\x1b[K\n'}
+[7.517685] (-) TimerEvent: {}
+[7.617951] (-) TimerEvent: {}
+[7.718216] (-) TimerEvent: {}
+[7.720522] (unitree_ros2_example) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:2\x1b[m\x1b[K,\n'}
+[7.720690] (unitree_ros2_example) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/include/go2w_base_loc/go2w_base_loc_env.h:9\x1b[m\x1b[K,\n'}
+[7.720763] (unitree_ros2_example) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/src/go2w_base_loc/go2w_base_loc.cpp:1\x1b[m\x1b[K:\n'}
+[7.720812] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/Buffer.hpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvoid ObservationBuffer::append(const at::Tensor&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.720855] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/Buffer.hpp:35:50:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kcomparison of integer expressions of different signedness: \xe2\x80\x98\x1b[01m\x1b[Kint64_t\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Klong int\x1b[m\x1b[K\xe2\x80\x99} and \xe2\x80\x98\x1b[01m\x1b[Ksize_t\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Klong unsigned int\x1b[m\x1b[K\xe2\x80\x99} [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare\x07-Wsign-compare\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.720902] (unitree_ros2_example) StderrLine: {'line': b'   35 |     if (data.sizes().size() != 1 || \x1b[01;35m\x1b[Kdata.size(0) != batch_size_\x1b[m\x1b[K) {\n'}
+[7.720941] (unitree_ros2_example) StderrLine: {'line': b'      |                                     \x1b[01;35m\x1b[K~~~~~~~~~~~~~^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.722932] (unitree_ros2_example) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:3\x1b[m\x1b[K:\n'}
+[7.723040] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/Noise.hpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvirtual void Noise::produce_noise(at::Tensor&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.723082] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/Noise.hpp:8:45:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Kinput\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.723120] (unitree_ros2_example) StderrLine: {'line': b'    8 |   virtual void produce_noise(\x1b[01;35m\x1b[Ktorch::Tensor &input\x1b[m\x1b[K) {};\n'}
+[7.723155] (unitree_ros2_example) StderrLine: {'line': b'      |                              \x1b[01;35m\x1b[K~~~~~~~~~~~~~~~^~~~~\x1b[m\x1b[K\n'}
+[7.734632] (unitree_ros2_example) StdoutLine: {'line': b'[ 90%] \x1b[32m\x1b[1mLinking CXX executable go2w_stand_example\x1b[0m\n'}
+[7.806409] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:\x1b[m\x1b[K In lambda function:\n'}
+[7.806577] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:36:41:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kimplicit capture of \xe2\x80\x98\x1b[01m\x1b[Kthis\x1b[m\x1b[K\xe2\x80\x99 via \xe2\x80\x98\x1b[01m\x1b[K[=]\x1b[m\x1b[K\xe2\x80\x99 is deprecated in C++20 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated\x07-Wdeprecated\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.806662] (unitree_ros2_example) StderrLine: {'line': b'   36 |   std::function<torch::Tensor()> func = \x1b[01;35m\x1b[K[\x1b[m\x1b[K=]() {\n'}
+[7.806717] (unitree_ros2_example) StderrLine: {'line': b'      |                                         \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[7.806775] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:36:41:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kadd explicit \xe2\x80\x98\x1b[01m\x1b[Kthis\x1b[m\x1b[K\xe2\x80\x99 or \xe2\x80\x98\x1b[01m\x1b[K*this\x1b[m\x1b[K\xe2\x80\x99 capture\n'}
+[7.818121] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:\x1b[m\x1b[K In constructor \xe2\x80\x98\x1b[01m\x1b[KObservationTerm::ObservationTerm(std::string, int, Noise)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.818273] (-) TimerEvent: {}
+[7.818369] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:57:15:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KObservationTerm::obs_term_name_\x1b[m\x1b[K\xe2\x80\x99 will be initialized after [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.818448] (unitree_ros2_example) StderrLine: {'line': b'   57 |   std::string \x1b[01;35m\x1b[Kobs_term_name_\x1b[m\x1b[K;\n'}
+[7.818497] (unitree_ros2_example) StderrLine: {'line': b'      |               \x1b[01;35m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.818541] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:51:7:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K  \xe2\x80\x98\x1b[01m\x1b[Kint ObservationTerm::history_length\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.818587] (unitree_ros2_example) StderrLine: {'line': b'   51 |   int \x1b[01;35m\x1b[Khistory_length\x1b[m\x1b[K = 1;\n'}
+[7.818631] (unitree_ros2_example) StderrLine: {'line': b'      |       \x1b[01;35m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.818672] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp:5:1:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K  when initialized here [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.818717] (unitree_ros2_example) StderrLine: {'line': b'    5 | \x1b[01;35m\x1b[KObservationTerm\x1b[m\x1b[K::ObservationTerm(std::string obs_term_name, int history_length,\n'}
+[7.818765] (unitree_ros2_example) StderrLine: {'line': b'      | \x1b[01;35m\x1b[K^~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.818902] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:\x1b[m\x1b[K In constructor \xe2\x80\x98\x1b[01m\x1b[KObservationTerm::ObservationTerm(std::string, int, GaussianNoise)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.819009] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:57:15:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KObservationTerm::obs_term_name_\x1b[m\x1b[K\xe2\x80\x99 will be initialized after [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.819069] (unitree_ros2_example) StderrLine: {'line': b'   57 |   std::string \x1b[01;35m\x1b[Kobs_term_name_\x1b[m\x1b[K;\n'}
+[7.819118] (unitree_ros2_example) StderrLine: {'line': b'      |               \x1b[01;35m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.819165] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:51:7:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K  \xe2\x80\x98\x1b[01m\x1b[Kint ObservationTerm::history_length\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.819226] (unitree_ros2_example) StderrLine: {'line': b'   51 |   int \x1b[01;35m\x1b[Khistory_length\x1b[m\x1b[K = 1;\n'}
+[7.819274] (unitree_ros2_example) StderrLine: {'line': b'      |       \x1b[01;35m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.819318] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp:10:1:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K  when initialized here [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.819364] (unitree_ros2_example) StderrLine: {'line': b'   10 | \x1b[01;35m\x1b[KObservationTerm\x1b[m\x1b[K::ObservationTerm(std::string obs_term_name, int history_length,\n'}
+[7.819408] (unitree_ros2_example) StderrLine: {'line': b'      | \x1b[01;35m\x1b[K^~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.823021] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:\x1b[m\x1b[K In constructor \xe2\x80\x98\x1b[01m\x1b[KObservationTerm::ObservationTerm(std::string, int, UniformNoise)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.823200] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:57:15:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KObservationTerm::obs_term_name_\x1b[m\x1b[K\xe2\x80\x99 will be initialized after [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.823272] (unitree_ros2_example) StderrLine: {'line': b'   57 |   std::string \x1b[01;35m\x1b[Kobs_term_name_\x1b[m\x1b[K;\n'}
+[7.823322] (unitree_ros2_example) StderrLine: {'line': b'      |               \x1b[01;35m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.823369] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.hpp:51:7:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K  \xe2\x80\x98\x1b[01m\x1b[Kint ObservationTerm::history_length\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.823418] (unitree_ros2_example) StderrLine: {'line': b'   51 |   int \x1b[01;35m\x1b[Khistory_length\x1b[m\x1b[K = 1;\n'}
+[7.823461] (unitree_ros2_example) StderrLine: {'line': b'      |       \x1b[01;35m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.823522] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp:16:1:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K  when initialized here [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder\x07-Wreorder\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.823574] (unitree_ros2_example) StderrLine: {'line': b'   16 | \x1b[01;35m\x1b[KObservationTerm\x1b[m\x1b[K::ObservationTerm(std::string obs_term_name, int history_length,\n'}
+[7.823616] (unitree_ros2_example) StderrLine: {'line': b'      | \x1b[01;35m\x1b[K^~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.837097] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvoid ManagerBasedEnv::init_manager(std::string)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[7.837274] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp:122:21:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kcomparison of integer expressions of different signedness: \xe2\x80\x98\x1b[01m\x1b[Kint\x1b[m\x1b[K\xe2\x80\x99 and \xe2\x80\x98\x1b[01m\x1b[Kstd::vector<std::shared_ptr<ObservationTerm> >::size_type\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Klong unsigned int\x1b[m\x1b[K\xe2\x80\x99} [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare\x07-Wsign-compare\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[7.837347] (unitree_ros2_example) StderrLine: {'line': b'  122 |   for (int i = 0; \x1b[01;35m\x1b[Ki < obs_terms.size()\x1b[m\x1b[K; i++) {\n'}
+[7.837415] (unitree_ros2_example) StderrLine: {'line': b'      |                   \x1b[01;35m\x1b[K~~^~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[7.918380] (-) TimerEvent: {}
+[8.018633] (-) TimerEvent: {}
+[8.018981] (unitree_ros2_example) StdoutLine: {'line': b'[ 90%] Built target go2w_stand_example\n'}
+[8.055585] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:\x1b[m\x1b[K In lambda function:\n'}
+[8.055702] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:36:41:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kimplicit capture of \xe2\x80\x98\x1b[01m\x1b[Kthis\x1b[m\x1b[K\xe2\x80\x99 via \xe2\x80\x98\x1b[01m\x1b[K[=]\x1b[m\x1b[K\xe2\x80\x99 is deprecated in C++20 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated\x07-Wdeprecated\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[8.055751] (unitree_ros2_example) StderrLine: {'line': b'   36 |   std::function<torch::Tensor()> func = \x1b[01;35m\x1b[K[\x1b[m\x1b[K=]() {\n'}
+[8.055782] (unitree_ros2_example) StderrLine: {'line': b'      |                                         \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[8.055809] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:36:41:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kadd explicit \xe2\x80\x98\x1b[01m\x1b[Kthis\x1b[m\x1b[K\xe2\x80\x99 or \xe2\x80\x98\x1b[01m\x1b[K*this\x1b[m\x1b[K\xe2\x80\x99 capture\n'}
+[8.118744] (-) TimerEvent: {}
+[8.160001] (unitree_ros2_example) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:2\x1b[m\x1b[K,\n'}
+[8.160122] (unitree_ros2_example) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/include/go2w_base_loc/go2w_base_loc_env.h:9\x1b[m\x1b[K,\n'}
+[8.160167] (unitree_ros2_example) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/src/go2w_base_loc/go2w_base_loc_env.cpp:1\x1b[m\x1b[K:\n'}
+[8.160196] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/Buffer.hpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvoid ObservationBuffer::append(const at::Tensor&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[8.160225] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/Buffer.hpp:35:50:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kcomparison of integer expressions of different signedness: \xe2\x80\x98\x1b[01m\x1b[Kint64_t\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Klong int\x1b[m\x1b[K\xe2\x80\x99} and \xe2\x80\x98\x1b[01m\x1b[Ksize_t\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Klong unsigned int\x1b[m\x1b[K\xe2\x80\x99} [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wsign-compare\x07-Wsign-compare\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[8.160254] (unitree_ros2_example) StderrLine: {'line': b'   35 |     if (data.sizes().size() != 1 || \x1b[01;35m\x1b[Kdata.size(0) != batch_size_\x1b[m\x1b[K) {\n'}
+[8.160280] (unitree_ros2_example) StderrLine: {'line': b'      |                                     \x1b[01;35m\x1b[K~~~~~~~~~~~~~^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[8.162413] (unitree_ros2_example) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:3\x1b[m\x1b[K:\n'}
+[8.162476] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/Noise.hpp:\x1b[m\x1b[K In member function \xe2\x80\x98\x1b[01m\x1b[Kvirtual void Noise::produce_noise(at::Tensor&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[8.162505] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/Noise.hpp:8:45:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Kinput\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[8.162538] (unitree_ros2_example) StderrLine: {'line': b'    8 |   virtual void produce_noise(\x1b[01;35m\x1b[Ktorch::Tensor &input\x1b[m\x1b[K) {};\n'}
+[8.162563] (unitree_ros2_example) StderrLine: {'line': b'      |                              \x1b[01;35m\x1b[K~~~~~~~~~~~~~~~^~~~~\x1b[m\x1b[K\n'}
+[8.218812] (-) TimerEvent: {}
+[8.319022] (-) TimerEvent: {}
+[8.419255] (-) TimerEvent: {}
+[8.478871] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:\x1b[m\x1b[K In lambda function:\n'}
+[8.479020] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:36:41:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kimplicit capture of \xe2\x80\x98\x1b[01m\x1b[Kthis\x1b[m\x1b[K\xe2\x80\x99 via \xe2\x80\x98\x1b[01m\x1b[K[=]\x1b[m\x1b[K\xe2\x80\x99 is deprecated in C++20 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wdeprecated\x07-Wdeprecated\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[8.479077] (unitree_ros2_example) StderrLine: {'line': b'   36 |   std::function<torch::Tensor()> func = \x1b[01;35m\x1b[K[\x1b[m\x1b[K=]() {\n'}
+[8.479107] (unitree_ros2_example) StderrLine: {'line': b'      |                                         \x1b[01;35m\x1b[K^\x1b[m\x1b[K\n'}
+[8.479135] (unitree_ros2_example) StderrLine: {'line': b'\x1b[01m\x1b[K/home/albusgive2/go2w_sim2sim/ros2/src/../../utils/cpp_manager_env/ManagerEnv.hpp:36:41:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kadd explicit \xe2\x80\x98\x1b[01m\x1b[Kthis\x1b[m\x1b[K\xe2\x80\x99 or \xe2\x80\x98\x1b[01m\x1b[K*this\x1b[m\x1b[K\xe2\x80\x99 capture\n'}
+[8.519357] (-) TimerEvent: {}
+[8.619569] (-) TimerEvent: {}
+[8.719777] (-) TimerEvent: {}
+[8.819982] (-) TimerEvent: {}
+[8.920210] (-) TimerEvent: {}
+[9.020449] (-) TimerEvent: {}
+[9.120687] (-) TimerEvent: {}
+[9.220906] (-) TimerEvent: {}
+[9.321110] (-) TimerEvent: {}
+[9.421332] (-) TimerEvent: {}
+[9.521559] (-) TimerEvent: {}
+[9.621789] (-) TimerEvent: {}
+[9.721993] (-) TimerEvent: {}
+[9.822203] (-) TimerEvent: {}
+[9.922418] (-) TimerEvent: {}
+[10.022677] (-) TimerEvent: {}
+[10.122940] (-) TimerEvent: {}
+[10.223192] (-) TimerEvent: {}
+[10.323575] (-) TimerEvent: {}
+[10.423808] (-) TimerEvent: {}
+[10.524016] (-) TimerEvent: {}
+[10.624237] (-) TimerEvent: {}
+[10.724484] (-) TimerEvent: {}
+[10.824714] (-) TimerEvent: {}
+[10.924926] (-) TimerEvent: {}
+[11.025152] (-) TimerEvent: {}
+[11.125377] (-) TimerEvent: {}
+[11.225580] (-) TimerEvent: {}
+[11.325786] (-) TimerEvent: {}
+[11.426001] (-) TimerEvent: {}
+[11.526222] (-) TimerEvent: {}
+[11.626463] (-) TimerEvent: {}
+[11.726676] (-) TimerEvent: {}
+[11.826901] (-) TimerEvent: {}
+[11.927130] (-) TimerEvent: {}
+[12.027364] (-) TimerEvent: {}
+[12.127597] (-) TimerEvent: {}
+[12.227804] (-) TimerEvent: {}
+[12.328021] (-) TimerEvent: {}
+[12.428254] (-) TimerEvent: {}
+[12.528464] (-) TimerEvent: {}
+[12.628679] (-) TimerEvent: {}
+[12.728909] (-) TimerEvent: {}
+[12.829138] (-) TimerEvent: {}
+[12.929364] (-) TimerEvent: {}
+[13.029607] (-) TimerEvent: {}
+[13.129797] (-) TimerEvent: {}
+[13.230057] (-) TimerEvent: {}
+[13.330306] (-) TimerEvent: {}
+[13.430523] (-) TimerEvent: {}
+[13.530759] (-) TimerEvent: {}
+[13.630962] (-) TimerEvent: {}
+[13.731185] (-) TimerEvent: {}
+[13.831404] (-) TimerEvent: {}
+[13.931632] (-) TimerEvent: {}
+[14.031853] (-) TimerEvent: {}
+[14.132058] (-) TimerEvent: {}
+[14.232283] (-) TimerEvent: {}
+[14.332485] (-) TimerEvent: {}
+[14.432708] (-) TimerEvent: {}
+[14.532917] (-) TimerEvent: {}
+[14.633150] (-) TimerEvent: {}
+[14.733376] (-) TimerEvent: {}
+[14.833577] (-) TimerEvent: {}
+[14.933796] (-) TimerEvent: {}
+[15.033998] (-) TimerEvent: {}
+[15.134217] (-) TimerEvent: {}
+[15.234420] (-) TimerEvent: {}
+[15.334613] (-) TimerEvent: {}
+[15.434807] (-) TimerEvent: {}
+[15.535003] (-) TimerEvent: {}
+[15.635216] (-) TimerEvent: {}
+[15.735435] (-) TimerEvent: {}
+[15.835631] (-) TimerEvent: {}
+[15.935834] (-) TimerEvent: {}
+[16.036043] (-) TimerEvent: {}
+[16.136268] (-) TimerEvent: {}
+[16.236474] (-) TimerEvent: {}
+[16.336704] (-) TimerEvent: {}
+[16.436932] (-) TimerEvent: {}
+[16.537169] (-) TimerEvent: {}
+[16.637371] (-) TimerEvent: {}
+[16.737572] (-) TimerEvent: {}
+[16.837798] (-) TimerEvent: {}
+[16.938020] (-) TimerEvent: {}
+[17.038238] (-) TimerEvent: {}
+[17.138441] (-) TimerEvent: {}
+[17.238640] (-) TimerEvent: {}
+[17.338855] (-) TimerEvent: {}
+[17.439108] (-) TimerEvent: {}
+[17.539332] (-) TimerEvent: {}
+[17.639553] (-) TimerEvent: {}
+[17.739781] (-) TimerEvent: {}
+[17.788215] (unitree_ros2_example) StdoutLine: {'line': b'[100%] \x1b[32m\x1b[1mLinking CXX executable go2w_base_loc\x1b[0m\n'}
+[17.839866] (-) TimerEvent: {}
+[17.940429] (-) TimerEvent: {}
+[18.040706] (-) TimerEvent: {}
+[18.141051] (-) TimerEvent: {}
+[18.241346] (-) TimerEvent: {}
+[18.341581] (-) TimerEvent: {}
+[18.441806] (-) TimerEvent: {}
+[18.542100] (-) TimerEvent: {}
+[18.642381] (-) TimerEvent: {}
+[18.742635] (-) TimerEvent: {}
+[18.842872] (-) TimerEvent: {}
+[18.943110] (-) TimerEvent: {}
+[18.965401] (unitree_ros2_example) StdoutLine: {'line': b'[100%] Built target go2w_base_loc\n'}
+[18.972899] (unitree_ros2_example) CommandEnded: {'returncode': 0}
+[18.973334] (unitree_ros2_example) JobProgress: {'identifier': 'unitree_ros2_example', 'progress': 'install'}
+[18.979777] (unitree_ros2_example) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example'], 'cwd': '/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('HTTPS_PROXY', 'http://127.0.0.1:7897/'), ('no_proxy', 'localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,172.29.0.0/16,::1'), ('LANGUAGE', 'zh_CN:zh'), ('USER', 'albusgive2'), ('all_proxy', 'socks://127.0.0.1:7897/'), ('XDG_SESSION_TYPE', 'x11'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp/lib:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs/lib:/usr/lib/x86_64-linux-gnu/gazebo-11/plugins:/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib:/opt/mujoco/lib:/usr/local/cuda/lib64::/usr/local/cuda-12.4/lib64'), ('HOME', '/home/albusgive2'), ('CONDA_SHLVL', '0'), ('CYCLONEDDS_URI', '<CycloneDDS><Domain><General><Interfaces>\n                            <NetworkInterface name="wlxfc221c1f67ee" priority="default" multicast="default" />\n                        </Interfaces></General></Domain></CycloneDDS>'), ('OLDPWD', '/home/albusgive2/go2w_sim2sim/ros2/build'), ('DESKTOP_SESSION', 'ubuntu'), ('NO_PROXY', 'localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,172.29.0.0/16,::1'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('DBUS_STARTER_BUS_TYPE', 'session'), ('SYSTEMD_EXEC_PID', '1892'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus,guid=cbaaaecb8eb7c5271a59923568aee6fd'), ('COLORTERM', 'truecolor'), ('_CE_M', ''), ('MANDATORY_PATH', '/usr/share/gconf/ubuntu.mandatory.path'), ('https_proxy', 'http://127.0.0.1:7897'), ('COLCON_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install:/home/albusgive2/ros2-gamepad/install:/home/albusgive2/rlfw/rlfw_interface/install'), ('ROS_DISTRO', 'humble'), ('GTK_IM_MODULE', 'ibus'), ('LOGNAME', 'albusgive2'), ('ALL_PROXY', 'socks://127.0.0.1:7897/'), ('http_proxy', 'http://127.0.0.1:7897'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('PKG_CONFIG_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib/x86_64-linux-gnu/pkgconfig:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/lib/pkgconfig'), ('XDG_SESSION_CLASS', 'user'), ('DEFAULTS_PATH', '/usr/share/gconf/ubuntu.default.path'), ('USERNAME', 'albusgive2'), ('TERM', 'xterm-256color'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('_CE_CONDA', ''), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/bin:/opt/ros/humble/bin:/home/albusgive2/Qt/6.8.2/gcc_64/bin:/usr/local/cuda/bin:/home/albusgive2/anaconda3/condabin:/home/albusgive2/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/usr/local/cuda-12.4/bin'), ('SESSION_MANAGER', 'local/albusgive2:@/tmp/.ICE-unix/1892,unix/albusgive2:/tmp/.ICE-unix/1892'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_TERMINAL_SCREEN', '/org/gnome/Terminal/screen/8c67f5cc_61f3_494a_90ad_ea4be711e0a4'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('DISPLAY', ':1'), ('LANG', 'zh_CN.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('RMW_IMPLEMENTATION', 'rmw_cyclonedds_cpp'), ('XMODIFIERS', '@im=ibus'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('GNOME_TERMINAL_SERVICE', ':1.579'), ('SSH_AGENT_LAUNCHER', 'gnome-keyring'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('ROS_DOMAIN_ID', '1'), ('AMENT_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp:/home/albusgive2/ros2-gamepad/install/gamepad:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs:/opt/ros/humble'), ('CONDA_PYTHON_EXE', '/home/albusgive2/anaconda3/bin/python'), ('SHELL', '/bin/bash'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('Torch_DIR', '/home/albusgive2/libtorch'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/albusgive2/go2w_sim2sim/ros2/build/unitree_ros2_example'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('CONDA_EXE', '/home/albusgive2/anaconda3/bin/conda'), ('DBUS_STARTER_ADDRESS', 'unix:path=/run/user/1000/bus,guid=cbaaaecb8eb7c5271a59923568aee6fd'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg/local/lib/python3.10/dist-packages:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/local/lib/python3.10/dist-packages:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/local/lib/python3.10/dist-packages:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs/local/lib/python3.10/dist-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages'), ('HTTP_PROXY', 'http://127.0.0.1:7897/'), ('COLCON', '1'), ('VTE_VERSION', '6800'), ('CMAKE_PREFIX_PATH', '/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_hg:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/rmw_cyclonedds_cpp:/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds:/home/albusgive2/ros2-gamepad/install/gamepad:/home/albusgive2/rlfw/rlfw_interface/install/rlfw_msgs:/opt/ros/humble')]), 'shell': False}
+[18.985816] (unitree_ros2_example) StdoutLine: {'line': b'-- Install configuration: ""\n'}
+[18.985955] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/bin/go2w_stand_example\n'}
+[18.987898] (unitree_ros2_example) StdoutLine: {'line': b'-- Set runtime path of "/home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/bin/go2w_stand_example" to ""\n'}
+[18.987985] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/bin/go2w_base_loc\n'}
+[18.991166] (unitree_ros2_example) StdoutLine: {'line': b'-- Set runtime path of "/home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/bin/go2w_base_loc" to ""\n'}
+[18.991280] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/ament_index/resource_index/package_run_dependencies/unitree_ros2_example\n'}
+[18.991337] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/ament_index/resource_index/parent_prefix_path/unitree_ros2_example\n'}
+[18.991395] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/environment/ament_prefix_path.sh\n'}
+[18.991456] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/environment/ament_prefix_path.dsv\n'}
+[18.991501] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/environment/path.sh\n'}
+[18.991571] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/environment/path.dsv\n'}
+[18.991662] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/local_setup.bash\n'}
+[18.991717] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/local_setup.sh\n'}
+[18.991769] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/local_setup.zsh\n'}
+[18.991816] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/local_setup.dsv\n'}
+[18.991861] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/package.dsv\n'}
+[18.991933] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/ament_index/resource_index/packages/unitree_ros2_example\n'}
+[18.991996] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/cmake/unitree_ros2_exampleConfig.cmake\n'}
+[18.992035] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/cmake/unitree_ros2_exampleConfig-version.cmake\n'}
+[18.992083] (unitree_ros2_example) StdoutLine: {'line': b'-- Installing: /home/albusgive2/go2w_sim2sim/ros2/install/unitree_ros2_example/share/unitree_ros2_example/package.xml\n'}
+[18.993320] (unitree_ros2_example) CommandEnded: {'returncode': 0}
+[19.005457] (unitree_ros2_example) JobEnded: {'identifier': 'unitree_ros2_example', 'rc': 0}
+[19.006031] (-) EventReactorShutdown: {}

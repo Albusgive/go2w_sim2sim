@@ -37,7 +37,6 @@ file(GLOB DEMO_SRC ${CMAKE_CURRENT_SOURCE_DIR}/demo/*.cpp)
 add_executable(lab2mj ${SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
 target_link_libraries(lab2mj mujoco::mujoco glut GL GLU glfw udev ${TORCH_LIBRARIES})
 
-
 add_executable(demo ${DEMO_SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
 target_link_libraries(demo mujoco::mujoco glut GL GLU glfw udev ${TORCH_LIBRARIES})
 
