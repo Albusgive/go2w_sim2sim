@@ -74,6 +74,8 @@ void RayCaster::_init(mjModel *m, mjData *d, std::string cam_name,
   geomids = new int[h_ray_num * v_ray_num];
   dist = new mjtNum[h_ray_num * v_ray_num];
   dist_ratio = new mjtNum[h_ray_num * v_ray_num];
+
+  _noise = new ray_noise::Noise;
   create_rays();
 }
 
@@ -86,7 +88,12 @@ int RayCaster::get_idx(int v, int h) {
   return idx;
 }
 
-void RayCaster::setNoise(ray_noise::Noise noise) { _noise = noise; }
+void RayCaster::setNoise(ray_noise::UniformNoise noise) {
+  _noise = new ray_noise::UniformNoise(noise);
+}
+void RayCaster::setNoise(ray_noise::GaussianNoise noise) {
+  _noise = new ray_noise::GaussianNoise(noise);
+}
 
 int RayCaster::_get_idx(int v, int h) { return v * h_ray_num + h; }
 
@@ -175,6 +182,12 @@ void RayCaster::compute_distance() {
         dist_ratio[i] = deep_min_ratio;
       }
       dist[i] = deep_max * dist_ratio[i];
+      _noise->produce_noise(dist[i]);
+      if (dist[i] > deep_max) {
+        dist[i] = deep_max;
+      } else if (dist[i] < deep_min) {
+        dist[i] = deep_min;
+      }
     }
   } else {
     mj_multiRay(m, d, pos, ray_vec, geomgroup, 1, no_detect_body_id, geomids,
@@ -188,9 +201,14 @@ void RayCaster::compute_distance() {
         dist_ratio[i] = deep_min_ratio;
       }
       dist[i] = deep_max * dist_ratio[i];
+      _noise->produce_noise(dist[i]);
+      if (dist[i] > deep_max) {
+        dist[i] = deep_max;
+      } else if (dist[i] < deep_min) {
+        dist[i] = deep_min;
+      }
     }
   }
-  _noise.produce_noise(dist, nray);
 }
 
 void RayCaster::get_image_data(unsigned char *image_data, bool is_noise,

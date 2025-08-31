@@ -20,8 +20,16 @@ public:
       true_random();
     }
   }
-  template <typename T> void produce_noise(std::vector<T> &) {};
-  template <typename T> void produce_noise(T *, int len) {};
+
+  virtual void produce_noise(std::vector<int> &) {};
+  virtual void produce_noise(std::vector<float> &) {};
+  virtual void produce_noise(std::vector<double> &) {};
+  virtual void produce_noise(int *, int len) {};
+  virtual void produce_noise(float *, int len) {};
+  virtual void produce_noise(double *, int len) {};
+  virtual void produce_noise(int &) {};
+  virtual void produce_noise(float &) {};
+  virtual void produce_noise(double &) {};
 
   std::mt19937 gen; // 随机数引擎
   void true_random() {
@@ -40,56 +48,97 @@ public:
 
 class GaussianNoise : public Noise {
 public:
-  GaussianNoise(double mean, double std, unsigned int seed) {
+  GaussianNoise(double mean, double std, unsigned int seed = NAN) {
     this->mean = mean;
     this->std = std;
+    this->dist = std::normal_distribution<double>(mean, std);
     set_seed(seed);
   }
-  GaussianNoise(double mean, double std) {
-    this->mean = mean;
-    this->std = std;
-    true_random();
-  }
-  template <typename T> void produce_noise(std::vector<T> &data) {
+
+  std::normal_distribution<double> dist;
+  template <typename T> void _produce_noise(std::vector<T> &data) {
     int len = data.size();
-    std::normal_distribution<double> dist(mean, std);
     for (int i = 0; i < len; i++) {
-      data[i] += dist(gen);
+      data[i] += static_cast<T>(dist(gen));
     }
   };
-  template <typename T> void produce_noise(T *data, int len) {
-    std::normal_distribution<double> dist(mean, std);
+  template <typename T> void _produce_noise(T *data, int len) {
     for (int i = 0; i < len; i++) {
-      data[i] += dist(gen);
+      data[i] += static_cast<T>(dist(gen));
     }
+  };
+  template <typename T> void _produce_noise(T &data) {
+    data += static_cast<T>(dist(gen));
+  };
+
+  void produce_noise(int &data) override { _produce_noise(data); };
+  void produce_noise(float &data) override { _produce_noise(data); };
+  void produce_noise(double &data) override { _produce_noise(data); };
+
+  void produce_noise(std::vector<int> &data) override { _produce_noise(data); };
+  void produce_noise(std::vector<float> &data) override {
+    _produce_noise(data);
+  };
+  void produce_noise(std::vector<double> &data) override {
+    _produce_noise(data);
+  };
+  void produce_noise(int *data, int len) override {
+    _produce_noise(data, len);
+  };
+  void produce_noise(float *data, int len) override {
+    _produce_noise(data, len);
+  };
+  void produce_noise(double *data, int len) override {
+    _produce_noise(data, len);
   };
 };
 
 class UniformNoise : public Noise {
 public:
-  UniformNoise(double low, double high, unsigned int seed) {
+  UniformNoise(double low, double high, unsigned int seed = NAN) {
     this->low = low;
     this->high = high;
+    this->dist = std::uniform_real_distribution<double>(low, high);
     set_seed(seed);
   }
-  UniformNoise(double low, double high) {
-    this->low = low;
-    this->high = high;
-    true_random();
-  }
 
-  template <typename T> void produce_noise(std::vector<T> &data) {
+  std::uniform_real_distribution<double> dist;
+
+  template <typename T> void _produce_noise(std::vector<T> &data) {
     int len = data.size();
-    std::uniform_real_distribution<double> dist(mean, std);
     for (int i = 0; i < len; i++) {
-      data[i] += dist(gen);
+      data[i] += static_cast<T>(dist(gen));
     }
   };
-  template <typename T> void produce_noise(T *data, int len) {
-    std::uniform_real_distribution<double> dist(mean, std);
+  template <typename T> void _produce_noise(T *data, int len) {
     for (int i = 0; i < len; i++) {
-      data[i] += dist(gen);
+      data[i] += static_cast<T>(dist(gen));
     }
+  };
+
+  template <typename T> void _produce_noise(T &data) {
+    data += static_cast<T>(dist(gen));
+  };
+
+  void produce_noise(int &data) override { _produce_noise(data); };
+  void produce_noise(float &data) override { _produce_noise(data); };
+  void produce_noise(double &data) override { _produce_noise(data); };
+
+  void produce_noise(std::vector<int> &data) override { _produce_noise(data); };
+  void produce_noise(std::vector<float> &data) override {
+    _produce_noise(data);
+  };
+  void produce_noise(std::vector<double> &data) override {
+    _produce_noise(data);
+  };
+  void produce_noise(int *data, int len) override {
+    _produce_noise(data, len);
+  };
+  void produce_noise(float *data, int len) override {
+    _produce_noise(data, len);
+  };
+  void produce_noise(double *data, int len) override {
+    _produce_noise(data, len);
   };
 };
 

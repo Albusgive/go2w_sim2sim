@@ -80,8 +80,9 @@ public:
   */
   int get_idx(int h, int v);
 
-  void setNoise(ray_noise::Noise noise);
-  ray_noise::Noise _noise;
+  void setNoise(ray_noise::UniformNoise noise);
+  void setNoise(ray_noise::GaussianNoise noise);
+  ray_noise::Noise* _noise;
 
   mjtNum *dist;               // 距离 h_ray_num * v_ray_num
   int nray;                   // 射线数量

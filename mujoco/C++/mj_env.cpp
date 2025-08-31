@@ -44,10 +44,12 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
 
   ray_caster_camera = RayCasterCamera(m, d, "RayCasterCamera", 24.0, 20.955, 1,
                                       20, 20, {0.25, 2.0});
-  ray_caster_camera.setNoise(ray_noise::UniformNoise(-0.1, 0.1));
+  ray_caster_camera.setNoise(ray_noise::UniformNoise(-0.3, 0.3));
   // img
   ray_caster_camera_img = new unsigned char[ray_caster_camera.h_ray_num *
                                             ray_caster_camera.v_ray_num];
+  ray_caster_camera_noise_img = new unsigned char[ray_caster_camera.h_ray_num *
+                                                  ray_caster_camera.v_ray_num];
   // body_track
   body_track("base_link", 0.05, {0.0, 1.0, 1.0, 0.5}, 50, 30);
 }
@@ -83,7 +85,8 @@ void MJ_ENV::step() {
 void MJ_ENV::step_unlock() {
 
   ray_caster_camera.compute_distance();
-  ray_caster_camera.get_image_data(ray_caster_camera_img,true);
+  ray_caster_camera.get_image_data(ray_caster_camera_img);
+  ray_caster_camera.get_image_data(ray_caster_camera_noise_img, true);
 }
 
 void MJ_ENV::draw() {
@@ -96,6 +99,9 @@ void MJ_ENV::draw() {
 
 void MJ_ENV::draw_windows() {
   drawGrayPixels(ray_caster_camera_img, 0,
+                 {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
+                 {400, 400});
+  drawGrayPixels(ray_caster_camera_noise_img, 1,
                  {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
                  {400, 400});
 }
