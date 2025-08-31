@@ -39,6 +39,7 @@
   <asset>
     <material name="metal" rgba=".9 .95 .95 1" />
     <material name="black" rgba="0 0 0 1" />
+    <material name="blue" rgba="0.1 0.1 .9 1" />
     <material name="white" rgba="1 1 1 1" />
     <material name="gray" rgba="0.671705 0.692426 0.774270 1" />
 
@@ -59,18 +60,27 @@
     <mesh file="calf_mirror.stl" />
     <mesh file="foot.obj" />
     <mesh file="wheel.stl" />
+
+    <mesh file="femto_bolt.STL" />
+    <mesh file="femto_bolt_fixed.STL" />
   </asset>
 
   <worldbody>
+
+
     <body name="base_link" pos="0 0 0.6" childclass="go2w">
       <inertial pos="0.021112 0 -0.005366" quat="-0.000543471 0.713435 -0.00173769 0.700719"
         mass="6.921"
         diaginertia="0.107027 0.0980771 0.0244531" />
       <freejoint />
-       <camera name="RayCasterCamera" pos="0.4 0 0.07" xyaxes="0 -1 0 0 0 1" fovy="80"/>
-       <camera name="RayCaster_base" pos="0 1.2 0" xyaxes="0 -1 0 1 0 0"/>
-       <camera name="RayCaster_yaw" pos="0 0 0" xyaxes="0 -1 0 1 0 0"/>
-       <camera name="RayCaster_world" pos="0 -1.2 0" xyaxes="0 -1 0 1 0 0"/>
+      <body pos="0.222 0 0.1" xyaxes="0 -1 0 -1 0 0">
+        <geom mesh="femto_bolt" pos="-0.065 -0.21 -1" material="gray" class="visual" />
+        <geom mesh="femto_bolt_fixed" pos="-0.065 -0.21 -1" material="blue" class="visual" />
+      </body>
+      <camera name="RayCasterCamera" pos="0.4 0 0.07" xyaxes="0 -1 0 0 0 1" fovy="80" />
+      <camera name="RayCaster_base" pos="0 1.2 0" xyaxes="0 -1 0 1 0 0" />
+      <camera name="RayCaster_yaw" pos="0 0 0" xyaxes="0 -1 0 1 0 0" />
+      <camera name="RayCaster_world" pos="0 -1.2 0" xyaxes="0 -1 0 1 0 0" />
       <geom mesh="base_0" material="black" class="visual" />
       <geom mesh="base_1" material="black" class="visual" />
       <geom mesh="base_2" material="black" class="visual" />
@@ -114,7 +124,7 @@
                 diaginertia="0.003 0.0016 0.0016" />
               <joint name="FL_wheel_joint" pos="0 0 0" axis="0 1 0" />
               <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 0.0 0"
-                quat="0.0 1.0 0.0 0.0" class="visual"/>
+                quat="0.0 1.0 0.0 0.0" class="visual" />
               <geom pos="0 0.0 0" quat="0.0 1.0 0.0 0.0" type="mesh" mesh="wheel" class="foot" />
             </body>
 
@@ -155,7 +165,7 @@
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.98"
                 diaginertia="0.003 0.0016 0.0016" />
               <joint name="FR_wheel_joint" pos="0 0 0" axis="0 1 0" />
-              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 -0.0 0" class="visual"/>
+              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 -0.0 0" class="visual" />
               <geom pos="0 0.0 0" type="mesh" mesh="wheel" class="foot" />
             </body>
 
@@ -197,7 +207,7 @@
                 diaginertia="0.003 0.0016 0.0016" />
               <joint name="RL_wheel_joint" pos="0 0 0" axis="0 1 0" />
               <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 0.0 0"
-                quat="0.0 1.0 0.0 0.0" class="visual"/>
+                quat="0.0 1.0 0.0 0.0" class="visual" />
               <geom pos="0 0.0 0" quat="0.0 1.0 0.0 0.0" type="mesh" mesh="wheel" class="foot" />
             </body>
 
@@ -240,7 +250,7 @@
                 quat="0.661419 0.248219 0.250051 0.662108" mass="0.98"
                 diaginertia="0.003 0.0016 0.0016" />
               <joint name="RR_wheel_joint" pos="0 0 0" axis="0 1 0" />
-              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 -0.00 0" class="visual"/>
+              <geom type="mesh" rgba="0.15 0.15 0.15 1" mesh="wheel" pos="0 -0.00 0" class="visual" />
               <geom pos="0 0.0 0" type="mesh" mesh="wheel" class="foot" />
             </body>
 
