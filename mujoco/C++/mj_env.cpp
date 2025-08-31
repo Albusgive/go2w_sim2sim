@@ -1,4 +1,5 @@
 #include "mj_env.h"
+#include "Noise.h"
 #include "Noise.hpp"
 #include "RayCaster.h"
 #include "RayCasterCamera.h"
@@ -41,20 +42,12 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
   print_vec(dof_vel_name);
   std::cout << "  size:" << dof_vel_name.size() << std::endl;
 
-  ray_caster = RayCaster(m, d, "RayCaster", 0.2, {2.0, 1.0}, {0.01, 0.6},
-                         RayCasterType::base);
   ray_caster_camera = RayCasterCamera(m, d, "RayCasterCamera", 24.0, 20.955, 1,
-                                      20, 20, {0.0, 5.0});
-  ray_caster_lidar =
-      RayCasterLidar(m, d, "RayCasterCamera", 200.0, 50.0, 100, 100, {0.01, 6});
+                                      20, 20, {0.25, 2.0});
+  ray_caster_camera.setNoise(ray_noise::UniformNoise(-0.1, 0.1));
   // img
-  ray_caster_img =
-      new unsigned char[ray_caster.h_ray_num * ray_caster.v_ray_num];
   ray_caster_camera_img = new unsigned char[ray_caster_camera.h_ray_num *
                                             ray_caster_camera.v_ray_num];
-  ray_caster_lidar_img = new unsigned char[ray_caster_lidar.h_ray_num *
-                                           ray_caster_lidar.v_ray_num];
-
   // body_track
   body_track("base_link", 0.05, {0.0, 1.0, 1.0, 0.5}, 50, 30);
 }
@@ -89,48 +82,22 @@ void MJ_ENV::step() {
 
 void MJ_ENV::step_unlock() {
 
-  // ray_caster.compute_distance();
   ray_caster_camera.compute_distance();
-  // ray_caster_lidar.compute_distance();
-
-  // ray_caster.get_image_data(ray_caster_img);
-  ray_caster_camera.get_image_data(ray_caster_camera_img);
-  // ray_caster_lidar.get_image_data(ray_caster_lidar_img);
+  ray_caster_camera.get_image_data(ray_caster_camera_img,true);
 }
 
 void MJ_ENV::draw() {
   float color1[4] = {1.0, 0.0, 0.0, 0.5};
   float color2[4] = {0.0, 1.0, 0.0, 0.3};
   float color3[4] = {0.0, 0.0, 1.0, 0.3};
-  // ray_caster_camera.draw_deep(&scn, 4, 20, color);
-  // ray_caster_camera.draw_hip_point(&scn, 1,0.02);
-  // ray_caster.draw_hip_point(&scn, 1, 0.02);
-  // ray_caster.draw_deep(&scn, 4, 20);
-  // ray_caster_lidar.draw_deep_ray(&scn, 2, 4, true, color);
 
-  // ray_caster.draw_deep_ray(&scn, 1, 5, false, color1);
-  // ray_caster.draw_hip_point(&scn, 1, 0.02, color1);
-  // ray_caster_camera.draw_deep_ray(&scn, 1, 5, color1);
-  // ray_caster_camera.draw_deep_ray(&scn, 399, 5, color1);
-  // ray_caster_camera.draw_deep_ray(&scn, 1, 5, true, color2);
   ray_caster_camera.draw_hip_point(&scn, 1, 0.02, color1);
-  // ray_caster_camera.draw_deep_ray(&scn, 1, 5, false, color2);
-  // ray_caster_lidar.draw_hip_point(&scn, 1, 0.02, color3);
 }
 
 void MJ_ENV::draw_windows() {
   drawGrayPixels(ray_caster_camera_img, 0,
                  {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
                  {400, 400});
-
-  // drawGrayPixels(ray_caster_img, 0,
-  //                {ray_caster.h_ray_num, ray_caster.v_ray_num}, {200, 400});
-  // drawGrayPixels(ray_caster_camera_img, 1,
-  //                {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
-  //                {400, 400});
-  // drawGrayPixels(ray_caster_lidar_img, 2,
-  //                {ray_caster_lidar.h_ray_num, ray_caster_lidar.v_ray_num},
-  //                {1600, 400});
 }
 
 void MJ_ENV::initObsManager() {
@@ -153,7 +120,7 @@ void MJ_ENV::initObsManager() {
   action_obs_term = std::make_shared<ActionObsTerm>("action_obs_term", 15);
   action_obs_term->init(16);
 
-  ray_caster_term = std::make_shared<ObservationTerm>("ray_caster", 1,UniformNoise(-0.1,0.1));
+  ray_caster_term = std::make_shared<ObservationTerm>("ray_caster", 1);
   ray_caster_term->func = [this]() { return get_ray_caster_image(); };
 
   obs_terms.push_back(base_ang_vel);

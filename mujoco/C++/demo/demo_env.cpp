@@ -19,7 +19,7 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
   set_window_title("MUJOCO");
   font_scale = mjtFontScale::mjFONTSCALE_300;
   set_max_FPS(max_FPS);
-  sub_step = 4;
+  sub_step = 3;
   set_dtype(torch::kFloat32);
   // 初始化要用到的tensor
   gravity = torch::tensor({0.0, 0.0, -1.0}, options_);

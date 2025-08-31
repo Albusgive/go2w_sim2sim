@@ -1,4 +1,5 @@
 #include "RayCaster.h"
+#include "Noise.h"
 #include <algorithm>
 #include <iterator>
 #include <mujoco/mujoco.h>
@@ -84,6 +85,8 @@ int RayCaster::get_idx(int v, int h) {
   }
   return idx;
 }
+
+void RayCaster::setNoise(ray_noise::Noise noise) { _noise = noise; }
 
 int RayCaster::_get_idx(int v, int h) { return v * h_ray_num + h; }
 
@@ -187,25 +190,42 @@ void RayCaster::compute_distance() {
       dist[i] = deep_max * dist_ratio[i];
     }
   }
+  _noise.produce_noise(dist, nray);
 }
 
-void RayCaster::get_image_data(unsigned char *image_data, bool is_info_max) {
-  if (is_info_max) {
-    for (int idx = 0; idx < nray; idx++) {
-      image_data[idx] = 255 - dist_ratio[idx] * 255;
+void RayCaster::get_image_data(unsigned char *image_data, bool is_noise,
+                               bool is_inf_max) {
+  if (!is_noise) {
+    if (is_inf_max) {
+      for (int idx = 0; idx < nray; idx++) {
+        image_data[idx] = 255 - dist_ratio[idx] * 255;
+      }
+    } else {
+      for (int idx = 0; idx < v_ray_num; idx++) {
+        if (geomids[idx] < 0)
+          image_data[idx] = 0;
+        else
+          image_data[idx] = 255 - dist_ratio[idx] * 255;
+      }
     }
   } else {
-    for (int idx = 0; idx < v_ray_num; idx++) {
-      if (geomids[idx] < 0)
-        image_data[idx] = 0;
-      else
-        image_data[idx] = 255 - dist_ratio[idx] * 255;
+    if (is_inf_max) {
+      for (int idx = 0; idx < nray; idx++) {
+        image_data[idx] = 255 - (dist[idx] / deep_max) * 255;
+      }
+    } else {
+      for (int idx = 0; idx < v_ray_num; idx++) {
+        if (geomids[idx] < 0)
+          image_data[idx] = 0;
+        else
+          image_data[idx] = 255 - (dist[idx] / deep_max) * 255;
+      }
     }
   }
 }
 
-void RayCaster::get_data(double *data, bool is_info_max) {
-  if (is_info_max)
+void RayCaster::get_data(double *data, bool is_inf_max) {
+  if (is_inf_max)
     memcpy(data, dist, nray * sizeof(double));
   else {
     for (int i = 0; i < nray; i++) {
@@ -217,8 +237,8 @@ void RayCaster::get_data(double *data, bool is_info_max) {
   }
 }
 
-std::vector<double> RayCaster::get_data(bool is_info_max) {
-  if (is_info_max)
+std::vector<double> RayCaster::get_data(bool is_inf_max) {
+  if (is_inf_max)
     return std::vector<double>(dist, dist + nray);
   else {
     std::vector<double> vec(nray);
@@ -237,7 +257,7 @@ void RayCaster::get_data_pos_w(double *data) {
     for (int j = 0; j < h_ray_num; j++) {
       int idx = _get_idx(i, j);
       if (geomids[idx] == -1) {
-        data[idx] = data[idx + 1] = data[idx + 2] = -deep_max;
+        data[idx] = data[idx + 1] = data[idx + 2] = NAN;
       } else {
         if (is_offert) {
           data[idx * 3] = pos[0] + ray_vec_offset[idx * 3];
@@ -258,7 +278,7 @@ std::vector<std::vector<double>> RayCaster::get_data_pos_w() {
       int idx = _get_idx(i, j);
       mjtNum end[3] = {pos[0], pos[1], pos[2]};
       if (geomids[idx] == -1) {
-        end[0] = end[1] = end[2] = -deep_max;
+        end[0] = end[1] = end[2] = NAN;
       } else {
         if (is_offert) {
           end[0] += ray_vec_offset[idx * 3];

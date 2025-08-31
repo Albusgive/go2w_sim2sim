@@ -1,0 +1,27 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/include/**",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/include/unitree_go/**",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/include/unitree_go/unitree_go/**",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_go/include/unitree_go/unitree_go/msg/**",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/unitree_api/include/**",
+        "/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cyclonedds/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/albusgive2/go2w_sim2sim/ros2/src/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ros2",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++17"
+    }
+  ],
+  "version": 4
+}
