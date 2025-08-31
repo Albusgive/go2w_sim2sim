@@ -44,7 +44,7 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
 
   ray_caster_camera = RayCasterCamera(m, d, "RayCasterCamera", 24.0, 20.955, 1,
                                       20, 20, {0.25, 2.0});
-  ray_caster_camera.setNoise(ray_noise::UniformNoise(-0.3, 0.3));
+  ray_caster_camera.setNoise(ray_noise::UniformNoise(-0.2, 0.2));
   // img
   ray_caster_camera_img = new unsigned char[ray_caster_camera.h_ray_num *
                                             ray_caster_camera.v_ray_num];
@@ -62,7 +62,7 @@ void MJ_ENV::vis_cfg() {
   // opt.flags[mjtVisFlag::mjVIS_CONTACTFORCE] = true;
   // opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
   // opt.flags[mjtVisFlag::mjVIS_CONVEXHULL] = true;
-  // opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
+  opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
   // opt.label = mjtLabel::mjLABEL_CAMERA;
   // opt.frame = mjtFrame::mjFRAME_WORLD;
   /*--------可视化配置--------*/
@@ -95,6 +95,7 @@ void MJ_ENV::draw() {
   float color3[4] = {0.0, 0.0, 1.0, 0.3};
 
   ray_caster_camera.draw_hip_point(&scn, 1, 0.02, color1);
+  ray_caster_camera.draw_deep_ray(&scn, 1, 5, true,color2);
 }
 
 void MJ_ENV::draw_windows() {
