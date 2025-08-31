@@ -46,9 +46,8 @@ public:
   RayCaster ray_caster;
   RayCasterLidar ray_caster_lidar;
 
-  unsigned char* ray_caster_img;
   unsigned char* ray_caster_camera_img;
-  unsigned char* ray_caster_lidar_img;
+  unsigned char* ray_caster_camera_noise_img;
 
 
 private:
