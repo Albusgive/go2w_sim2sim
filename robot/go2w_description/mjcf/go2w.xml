@@ -33,13 +33,19 @@
             friction="0.8 0.02 0.01" />
         </default>
       </default>
+      <default class="collision_visual">
+        <geom type="mesh" group="2" priority="1" condim="6" friction="0.8 0.02 0.01" />
+      </default>
     </default>
   </default>
 
   <asset>
     <material name="metal" rgba=".9 .95 .95 1" />
     <material name="black" rgba="0 0 0 1" />
-    <material name="blue" rgba="0.1 0.1 .9 1" />
+    <material name="red" rgba=".9 .1 .1 1" />
+    <material name="green" rgba=".1 .9 .1 1" />
+    <material name="blue" rgba=".1 .1 .9 1" />
+    <material name="yellow" rgba=".9 .9 .1 1" />
     <material name="white" rgba="1 1 1 1" />
     <material name="gray" rgba="0.671705 0.692426 0.774270 1" />
 
@@ -63,21 +69,58 @@
 
     <mesh file="femto_bolt.STL" />
     <mesh file="femto_bolt_fixed.STL" />
+
+    <mesh file="d435i_fix1.STL" />
+    <mesh file="d435i_fix2.STL" />
+
+    <material name="Black_Acrylic" rgba="0.070360 0.070360 0.070360 1" />
+    <material name="Cameras_Gray" rgba="0.296138 0.296138 0.296138 1" />
+    <material name="IR_Emitter_Lens" rgba="0.287440 0.665387 0.327778 1" />
+    <material name="IR_Lens" rgba="0.035601 0.035601 0.035601 1" />
+    <material name="IR_Rim" rgba="0.799102 0.806952 0.799103 1" />
+    <material name="Metal_Casing" rgba="1 1 1 1" />
+    <material name="RGB_Pupil" rgba="0.087140 0.002866 0.009346 1" />
+
+    <mesh file="d435i_0.obj" />
+    <mesh file="d435i_1.obj" />
+    <mesh file="d435i_2.obj" />
+    <mesh file="d435i_3.obj" />
+    <mesh file="d435i_4.obj" />
+    <mesh file="d435i_5.obj" />
+    <mesh file="d435i_6.obj" />
+    <mesh file="d435i_7.obj" />
+    <mesh file="d435i_8.obj" />
   </asset>
 
   <worldbody>
-
 
     <body name="base_link" pos="0 0 0.6" childclass="go2w">
       <inertial pos="0.021112 0 -0.005366" quat="-0.000543471 0.713435 -0.00173769 0.700719"
         mass="6.921"
         diaginertia="0.107027 0.0980771 0.0244531" />
       <freejoint />
-      <body pos="0.222 0 0.1" xyaxes="0 -1 0 -1 0 0">
-        <geom mesh="femto_bolt" pos="-0.065 -0.21 -1" material="gray" class="visual" />
-        <geom mesh="femto_bolt_fixed" pos="-0.065 -0.21 -1" material="blue" class="visual" />
+      <!-- <body pos="0.222 0 0.1" xyaxes="0 -1 0 -1 0 0">
+        <geom mesh="femto_bolt" pos="-0.065 -0.21 -1" material="gray" class="visual" mass="0.1"/>
+        <geom mesh="femto_bolt_fixed" pos="-0.065 -0.21 -1" material="red" class="visual" mass="0.1"/>
+      </body> -->
+      <body name="d435i_and_fix" pos="0.35 0.01 0.045" euler="0 -0.065449847 0">
+        <geom mesh="d435i_fix1" material="red" class="collision_visual" mass="0.1" euler="0 0.2 0" />
+        <body euler="0 0.2 0">
+          <geom mesh="d435i_fix2" material="red" class="collision_visual" mass="0.1" />
+          <camera name="RayCasterCamera" pos="0.045 0 0" xyaxes="0 -1 0 0 0 1" fovy="80" />
+          <body name="d435i" xyaxes="0 1 0 0 0 1" pos="0.0434 -0.0115 0">
+            <geom mesh="d435i_0" material="IR_Lens" class="collision_visual" />
+            <geom mesh="d435i_1" material="IR_Emitter_Lens" class="collision_visual" />
+            <geom mesh="d435i_2" material="IR_Rim" class="collision_visual" />
+            <geom mesh="d435i_3" material="IR_Lens" class="collision_visual" />
+            <geom mesh="d435i_4" material="Cameras_Gray" class="collision_visual" />
+            <geom mesh="d435i_5" material="Black_Acrylic" class="collision_visual" />
+            <geom mesh="d435i_6" material="Black_Acrylic" class="collision_visual" />
+            <geom mesh="d435i_7" material="RGB_Pupil" class="collision_visual" />
+            <geom mesh="d435i_8" mass="0.072" material="Metal_Casing" class="collision_visual" />
+          </body>
+        </body>
       </body>
-      <camera name="RayCasterCamera" pos="0.4 0 0.07" xyaxes="0 -1 0 0 0 1" fovy="80" />
       <camera name="RayCaster_base" pos="0 1.2 0" xyaxes="0 -1 0 1 0 0" />
       <camera name="RayCaster_yaw" pos="0 0 0" xyaxes="0 -1 0 1 0 0" />
       <camera name="RayCaster_world" pos="0 -1.2 0" xyaxes="0 -1 0 1 0 0" />

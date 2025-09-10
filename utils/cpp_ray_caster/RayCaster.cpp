@@ -1,5 +1,4 @@
 #include "RayCaster.h"
-#include "Noise.h"
 #include <algorithm>
 #include <iterator>
 #include <mujoco/mujoco.h>
@@ -57,20 +56,21 @@ void RayCaster::_init(mjModel *m, mjData *d, std::string cam_name,
 
   nray = h_ray_num * v_ray_num;
   deep_min_ratio = deep_min / deep_max;
+  deep_min_ratio_dif = 1.0 - deep_min_ratio;
+  deep_min_dif = deep_max - deep_min;
 
   pos = d->cam_xpos + cam_id * 3;
   mat = d->cam_xmat + cam_id * 9;
 
-  _ray_vec = new mjtNum[h_ray_num * v_ray_num * 3];
-  ray_vec = new mjtNum[h_ray_num * v_ray_num * 3];
-
   if (type == RayCasterType::none) {
     is_offert = false;
   }
-  if (is_offert) {
-    _ray_vec_offset = new mjtNum[h_ray_num * v_ray_num * 3];
-    ray_vec_offset = new mjtNum[h_ray_num * v_ray_num * 3];
-  }
+  _ray_vec = new mjtNum[h_ray_num * v_ray_num * 3];
+  ray_vec = new mjtNum[h_ray_num * v_ray_num * 3];
+  _ray_vec_offset = new mjtNum[h_ray_num * v_ray_num * 3];
+  ray_vec_offset = new mjtNum[h_ray_num * v_ray_num * 3];
+  pos_w = new mjtNum[h_ray_num * v_ray_num * 3];
+
   geomids = new int[h_ray_num * v_ray_num];
   dist = new mjtNum[h_ray_num * v_ray_num];
   dist_ratio = new mjtNum[h_ray_num * v_ray_num];
@@ -88,14 +88,34 @@ int RayCaster::get_idx(int v, int h) {
   return idx;
 }
 
-void RayCaster::setNoise(ray_noise::UniformNoise noise) {
-  _noise = new ray_noise::UniformNoise(noise);
-}
-void RayCaster::setNoise(ray_noise::GaussianNoise noise) {
-  _noise = new ray_noise::GaussianNoise(noise);
+int RayCaster::_get_idx(int v, int h) { return v * h_ray_num + h; }
+
+void RayCaster::setNoise(ray_noise::RayNoise2 noise) {
+  delete _noise;
+  auto n = ray_noise::RayNoise2(noise);
+  n.dist = dist;
+  n.pos = pos;
+  n.pos_w = pos_w;
+  n.h_ray_num = h_ray_num;
+  n.v_ray_num = v_ray_num;
+  is_compute_hit = true;
+  _noise = new ray_noise::RayNoise2(n);
 }
 
-int RayCaster::_get_idx(int v, int h) { return v * h_ray_num + h; }
+#ifdef USE_OPENCV
+void RayCaster::setNoise(ray_noise::RayNoise3 noise) {
+  delete _noise;
+  auto n = ray_noise::RayNoise3(noise);
+  n.dist = dist;
+  n.h_ray_num = h_ray_num;
+  n.v_ray_num = v_ray_num;
+  n.get_normal_data = [this](double *data, bool is_inf_max, bool is_inv,
+                             double scale) {
+    get_normal_data(data, is_inf_max, is_inv, scale);
+  };
+  _noise = new ray_noise::RayNoise3(n);
+}
+#endif
 
 void RayCaster::compute_ray_vec() {
   if (is_offert) {
@@ -209,37 +229,39 @@ void RayCaster::compute_distance() {
       }
     }
   }
+  if (is_compute_hit)
+    compute_hit();
+  _noise->produce_united_noise();
+}
+
+void RayCaster::get_inv_image_data(unsigned char *image_data, bool is_noise,
+                                   bool is_inf_max) {
+  if (!is_noise) {
+    _get_normal_data_from_ratio(image_data, is_inf_max, true, 255);
+  } else {
+    _get_normal_data(image_data, is_inf_max, true, 255);
+  }
 }
 
 void RayCaster::get_image_data(unsigned char *image_data, bool is_noise,
                                bool is_inf_max) {
   if (!is_noise) {
-    if (is_inf_max) {
-      for (int idx = 0; idx < nray; idx++) {
-        image_data[idx] = 255 - dist_ratio[idx] * 255;
-      }
-    } else {
-      for (int idx = 0; idx < v_ray_num; idx++) {
-        if (geomids[idx] < 0)
-          image_data[idx] = 0;
-        else
-          image_data[idx] = 255 - dist_ratio[idx] * 255;
-      }
-    }
+    _get_normal_data_from_ratio(image_data, is_inf_max, false, 255);
   } else {
-    if (is_inf_max) {
-      for (int idx = 0; idx < nray; idx++) {
-        image_data[idx] = 255 - (dist[idx] / deep_max) * 255;
-      }
-    } else {
-      for (int idx = 0; idx < v_ray_num; idx++) {
-        if (geomids[idx] < 0)
-          image_data[idx] = 0;
-        else
-          image_data[idx] = 255 - (dist[idx] / deep_max) * 255;
-      }
-    }
+    _get_normal_data(image_data, is_inf_max, false, 255);
   }
+}
+
+void RayCaster::get_normal_data(double *data, bool is_inf_max, bool is_inv,
+                                double scale) {
+  _get_normal_data(data, is_inf_max, is_inv, scale);
+}
+
+std::vector<double> RayCaster::get_normal_data(bool is_inf_max, bool is_inv,
+                                               double scale) {
+  std::vector<double> data(nray);
+  _get_normal_data(data, is_inf_max, is_inv, scale);
+  return data;
 }
 
 void RayCaster::get_data(double *data, bool is_inf_max) {
@@ -270,46 +292,11 @@ std::vector<double> RayCaster::get_data(bool is_inf_max) {
   }
 }
 
-void RayCaster::get_data_pos_w(double *data) {
-  for (int i = 0; i < v_ray_num; i++) {
-    for (int j = 0; j < h_ray_num; j++) {
-      int idx = _get_idx(i, j);
-      if (geomids[idx] == -1) {
-        data[idx] = data[idx + 1] = data[idx + 2] = NAN;
-      } else {
-        if (is_offert) {
-          data[idx * 3] = pos[0] + ray_vec_offset[idx * 3];
-          data[idx * 3 + 1] = pos[1] + ray_vec_offset[idx * 3 + 1];
-          data[idx * 3 + 2] = pos[2] + ray_vec_offset[idx * 3 + 2];
-        }
-        mju_addToScl3(data + (idx * 3), ray_vec + (idx * 3), dist_ratio[idx]);
-      }
-    }
-  }
-}
+void RayCaster::get_data_pos_w(double *data) { _get_data_pos_w_dim1(data); }
 
 std::vector<std::vector<double>> RayCaster::get_data_pos_w() {
-  std::vector<std::vector<double>> pos_w =
-      std::vector<std::vector<double>>(nray, std::vector<double>(3, 0));
-  for (int i = 0; i < v_ray_num; i++) {
-    for (int j = 0; j < h_ray_num; j++) {
-      int idx = _get_idx(i, j);
-      mjtNum end[3] = {pos[0], pos[1], pos[2]};
-      if (geomids[idx] == -1) {
-        end[0] = end[1] = end[2] = NAN;
-      } else {
-        if (is_offert) {
-          end[0] += ray_vec_offset[idx * 3];
-          end[1] += ray_vec_offset[idx * 3 + 1];
-          end[2] += ray_vec_offset[idx * 3 + 2];
-        }
-        mju_addToScl3(end, ray_vec + (idx * 3), dist_ratio[idx]);
-      }
-      pos_w[idx][0] = end[0];
-      pos_w[idx][1] = end[1];
-      pos_w[idx][2] = end[2];
-    }
-  }
+  std::vector<std::vector<double>> pos_w(nray, std::vector<double>(3, 0));
+  _get_data_pos_w_dim2(pos_w);
   return pos_w;
 }
 
@@ -425,16 +412,9 @@ void RayCaster::draw_hip_point(mjvScene *scn, int ratio, mjtNum size,
   for (int i = 0; i < v_ray_num; i += ratio) {
     for (int j = 0; j < h_ray_num; j += ratio) {
       int idx = _get_idx(i, j);
-      if (geomids[idx] == -1)
+      if (geomids[idx] == -1 || dist[idx] == 0 || dist_ratio[idx] > 0.999)
         continue;
-      mjtNum end[3] = {pos[0], pos[1], pos[2]};
-      if (is_offert) {
-        end[0] += ray_vec_offset[idx * 3];
-        end[1] += ray_vec_offset[idx * 3 + 1];
-        end[2] += ray_vec_offset[idx * 3 + 2];
-      }
-      mju_addToScl3(end, ray_vec + (idx * 3), dist_ratio[idx]);
-      draw_geom(scn, mjGEOM_SPHERE, size_, end, mat, color_);
+      draw_geom(scn, mjGEOM_SPHERE, size_, pos_w + (idx * 3), mat, color_);
     }
   }
 }
@@ -446,4 +426,21 @@ void RayCaster::rotate_vector_with_yaw(mjtNum result[3], mjtNum yaw,
   result[0] = c * vec[0] - s * vec[1];
   result[1] = s * vec[0] + c * vec[1];
   result[2] = vec[2];
+}
+
+void RayCaster::compute_hit() {
+  for (int i = 0; i < v_ray_num; i++) {
+    for (int j = 0; j < h_ray_num; j++) {
+      int idx = _get_idx(i, j);
+      pos_w[idx * 3] = pos[0];
+      pos_w[idx * 3 + 1] = pos[1];
+      pos_w[idx * 3 + 2] = pos[2];
+      if (is_offert) {
+        pos_w[idx * 3] += ray_vec_offset[idx * 3];
+        pos_w[idx * 3 + 1] += ray_vec_offset[idx * 3 + 1];
+        pos_w[idx * 3 + 2] += ray_vec_offset[idx * 3 + 2];
+      }
+      mju_addToScl3(pos_w + (idx * 3), ray_vec + (idx * 3), dist_ratio[idx]);
+    }
+  }
 }

@@ -34,19 +34,25 @@ public:
   // 键盘回调,继承后可重载后接收键盘事件，可用于自定义cmd
   virtual void keyboard_press(std::string key) {};
   // lable value 绘制在左侧中间位置
-  virtual std::vector<std::pair<std::string, std::string>> draw_table() {
-    return std::vector<std::pair<std::string, std::string>>();
-  }
 
   // 调用之后关闭窗口会停止仿真
   void connect_windows_sim();
   void sim();
+  // 在子线程使用sim
+  void sim2thread();
+  std::thread sim_thread;
   virtual void step() = 0;
   // 在step之后 不影响渲染线程的操作建议在这执行
   virtual void step_unlock();
   virtual void vis_cfg();
+  // 渲染图像
+  void get_camera_img();
   // 绘制操作
   virtual void draw();
+  virtual std::vector<std::pair<std::string, std::string>> draw_left_table() {
+    return std::vector<std::pair<std::string, std::string>>();
+  }
+  virtual std::string draw_top_text() { return ""; }
   virtual void draw_windows();
   // 在draw函数中使用
   void drawRGBPixels(const unsigned char *rgb, int idx,
@@ -95,6 +101,8 @@ public:
   mjvPerturb pert;      // perturbation object
 
   mjvFigure figure;
+  int cam_id = 0;
+  std::vector<mjtCamera> cam_type;
 
 private:
   // mouse interaction
@@ -155,7 +163,7 @@ private:
   void mouse_button(int button, int act, int mods);
   void scroll(double xoffset, double yoffset);
 
-  void select_body(mjrRect &viewport,bool camera_target=false);
+  void select_body(mjrRect &viewport, bool camera_target = false);
 
   // 可视化
   std::atomic_bool is_show{false};

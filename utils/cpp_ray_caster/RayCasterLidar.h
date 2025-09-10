@@ -4,6 +4,19 @@
 #include <mujoco/mujoco.h>
 #include <string>
 
+class RayCasterLidarCameraCfg {
+public:
+  mjModel *m;
+  mjData *d;
+  std::string cam_name;
+  mjtNum fov_h;
+  mjtNum fov_v;
+  int h_ray_num = 160;
+  int v_ray_num = 90;
+  std::array<mjtNum, 2> dis_range;
+  bool is_detect_self = false;
+};
+
 class RayCasterLidar : public RayCaster {
 public:
   RayCasterLidar();
@@ -19,10 +32,12 @@ public:
    */
   RayCasterLidar(mjModel *m, mjData *d, std::string cam_name, mjtNum fov_h,
                  mjtNum fov_v, int h_ray_num, int v_ray_num,
-                 const std::array<mjtNum, 2> & dis_range, bool is_detect_self = false);
+                 const std::array<mjtNum, 2> &dis_range,
+                 bool is_detect_self = false);
   ~RayCasterLidar();
   void init(mjModel *m, mjData *d, std::string cam_name, mjtNum fov_h,
-            mjtNum fov_v, int h_ray_num, int v_ray_num, const std::array<mjtNum, 2> & dis_range,
+            mjtNum fov_v, int h_ray_num, int v_ray_num,
+            const std::array<mjtNum, 2> &dis_range,
             bool is_detect_self = false);
 
 private:

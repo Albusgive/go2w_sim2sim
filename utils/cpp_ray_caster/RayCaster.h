@@ -1,5 +1,5 @@
 #pragma once
-#include "Noise.h"
+#include "RayNoise.hpp"
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -7,11 +7,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <string>
+#include <type_traits>
 #include <vector>
 
-namespace ray_noise = cpp_niose;
-
 enum RayCasterType { base, yaw, world, none };
+
+class RayCasterCfg {
+public:
+  mjModel *m;
+  mjData *d;
+  std::string cam_name;
+  mjtNum resolution;
+  std::array<mjtNum, 2> size;
+  std::array<mjtNum, 2> dis_range;
+  bool is_detect_parentbody = false;
+};
 
 class RayCaster {
 public:
@@ -80,9 +90,15 @@ public:
   */
   int get_idx(int h, int v);
 
-  void setNoise(ray_noise::UniformNoise noise);
-  void setNoise(ray_noise::GaussianNoise noise);
-  ray_noise::Noise* _noise;
+  template <typename NoiseType> void setNoise(NoiseType noise) {
+    delete _noise;
+    _noise = new NoiseType(noise);
+  }
+  void setNoise(ray_noise::RayNoise2 noise);
+#ifdef USE_OPENCV
+  void setNoise(ray_noise::RayNoise3 noise);
+#endif
+  ray_noise::Noise *_noise;
 
   mjtNum *dist;               // 距离 h_ray_num * v_ray_num
   int nray;                   // 射线数量
@@ -99,6 +115,8 @@ public:
   mjtNum deep_max = 1e6;
   mjtNum deep_min = 0;
   mjtNum deep_min_ratio;
+  mjtNum deep_min_ratio_dif;
+  mjtNum deep_min_dif;
   mjtNum *_ray_vec;        // h_ray_num * v_ray_num * 3 相对于相机坐标系的偏转
   mjtNum *_ray_vec_offset; // h_ray_num * v_ray_num * 3 相对于相机坐标系的位移
   mjtNum *ray_vec;         // h_ray_num * v_ray_num * 3 世界坐标系下的偏转
@@ -117,10 +135,20 @@ public:
   // 初始化时创建射线相对于相机坐标系偏转向量 _ray_vec，非单位向量
   virtual void create_rays();
 
+  void get_inv_image_data(unsigned char *image_data, bool is_noise = false,
+                          bool is_inf_max = true);
   void get_image_data(unsigned char *image_data, bool is_noise = false,
                       bool is_inf_max = true);
+
+  void get_normal_data(double *data, bool is_inf_max = true,
+                       bool is_inv = false, double scale = 1.0);
+  std::vector<double> get_normal_data(bool is_inf_max = true,
+                                      bool is_inv = false, double scale = 1.0);
+
+  // 直接测量距离信息
   void get_data(double *data, bool is_inf_max = true);
   std::vector<double> get_data(bool is_inf_max = true);
+
   // 世界坐标系命中位置 没命中的返回(NAN,NAN,NAN)
   void get_data_pos_w(double *data);
   std::vector<std::vector<double>> get_data_pos_w();
@@ -132,6 +160,11 @@ public:
 
   void rotate_vector_with_yaw(mjtNum result[3], mjtNum yaw,
                               const mjtNum vec[3]);
+
+  // 如果不绘制落点可以关掉提高性能，ray_noise::RayNoise2会自动开启
+  bool is_compute_hit = true;
+  mjtNum *pos_w; // 命中位置
+  void compute_hit();
 
 private:
   void draw_ary(int idx, int width, float *color, mjvScene *scn, bool is_scale);
@@ -153,4 +186,109 @@ private:
             const std::array<mjtNum, 2> &size,
             const std::array<mjtNum, 2> &dis_range, RayCasterType type,
             bool is_detect_parentbody);
+
+  /*-----------模板-----------*/
+  template <typename T>
+  void _get_normal_data(T &data, bool is_inf_max, bool is_inv, double scale) {
+    if (is_inv) {
+      if (is_inf_max) {
+        for (int idx = 0; idx < nray; idx++) {
+          if (dist[idx] == 0)
+            data[idx] = 0;
+          else
+            data[idx] = (1 - (dist[idx] - deep_min) / deep_min_dif) * scale;
+        }
+      } else {
+        for (int idx = 0; idx < v_ray_num; idx++) {
+          if (geomids[idx] < 0)
+            data[idx] = 0;
+          else if (dist[idx] == 0)
+            data[idx] = 0;
+          else
+            data[idx] = (1 - (dist[idx] - deep_min) / deep_min_dif) * scale;
+        }
+      }
+    } else {
+      if (is_inf_max) {
+        for (int idx = 0; idx < nray; idx++) {
+          if (dist[idx] == 0)
+            data[idx] = 0;
+          else
+            data[idx] = ((dist[idx] - deep_min) / deep_min_dif) * scale;
+        }
+      } else {
+        for (int idx = 0; idx < v_ray_num; idx++) {
+          if (geomids[idx] < 0)
+            data[idx] = 0;
+          else if (dist[idx] == 0)
+            data[idx] = 0;
+          else
+            data[idx] = ((dist[idx] - deep_min) / deep_min_dif) * scale;
+        }
+      }
+    }
+  }
+
+  template <typename T>
+  void _get_normal_data_from_ratio(T &data, bool is_inf_max, bool is_inv,
+                                   double scale) {
+    if (is_inv) {
+      if (is_inf_max) {
+        for (int idx = 0; idx < nray; idx++) {
+          data[idx] =
+              (1 - (dist_ratio[idx] - deep_min_ratio) / deep_min_ratio_dif) *
+              scale;
+        }
+      } else {
+        for (int idx = 0; idx < v_ray_num; idx++) {
+          if (geomids[idx] < 0)
+            data[idx] = 0;
+          else
+            data[idx] =
+                (1 - (dist_ratio[idx] - deep_min_ratio) / deep_min_ratio_dif) *
+                scale;
+        }
+      }
+    } else {
+      if (is_inf_max) {
+        for (int idx = 0; idx < nray; idx++) {
+          data[idx] =
+              ((dist_ratio[idx] - deep_min_ratio) / deep_min_ratio_dif) * scale;
+        }
+      } else {
+        for (int idx = 0; idx < v_ray_num; idx++) {
+          if (geomids[idx] < 0)
+            data[idx] = 0;
+          else
+            data[idx] =
+                ((dist_ratio[idx] - deep_min_ratio) / deep_min_ratio_dif) *
+                scale;
+        }
+      }
+    }
+  }
+
+  template <typename T> void _get_data_pos_w_dim1(T &data) {
+    compute_hit();
+    for (int i = 0; i < v_ray_num; i++) {
+      for (int j = 0; j < h_ray_num; j++) {
+        int idx = _get_idx(i, j);
+        data[idx * 3] = pos_w[idx * 3];
+        data[idx * 3 + 1] = pos_w[idx * 3 + 1];
+        data[idx * 3 + 2] = pos_w[idx * 3 + 2];
+      }
+    }
+  }
+
+  template <typename T> void _get_data_pos_w_dim2(T &data) {
+    compute_hit();
+    for (int i = 0; i < v_ray_num; i++) {
+      for (int j = 0; j < h_ray_num; j++) {
+        int idx = _get_idx(i, j);
+        data[idx][0] = pos_w[idx * 3];
+        data[idx][1] = pos_w[idx * 3 + 1];
+        data[idx][2] = pos_w[idx * 3 + 2];
+      }
+    }
+  }
 };

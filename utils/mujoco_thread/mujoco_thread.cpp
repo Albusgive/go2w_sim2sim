@@ -1,8 +1,10 @@
 #include "mujoco_thread.h"
 #include <chrono>
 #include <cstddef>
+#include <functional>
 #include <iomanip>
 #include <mujoco/mjmodel.h>
+#include <mujoco/mjrender.h>
 #include <mujoco/mujoco.h>
 #include <mutex>
 #include <utility>
@@ -71,6 +73,15 @@ void mujoco_thread::load_model(std::string model_file) {
   mj_resetDataKeyframe(m, d, 0);
   realtime.store(m->vis.global.realtime);
   mj_forward(m, d);
+
+  cam_type.push_back(mjCAMERA_FREE);
+  for (int i = 1; i < m->ncam; i++) {
+    if (m->cam_mode[i] == mjCAMLIGHT_FIXED) {
+      cam_type.push_back(mjCAMERA_FIXED);
+    } else {
+      cam_type.push_back(mjCAMERA_TRACKING);
+    }
+  }
 }
 
 void mujoco_thread::sim() {
@@ -78,15 +89,16 @@ void mujoco_thread::sim() {
   while (is_sim.load()) {
     auto step_start = std::chrono::high_resolution_clock::now();
     if (is_step.load()) {
-      std::lock_guard<std::mutex> lk(m_mtx);
+      std::unique_lock<std::mutex> lk(m_mtx);
       step();
       for (int i = 0; i < sub_step; i++) {
         mj_step(m, d);
         // 记录轨迹
         track();
       }
+      lk.unlock();
+      step_unlock();
     }
-    step_unlock();
     // 同步时间
     auto current_time = std::chrono::high_resolution_clock::now();
     double elapsed_sec =
@@ -97,6 +109,11 @@ void mujoco_thread::sim() {
       std::this_thread::sleep_for(sleep_duration / realtime.load());
     }
   }
+}
+
+void mujoco_thread::sim2thread() {
+  sim_thread = std::thread([this]() { sim(); });
+  sim_thread.detach();
 }
 
 void mujoco_thread::step_unlock() {}
@@ -112,7 +129,7 @@ void mujoco_thread::drawRGBPixels(const unsigned char *rgb, int idx,
     img_bottom.push_back(0);
   }
   auto img = scaleImageToRGB(rgb, src_size[0], src_size[1], dst_size[0],
-                             dst_size[1], 1);
+                             dst_size[1], 3);
   mjrRect viewport = {img_left[idx], img_bottom[idx], dst_size[0], dst_size[1]};
   mjr_drawPixels(img, nullptr, viewport, &con);
   delete[] img;
@@ -312,6 +329,22 @@ void mujoco_thread::keyboard(int key, int scancode, int act, int mods) {
     case GLFW_KEY_MINUS: {
       realtime.store(realtime - 0.05);
     } break;
+    case GLFW_KEY_LEFT_BRACKET: {
+      cam_id--;
+      if (cam_id < 0)
+        cam_id = m->ncam - 1;
+      cam.fixedcamid = cam_id;
+      cam.type = cam_type[cam_id];
+      cam.trackbodyid = m->cam_targetbodyid[cam_id];
+    } break;
+    case GLFW_KEY_RIGHT_BRACKET: {
+      cam_id++;
+      if (cam_id > m->ncam - 1)
+        cam_id = 0;
+      cam.fixedcamid = cam_id;
+      cam.type = cam_type[cam_id];
+      cam.trackbodyid = m->cam_targetbodyid[cam_id];
+    } break;
     }
     auto _realtime = realtime.load();
     if (_realtime > 1.0) {
@@ -457,7 +490,7 @@ void mujoco_thread::updateRender() {
         mju_copy3(pos, target_point_pos);
       }
       // look at
-      if (is_look_at && pert.select > 0) {
+      if (is_look_at && pert.select > 0 && cam_id == 0) {
         mju_copy3(cam.lookat, d->xpos + pert.select * 3);
       }
 
@@ -486,15 +519,21 @@ void mujoco_thread::updateRender() {
       mjr_overlay(mjFONT_NORMAL, mjGRID_TOPLEFT, viewport, fpsText.c_str(),
                   speedText.c_str(), &con);
 
-      auto table = draw_table();
-      if (!table.empty()) {
+      auto left_table = draw_left_table();
+      if (!left_table.empty()) {
         std::string lable, value;
-        for (auto &item : table) {
+        for (auto &item : left_table) {
           lable += item.first + "\n";
           value += item.second + "\n";
         }
         mjr_overlay(mjFONT_NORMAL, mjGRID_LEFT, viewport, value.c_str(),
                     lable.c_str(), &con);
+      }
+
+      auto top_table = draw_top_text();
+      if (!top_table.empty()) {
+        mjr_overlay(mjFONT_NORMAL, mjGRID_TOP, viewport, top_table.c_str(),
+                    NULL, &con);
       }
 
       draw_windows();

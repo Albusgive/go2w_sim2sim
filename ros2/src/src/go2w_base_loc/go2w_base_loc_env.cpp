@@ -1,8 +1,10 @@
 #include "go2w_base_loc_env.h"
-#include <torch/serialize/input-archive.h>
-#include <vector>
 
-LowLevelCmdNode::LowLevelCmdNode() : Node("low_level_cmd_node") {
+LowLevelCmdNode::LowLevelCmdNode(
+    std::vector<std::pair<std::string, std::string>>
+        &policy_paths_and_description)
+    : ManagerBasedEnv(policy_paths_and_description),
+      Node("low_level_cmd_node") {
   set_dtype(torch::kFloat32);
   // 初始化要用到的tensor
   gravity = torch::tensor({0.0, 0.0, -1.0}, options_);
@@ -16,9 +18,9 @@ LowLevelCmdNode::~LowLevelCmdNode() {}
 
 void LowLevelCmdNode::Init() {
   InitLowCmd();
-  low_cmd_pub_ = this->create_publisher<unitree_go::msg::LowCmd>("/lowcmd", 10);
+  low_cmd_pub_ = this->create_publisher<unitree_go::msg::LowCmd>("/lowcmd", 1);
   low_state_sub_ = this->create_subscription<unitree_go::msg::LowState>(
-      "/lowstate", 10, [this](const unitree_go::msg::LowState::SharedPtr msg) {
+      "/lowstate", 1, [this](const unitree_go::msg::LowState::SharedPtr msg) {
         LowStateMessageHandler(msg);
       });
 }
@@ -54,9 +56,9 @@ void LowLevelCmdNode::LowStateMessageHandler(
 
 void LowLevelCmdNode::LowCmdWrite() {
 
-  auto action = manager_step();
+  auto action = manager_step(policy_id);
   auto act = toVector<double>(action);
-  if (!is_stop.load()){
+  if (!is_stop.load()) {
     for (int i = 0; i < 12; i++) {
       low_cmd_.motor_cmd[i].q = act[i];
       low_cmd_.motor_cmd[i].dq = 0;
@@ -71,18 +73,22 @@ void LowLevelCmdNode::LowCmdWrite() {
       low_cmd_.motor_cmd[i].kd = kd_;
       low_cmd_.motor_cmd[i].tau = 0;
     }
+  } else {
+    for (int i = 0; i < 16; i++) {
+      low_cmd_.motor_cmd[i].q = 0;
+      low_cmd_.motor_cmd[i].dq = 0;
+      low_cmd_.motor_cmd[i].kp = 0;
+      low_cmd_.motor_cmd[i].kd = 0;
+      low_cmd_.motor_cmd[i].tau = 0;
+    }
   }
 
-  // low_cmd_.motor_cmd[0].q = 1.0;
-  // low_cmd_.motor_cmd[0].dq = 0;
-  // low_cmd_.motor_cmd[0].kp = kp_;
-  // low_cmd_.motor_cmd[0].kd = kd_;
-  // low_cmd_.motor_cmd[0].tau = 0;
   get_crc(low_cmd_); // Check motor cmd crc
   low_cmd_pub_->publish(low_cmd_);
 }
 
 void LowLevelCmdNode::initObsManager() {
+  std::vector<std::shared_ptr<ObservationTerm>> obs_term;
   base_ang_vel = std::make_shared<ObservationTerm>("base_angvel", 1);
   base_ang_vel->func = [this]() { return get_base_ang_vel(); };
   base_ang_vel->scale = 0.25;
@@ -102,22 +108,22 @@ void LowLevelCmdNode::initObsManager() {
   action_obs_term = std::make_shared<ActionObsTerm>("action_obs_term", 1);
   action_obs_term->init(16);
 
-  ray_caster_term = std::make_shared<ObservationTerm>("ray_caster", 1,
-                                                      UniformNoise(-0.1, 0.1));
-  ray_caster_term->func = [this]() { return get_ray_caster_image(); };
-
-  obs_terms.push_back(base_ang_vel);
-  obs_terms.push_back(projected_gravity);
-  obs_terms.push_back(command);
-  obs_terms.push_back(dof_pos);
-  obs_terms.push_back(dof_vel);
-  obs_terms.push_back(action_obs_term);
-  // obs_terms.push_back(ray_caster_term);
+  obs_term.push_back(base_ang_vel);
+  obs_term.push_back(projected_gravity);
+  obs_term.push_back(command);
+  obs_term.push_back(dof_pos);
+  obs_term.push_back(dof_vel);
+  obs_term.push_back(action_obs_term);
 
   action_term = std::make_shared<ActionTerm>();
   action_term->default_action =
       torch::tensor(act_default_dof_pos_vec, options_);
   action_term->scale_ = torch::tensor(action_scale_vec, options_);
+
+  // To manager
+  obs_terms.push_back(obs_term);
+  action_terms.push_back(action_term);
+  action_obs_terms.push_back(action_obs_term);
 }
 
 torch::Tensor LowLevelCmdNode::get_base_ang_vel() {
@@ -179,6 +185,11 @@ void LowLevelCmdNode::init_gamepad() {
     }
     if (map.b) {
       is_stop.store(true);
+    }
+    if (map.x) {
+      policy_id++;
+      if (policy_id == policy_description.size())
+        policy_id = 0;
     }
   });
   int is;

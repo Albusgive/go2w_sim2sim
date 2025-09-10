@@ -1,7 +1,10 @@
 #include "ManagerEnv.hpp"
 #include "debug.hpp"
+#include "libtorch_net.h"
 #include <ATen/core/TensorBody.h>
 #include <ATen/ops/zeros.h>
+#include <memory>
+#include <string>
 ObservationTerm::ObservationTerm(std::string obs_term_name, int history_length,
                                  Noise noise)
     : obs_term_name_(obs_term_name), history_length(history_length) {
@@ -11,13 +14,11 @@ ObservationTerm::ObservationTerm(std::string obs_term_name, int history_length,
                                  GaussianNoise noise)
     : obs_term_name_(obs_term_name), history_length(history_length) {
   this->noise = std::make_shared<GaussianNoise>(noise);
-  ;
 };
 ObservationTerm::ObservationTerm(std::string obs_term_name, int history_length,
                                  UniformNoise noise)
     : obs_term_name_(obs_term_name), history_length(history_length) {
   this->noise = std::make_shared<UniformNoise>(noise);
-  ;
 };
 
 ObservationTerm::~ObservationTerm() {
@@ -96,96 +97,99 @@ void ActionTerm::init(int batch_size, torch::Dtype dtype) {
   }
 }
 
-void ManagerBasedEnv::init_manager(std::string filename) {
-  load_policy(filename);
+ManagerBasedEnv::ManagerBasedEnv(
+    std::vector<std::pair<std::string, std::string>>
+        &policy_paths_and_description) {
+  policys.resize(policy_paths_and_description.size());
+  for (auto &pp_d : policy_paths_and_description) {
+    auto [path, description] = pp_d;
+    this->policy_paths.push_back(path);
+    this->policy_description.push_back(description);
+  }
+}
+
+void ManagerBasedEnv::init_manager() {
   initObsManager();
-  // 删除不需要的obs term
-  for (auto &manager : obs_terms) {
-    for (auto &term_name : remove_obs_term_list) {
-      if (manager->obs_term_name_ == term_name) {
-        obs_terms.erase(
-            std::remove(obs_terms.begin(), obs_terms.end(), manager),
-            obs_terms.end());
-        return;
-      }
+  for (int obs_term_id = 0; obs_term_id < obs_terms.size(); obs_term_id++) {
+    Log("--------------------------------------");
+    Log("policy " << obs_term_id
+                  << "  description:" << policy_description[obs_term_id]);
+    if (policy_paths.size() < obs_term_id)
+      DebugErr("policy " + std::to_string(obs_term_id) + " absence path");
+    load_policy(obs_term_id, policy_paths[obs_term_id]);
+    if (action_obs_terms.size() < obs_terms.size()) {
+      DebugErr("action_obs_term is nullptr! please "
+               "std::make_shared<ActionObsTerm>();");
     }
-  }
-  if (action_obs_term == nullptr) {
-    DebugErr("action_obs_term is nullptr! please "
-             "std::make_shared<ActionObsTerm>();");
-  }
-  // check
-  if (obs_terms.empty())
-    DebugErr("the obs_terms is empty!");
-  // check
-  int obs_num = 0;
-  for (int i = 0; i < obs_terms.size(); i++) {
-    auto f = obs_terms[i]->func();
-    if (f.defined() && f.numel() != 0)
-      obs_terms[i]->init(f.size(0));
-    if (obs_terms[i]->batch_size == 0)
-      DebugErr("obs_terms: " + obs_terms[i]->obs_term_name_ + " has no init!");
-    Log("obs num " + std::to_string(i) + ": " + obs_terms[i]->obs_term_name_ +
-        "  data length: " +
-        std::to_string(obs_terms[i]->batch_size *
-                       obs_terms[i]->history_length));
-    obs_num += obs_terms[i]->batch_size * obs_terms[i]->history_length;
-  }
-  Log("num obs: " + std::to_string(obs_num));
-  obs = torch::zeros(obs_num, options_);
-  obs_action = torch::zeros(action_obs_term->batch_size, options_);
-  // obs之后初始化 action
-  if (action_term == nullptr) {
-    Warning("the action_term is nullptr,managerenv will declare it")
-        action_term = std::make_shared<ActionTerm>();
-  }
-  action_term->init(action_obs_term->batch_size);
-  computeObs();
-  int shape = obs.size(0);
-  Log("obs shape: " + std::to_string(shape));
-}
-
-void ManagerBasedEnv::remove_obs_term(std::string term_name) {
-  for (auto &manager : obs_terms) {
-    if (manager->obs_term_name_ == term_name) {
-      obs_terms.erase(std::remove(obs_terms.begin(), obs_terms.end(), manager),
-                      obs_terms.end());
-      return;
+    // check
+    if (obs_terms.empty())
+      DebugErr("the obs_terms is empty!");
+    // check
+    int obs_num = 0;
+    for (int i = 0; i < obs_terms[obs_term_id].size(); i++) {
+      auto f = obs_terms[obs_term_id][i]->func();
+      if (f.defined() && f.numel() != 0)
+        obs_terms[obs_term_id][i]->init(f.size(0));
+      if (obs_terms[obs_term_id][i]->batch_size == 0)
+        DebugErr("obs_terms: " + obs_terms[obs_term_id][i]->obs_term_name_ +
+                 " has no init!");
+      Log("obs num " + std::to_string(i) + ": " +
+          obs_terms[obs_term_id][i]->obs_term_name_ + "  data length: " +
+          std::to_string(obs_terms[obs_term_id][i]->batch_size *
+                         obs_terms[obs_term_id][i]->history_length));
+      obs_num += obs_terms[obs_term_id][i]->batch_size *
+                 obs_terms[obs_term_id][i]->history_length;
     }
+    Log("num obs: " + std::to_string(obs_num));
+    auto obs = torch::zeros(obs_num, options_);
+    policcy_obs.push_back(obs);
+
+    auto obs_action =
+        torch::zeros(action_obs_terms[obs_term_id]->batch_size, options_);
+    obs_actions.push_back(obs_action);
+    // obs之后初始化 action
+    if (action_terms.size() < obs_terms.size()) {
+      Warning("the action_term is nullptr,managerenv will declare it") auto
+          action_term = std::make_shared<ActionTerm>();
+      action_terms.push_back(action_term);
+    }
+    action_terms[obs_term_id]->init(action_obs_terms[obs_term_id]->batch_size);
+    computeObs(obs_term_id);
+    int shape = policcy_obs[obs_term_id].size(0);
+    Log("obs shape: " + std::to_string(shape));
   }
-  remove_obs_term_list.push_back(term_name);
 }
 
-torch::Tensor ManagerBasedEnv::manager_step() {
-  computeObs();
-  return computeAction();
+torch::Tensor ManagerBasedEnv::manager_step(int id) {
+  computeObs(id);
+  return computeAction(id);
 }
 
-void ManagerBasedEnv::computeObs() {
-  action_obs_term->_compute_obs(obs_action);
+void ManagerBasedEnv::computeObs(int id) {
+  action_obs_terms[id]->_compute_obs(obs_actions[id]);
   std::vector<torch::Tensor> obs_list;
-  for (auto &term : obs_terms) {
+  for (auto &term : obs_terms[id]) {
     term->compute_obs();
     obs_list.push_back(term->get_obs());
   }
-  obs = torch::cat(obs_list);
+  policcy_obs[id] = torch::cat(obs_list);
 }
 
-torch::Tensor ManagerBasedEnv::computeAction() {
-  obs_action = policy.get_action(obs);
+torch::Tensor ManagerBasedEnv::computeAction(int id) {
+  obs_actions[id] = policys[id].get_action(policcy_obs[id]);
   // clip
-  auto act =
-      torch::clip(obs_action, action_term->clip_[0], action_term->clip_[1]);
+  auto act = torch::clip(obs_actions[id], action_terms[id]->clip_[0],
+                         action_terms[id]->clip_[1]);
   // scale
-  act = act.mul(action_term->scale_);
+  act = act.mul(action_terms[id]->scale_);
   // default
-  act += action_term->default_action;
+  act += action_terms[id]->default_action;
   return act;
 }
 
-void ManagerBasedEnv::load_policy(std::string filename) {
-  auto path = policy.load(filename, dtype_);
-  Log("poliy load succeed,from: " << path);
+void ManagerBasedEnv::load_policy(int id, std::string filename) {
+  auto path = policys[id].load(filename, dtype_);
+  Log("poly load succeed,from: " << path);
 }
 
 void ManagerBasedEnv::set_dtype(torch::Dtype dtype) {

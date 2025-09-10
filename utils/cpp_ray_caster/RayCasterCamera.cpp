@@ -5,12 +5,13 @@ RayCasterCamera::RayCasterCamera() {}
 
 RayCasterCamera::RayCasterCamera(mjModel *m, mjData *d, std::string cam_name,
                                  mjtNum focal_length,
-                                 mjtNum horizontal_aperture,
-                                 mjtNum aspect_ratio, int h_ray_num,
-                                 int v_ray_num, const std::array<mjtNum, 2> & dis_range,
+                                 mjtNum horizontal_aperture, int h_ray_num,
+                                 int v_ray_num,
+                                 const std::array<mjtNum, 2> &dis_range,
+                                 mjtNum vertical_aperture,
                                  bool is_detect_parentbody) {
-  init(m, d, cam_name, focal_length, horizontal_aperture, aspect_ratio,
-       h_ray_num, v_ray_num, dis_range, is_detect_parentbody);
+  init(m, d, cam_name, focal_length, horizontal_aperture, h_ray_num, v_ray_num,
+       dis_range, vertical_aperture, is_detect_parentbody);
 }
 
 RayCasterCamera::~RayCasterCamera() {
@@ -23,11 +24,18 @@ RayCasterCamera::~RayCasterCamera() {
 
 void RayCasterCamera::init(mjModel *m, mjData *d, std::string cam_name,
                            mjtNum focal_length, mjtNum horizontal_aperture,
-                           mjtNum aspect_ratio, int h_ray_num, int v_ray_num,
-                           const std::array<mjtNum, 2> & dis_range, bool is_detect_parentbody) {
+                           int h_ray_num, int v_ray_num,
+                           const std::array<mjtNum, 2> &dis_range,
+                           mjtNum vertical_aperture,
+                           bool is_detect_parentbody) {
   this->focal_length = focal_length;
   this->horizontal_aperture = horizontal_aperture;
-  this->aspect_ratio = aspect_ratio;
+  this->vertical_aperture = vertical_aperture;
+  if (vertical_aperture == 0) {
+    this->aspect_ratio = (double)h_ray_num / (double)v_ray_num;
+    this->vertical_aperture = horizontal_aperture / aspect_ratio;
+  } else
+    this->aspect_ratio = horizontal_aperture / vertical_aperture;
 
   h_pixel_size = horizontal_aperture / h_ray_num;
   v_pixel_size = (horizontal_aperture / aspect_ratio) / v_ray_num;
