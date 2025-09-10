@@ -1,22 +1,28 @@
 #include "mj_env.h"
-#include "Noise.h"
 #include "Noise.hpp"
 #include "RayCaster.h"
 #include "RayCasterCamera.h"
 #include "RayCasterLidar.h"
+#include "RayNoise.hpp"
 #include "gamepad.h"
 #include "mujoco_thread.h"
 #include <ATen/ops/tensor.h>
 #include <atomic>
+#include <cmath>
 #include <functional>
 #include <memory>
 #include <mujoco/mujoco.h>
+#include <string>
 #include <torch/types.h>
 #include <vector>
 
-MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
+MJ_ENV::MJ_ENV(std::string model_file,
+               std::vector<std::pair<std::string, std::string>>
+                   &policy_paths_and_description,
+               double max_FPS)
+    : ManagerBasedEnv(policy_paths_and_description) {
   load_model(model_file);
-  set_window_size(2560, 1440);
+  set_window_size(3840, 2160);
   set_window_title("MUJOCO");
   font_scale = mjtFontScale::mjFONTSCALE_300;
   set_max_FPS(max_FPS);
@@ -42,14 +48,22 @@ MJ_ENV::MJ_ENV(std::string model_file, double max_FPS) {
   print_vec(dof_vel_name);
   std::cout << "  size:" << dof_vel_name.size() << std::endl;
 
-  ray_caster_camera = RayCasterCamera(m, d, "RayCasterCamera", 24.0, 20.955, 1,
-                                      20, 20, {0.25, 2.0});
-  ray_caster_camera.setNoise(ray_noise::UniformNoise(-0.2, 0.2));
+  ray_caster_camera = RayCasterCamera(m, d, "RayCasterCamera", 11.41, 20.955,
+                                      32, 18, {0.3, 2.0}, 12.64);
+  // ray_caster_camera.setNoise(ray_noise::RayNoise2(-0.01, 0.01, 0.005, 160.0,
+  // 175.0, 0.2, 0.8));
+  ray_caster_camera.setNoise(
+      ray_noise::RayNoise3(-0.01, 0.01, 0.005, 2.0, 10.0, 0.2, 0.6));
   // img
   ray_caster_camera_img = new unsigned char[ray_caster_camera.h_ray_num *
                                             ray_caster_camera.v_ray_num];
   ray_caster_camera_noise_img = new unsigned char[ray_caster_camera.h_ray_num *
                                                   ray_caster_camera.v_ray_num];
+  ray_caster_camera_inv_img = new unsigned char[ray_caster_camera.h_ray_num *
+                                                ray_caster_camera.v_ray_num];
+  ray_caster_camera_noise_inv_img =
+      new unsigned char[ray_caster_camera.h_ray_num *
+                        ray_caster_camera.v_ray_num];
   // body_track
   body_track("base_link", 0.05, {0.0, 1.0, 1.0, 0.5}, 50, 30);
 }
@@ -58,11 +72,11 @@ MJ_ENV::~MJ_ENV() {}
 
 void MJ_ENV::vis_cfg() {
   /*--------可视化配置--------*/
-  // opt.flags[mjtVisFlag::mjVIS_CONTACTPOINT] = true;
-  // opt.flags[mjtVisFlag::mjVIS_CONTACTFORCE] = true;
+  opt.flags[mjtVisFlag::mjVIS_CONTACTPOINT] = true;
+  opt.flags[mjtVisFlag::mjVIS_CONTACTFORCE] = true;
   // opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
   // opt.flags[mjtVisFlag::mjVIS_CONVEXHULL] = true;
-  opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
+  // opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
   // opt.label = mjtLabel::mjLABEL_CAMERA;
   // opt.frame = mjtFrame::mjFRAME_WORLD;
   /*--------可视化配置--------*/
@@ -75,18 +89,25 @@ void MJ_ENV::vis_cfg() {
 }
 
 void MJ_ENV::step() {
-  auto action = manager_step();
-  auto act = toVector<double>(action);
+  auto action = manager_step(policy_id);
+  auto act = toVector<mjtNum>(action);
   for (int i = 0; i < 16; i++) {
+    // if (std::isnan(act[i]) || std::isinf(act[i]))
+    // {  act[i] = 0.0;}
     d->ctrl[i] = act[i];
   }
 }
 
 void MJ_ENV::step_unlock() {
-
-  ray_caster_camera.compute_distance();
-  ray_caster_camera.get_image_data(ray_caster_camera_img);
-  ray_caster_camera.get_image_data(ray_caster_camera_noise_img, true);
+  ray_update_setp++;
+  if (ray_update_setp >= 1) {
+    ray_update_setp = 0;
+    ray_caster_camera.compute_distance();
+    ray_caster_camera.get_inv_image_data(ray_caster_camera_inv_img);
+    ray_caster_camera.get_inv_image_data(ray_caster_camera_noise_inv_img, true);
+    ray_caster_camera.get_image_data(ray_caster_camera_img);
+    ray_caster_camera.get_image_data(ray_caster_camera_noise_img, true);
+  }
 }
 
 void MJ_ENV::draw() {
@@ -95,19 +116,44 @@ void MJ_ENV::draw() {
   float color3[4] = {0.0, 0.0, 1.0, 0.3};
 
   ray_caster_camera.draw_hip_point(&scn, 1, 0.02, color1);
-  ray_caster_camera.draw_deep_ray(&scn, 1, 5, true,color2);
+  ray_caster_camera.draw_deep_ray(&scn, 1, 5, true, color2);
+}
+
+std::vector<std::pair<std::string, std::string>> MJ_ENV::draw_left_table() {
+  std::vector<std::pair<std::string, std::string>> table;
+  table.push_back(std::make_pair("cmd x", std::to_string(cmd[0])));
+  table.push_back(std::make_pair("cmd y", std::to_string(cmd[1])));
+  table.push_back(std::make_pair("cmd yaw", std::to_string(cmd[2])));
+  return table;
+}
+
+std::string MJ_ENV::draw_top_text() {
+  return "policy description: " + policy_description[policy_id];
 }
 
 void MJ_ENV::draw_windows() {
-  drawGrayPixels(ray_caster_camera_img, 0,
+  int ratio = 10;
+  drawGrayPixels(ray_caster_camera_inv_img, 0,
                  {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
-                 {400, 400});
-  drawGrayPixels(ray_caster_camera_noise_img, 1,
+                 {ray_caster_camera.h_ray_num * ratio,
+                  ray_caster_camera.v_ray_num * ratio});
+  drawGrayPixels(ray_caster_camera_noise_inv_img, 1,
                  {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
-                 {400, 400});
+                 {ray_caster_camera.h_ray_num * ratio,
+                  ray_caster_camera.v_ray_num * ratio});
+  drawGrayPixels(ray_caster_camera_img, 2,
+                 {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
+                 {ray_caster_camera.h_ray_num * ratio,
+                  ray_caster_camera.v_ray_num * ratio});
+  drawGrayPixels(ray_caster_camera_noise_img, 3,
+                 {ray_caster_camera.h_ray_num, ray_caster_camera.v_ray_num},
+                 {ray_caster_camera.h_ray_num * ratio,
+                  ray_caster_camera.v_ray_num * ratio});
 }
 
 void MJ_ENV::initObsManager() {
+
+  std::vector<std::shared_ptr<ObservationTerm>> obs_term;
   base_ang_vel = std::make_shared<ObservationTerm>("base_angvel", 15);
   base_ang_vel->func = [this]() { return get_base_ang_vel(); };
   base_ang_vel->scale = 0.25;
@@ -130,18 +176,57 @@ void MJ_ENV::initObsManager() {
   ray_caster_term = std::make_shared<ObservationTerm>("ray_caster", 1);
   ray_caster_term->func = [this]() { return get_ray_caster_image(); };
 
-  obs_terms.push_back(base_ang_vel);
-  obs_terms.push_back(projected_gravity);
-  obs_terms.push_back(command);
-  obs_terms.push_back(dof_pos);
-  obs_terms.push_back(dof_vel);
-  obs_terms.push_back(action_obs_term);
-  obs_terms.push_back(ray_caster_term);
+  obs_term.push_back(base_ang_vel);
+  obs_term.push_back(projected_gravity);
+  obs_term.push_back(command);
+  obs_term.push_back(dof_pos);
+  obs_term.push_back(dof_vel);
+  obs_term.push_back(action_obs_term);
+  obs_term.push_back(ray_caster_term);
 
   action_term = std::make_shared<ActionTerm>();
   action_term->default_action =
       torch::tensor(act_default_dof_pos_vec, options_);
   action_term->scale_ = torch::tensor(action_scale_vec, options_);
+
+  /*policy2*/
+  std::vector<std::shared_ptr<ObservationTerm>> obs_term2;
+  auto base_ang_vel2 = std::make_shared<ObservationTerm>("base_angvel", 1);
+  base_ang_vel2->func = [this]() { return get_base_ang_vel(); };
+  base_ang_vel2->scale = 0.25;
+
+  auto projected_gravity2 = std::make_shared<ObservationTerm>("grivate", 1);
+  projected_gravity2->func = [this]() { return get_projected_gravity(); };
+  auto dof_pos2 = std::make_shared<ObservationTerm>("dof_pos", 1);
+  dof_pos2->func = [this]() { return get_dof_pos(); };
+
+  auto dof_vel2 = std::make_shared<ObservationTerm>("dof_vel", 1);
+  dof_vel2->scale = 0.05;
+  dof_vel2->func = [this]() { return get_dof_vel(); };
+
+  auto action_obs_term2 = std::make_shared<ActionObsTerm>("action_obs_term", 1);
+  action_obs_term2->init(16);
+
+  auto action_term2 = std::make_shared<ActionTerm>();
+  action_term2->default_action =
+      torch::tensor(act_default_dof_pos_vec, options_);
+  action_term2->scale_ = torch::tensor(action2_scale_vec, options_);
+
+  obs_term2.push_back(base_ang_vel2);
+  obs_term2.push_back(projected_gravity2);
+  obs_term2.push_back(command);
+  obs_term2.push_back(dof_pos2);
+  obs_term2.push_back(dof_vel2);
+  obs_term2.push_back(action_obs_term2);
+
+  // To manager
+  obs_terms.push_back(obs_term);
+  action_terms.push_back(action_term);
+  action_obs_terms.push_back(action_obs_term);
+  /*policy2*/
+  obs_terms.push_back(obs_term2);
+  action_terms.push_back(action_term2);
+  action_obs_terms.push_back(action_obs_term2);
 }
 
 torch::Tensor MJ_ENV::get_base_ang_vel() {
@@ -180,7 +265,8 @@ torch::Tensor MJ_ENV::get_dof_vel() {
 }
 
 torch::Tensor MJ_ENV::get_ray_caster_image() {
-  std::vector<double> image = ray_caster_camera.get_data();
+  std::vector<double> image =
+      ray_caster_camera.get_normal_data(true, false, 1.0);
   return fromVector(image);
 }
 
@@ -201,15 +287,11 @@ void MJ_ENV::keyboard_press(std::string key) {
     cmd[0] = 0.0;
     cmd[1] = 0.0;
     cmd[2] = 0.0;
+  } else if (key == "h") {
+    policy_id++;
+    if (policy_id == policy_description.size())
+      policy_id = 0;
   }
-}
-
-std::vector<std::pair<std::string, std::string>> MJ_ENV::draw_table() {
-  std::vector<std::pair<std::string, std::string>> table;
-  table.push_back(std::make_pair("cmd x", std::to_string(cmd[0])));
-  table.push_back(std::make_pair("cmd y", std::to_string(cmd[1])));
-  table.push_back(std::make_pair("cmd yaw", std::to_string(cmd[2])));
-  return table;
 }
 
 void MJ_ENV::init_gamepad() {
@@ -224,6 +306,11 @@ void MJ_ENV::init_gamepad() {
     cmd[0] = -(double)map.ly / 32767.0 * cmd_pad_scale[0];
     cmd[1] = -(double)map.lx / 32767.0 * cmd_pad_scale[1];
     cmd[2] = -(double)map.rx / 32767.0 * cmd_pad_scale[2];
+    if (map.x) {
+      policy_id++;
+      if (policy_id == policy_description.size())
+        policy_id = 0;
+    }
   });
   int is;
   std::string opid = pad->GamePadpads.begin()->first;

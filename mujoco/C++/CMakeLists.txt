@@ -12,6 +12,24 @@ if (mujoco_FOUND)
 endif()
 
 find_package(Torch REQUIRED)
+find_package(Eigen3 REQUIRED)
+# real2sim
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
+
+set (
+  DEPENDENCY_LIST
+  rclcpp
+  std_msgs
+  sensor_msgs
+  cv_bridge
+  OpenCV
+)
+
+set(LIB_LIST mujoco::mujoco glut GL GLU glfw udev ${TORCH_LIBRARIES} Eigen3::Eigen ${OpenCV_LIBS})
 
 set(mujoco_thread_path ${CMAKE_CURRENT_SOURCE_DIR}/../../utils/mujoco_thread)
 include_directories(${mujoco_thread_path})
@@ -33,12 +51,20 @@ file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/demo)
 file(GLOB DEMO_SRC ${CMAKE_CURRENT_SOURCE_DIR}/demo/*.cpp)
- 
-add_executable(lab2mj ${SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
-target_link_libraries(lab2mj mujoco::mujoco glut GL GLU glfw udev ${TORCH_LIBRARIES})
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/real2sim)
+file(GLOB REAL2SIM_SRC ${CMAKE_CURRENT_SOURCE_DIR}/real2sim/*.cpp)
+ 
 add_executable(demo ${DEMO_SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
-target_link_libraries(demo mujoco::mujoco glut GL GLU glfw udev ${TORCH_LIBRARIES})
+target_link_libraries(demo ${LIB_LIST})
+
+add_executable(lab2mj ${SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
+target_link_libraries(lab2mj ${LIB_LIST})
+
+add_executable(real2sim ${REAL2SIM_SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
+target_link_libraries(real2sim ${LIB_LIST})
+ament_target_dependencies(real2sim ${DEPENDENCY_LIST})
+
 
 set(policy_path "${CMAKE_SOURCE_DIR}/../../policy/raycam/")
 add_definitions(-DPOLICY_PATH="${policy_path}")
@@ -47,5 +73,8 @@ add_definitions(-DMJCF_PATH="${mjcf_path}")
 
 set(demo_policy_path "${CMAKE_SOURCE_DIR}/../../policy/history_1/")
 add_definitions(-DDEMO_POLICY_PATH="${demo_policy_path}")
-set(demo_mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene.xml")
+set(demo_mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_demo.xml")
 add_definitions(-DDEMO_MJCF_PATH="${demo_mjcf_path}")
+
+
+add_definitions(-DUSE_OPENCV)

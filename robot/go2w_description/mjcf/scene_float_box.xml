@@ -20,6 +20,12 @@
     <mesh name="flag" vertex="0 0 0  0.6 0 0  0 0 0.3 0 0.01 0 0 -0.01 0" />
   </asset>
 
+  <default>
+    <default class="collision_">
+      <geom solimp="0.1 0.9 0.001 0.5 2" solref="-100 -20" condim="6" solmix="1" />
+    </default>
+  </default>
+
   <worldbody>
     <light pos="0 0 1.5" dir="0 0 -1" directional="true" />
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" />
@@ -31,21 +37,23 @@
     </body>
 
     <replicate count="5" offset="0 2 0">
-      <geom pos="3 -2.5 0.7" type="box" size="1 1 0.3" solimp="0.1 0.9 0.001 0.5 2" solref="-1000 -200" condim="6" solmix="1"/>
+      <geom pos="3 -2.5 0.7" type="box" size="1 1 0.3" class="collision_" />
     </replicate>
 
     <replicate count="3" offset="1.5 0 0.05">
       <replicate count="5" offset="0 2 0">
-        <geom pos="5 -2.5 0" type="box" size="0.05 1 0.05" solimp="0.1 0.9 0.001 0.5 2" solref="-1000 -200" condim="6" solmix="1"/>
+        <geom pos="5 -2.5 0" type="box" size="0.05 1 0.05" class="collision_" />
       </replicate>
     </replicate>
 
     <replicate count="5" offset="0 2 0">
-      <geom pos="12 -2.5 0.65" type="box" size="1 1 0.3" solimp="0.1 0.9 0.001 0.5 2" solref="-1000 -200" condim="6" solmix="1"/>
+      <geom pos="12 -2.5 0.65" type="box" size="1 1 0.3" class="collision_" />
     </replicate>
 
-    <replicate count="5" offset="0 2 0">
-      <geom pos="-3 -2.5 0.45" type="box" size="1 1 0.05" solimp="0.1 0.9 0.001 0.5 2" solref="-1000 -200" condim="6" solmix="1"/>
+    <replicate count="9" offset="0 1.5 -0.02">
+      <geom pos="0 2 0.55" type="box" size="1 0.5 0.1" rgba=".9 .9 .9 .5" class="collision_" />
+      <geom pos="1.05 2 0" type="box" size="0.05 .5 .5" rgba=".9 .9 .9 .5" class="collision_" />
+      <geom pos="-1.05 2 0" type="box" size="0.05 .5 .5" rgba=".9 .9 .9 .5" class="collision_" />
     </replicate>
 
 

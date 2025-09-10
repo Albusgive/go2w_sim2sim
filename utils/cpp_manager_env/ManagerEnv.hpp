@@ -8,6 +8,7 @@
 #include <ATen/ops/empty.h>
 #include <ATen/ops/tensor.h>
 #include <ATen/ops/zeros.h>
+#include <array>
 #include <c10/core/DeviceType.h>
 #include <c10/core/ScalarType.h>
 #include <c10/core/TensorOptions.h>
@@ -18,6 +19,7 @@
 #include <torch/csrc/autograd/generated/variable_factories.h>
 #include <torch/types.h>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 // 在managerenv里面根据func返回的数据长度
@@ -95,40 +97,41 @@ public:
 
 class ManagerBasedEnv {
 public:
-  ManagerBasedEnv() = default;
+  ManagerBasedEnv(std::vector<std::pair<std::string,std::string>>& policy_paths_and_description);
   ~ManagerBasedEnv() = default;
 
   // 加载jit模型 初始化环境并且检查各种term是否正确使用,打印输出
-  void init_manager(std::string filename);
-  void remove_obs_term(std::string term_name);
-  std::vector<std::string> remove_obs_term_list;
+  void init_manager();
   // 运行环境并返回机器人action
-  torch::Tensor manager_step();
+  torch::Tensor manager_step(int id = 0);
 
   // 模型完整观测
-  torch::Tensor obs;
+  std::vector<torch::Tensor> policcy_obs;
   // 观测代理,按照obs顺序填入
-  std::vector<std::shared_ptr<ObservationTerm>> obs_terms;
+  std::vector<std::vector<std::shared_ptr<ObservationTerm>>> obs_terms;
   // action观测代理,一定要初始化,action_term会根据该数据初始化 需要手动init
-  std::shared_ptr<ActionObsTerm> action_obs_term = nullptr;
+  std::vector<std::shared_ptr<ActionObsTerm>> action_obs_terms;
   // 使用时需继承该函数用于obs term的初始化
   virtual void initObsManager() {
     DebugErr("Env has no defind initObsManager()")
   };
 
   // 在step中计算obs
-  void computeObs();
+  void computeObs(int id = 0);
 
   // 用观测的action,是模型直接输出的数据无缩放和裁减
-  torch::Tensor obs_action;
+  std::vector<torch::Tensor> obs_actions;
   // 会根据action_obs_term自动初始化
-  std::shared_ptr<ActionTerm> action_term = nullptr;
+  std::vector<std::shared_ptr<ActionTerm>> action_terms;
   // 模型推理计算action
-  torch::Tensor computeAction();
+  torch::Tensor computeAction(int id = 0);
 
   // policy
-  Policy policy;
-  void load_policy(std::string filename);
+  std::vector<Policy> policys;
+  std::vector<std::string> policy_paths;
+  std::vector<std::string> policy_description;
+  // Policy policy;
+  void load_policy(int id, std::string filename);
 
   // tensor类型设置
   torch::Dtype dtype_ = torch::kFloat32;

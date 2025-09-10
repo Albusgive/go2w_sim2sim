@@ -1,12 +1,8 @@
 #pragma once
-
+#include "ManagerEnv.hpp"
 #include <chrono>
 #include <cmath>
 #include <cstring>
-#include <string>
-#include <vector>
-
-#include "ManagerEnv.hpp"
 #include "gamepad.h"
 #include "motor_crc.h"
 #include "rclcpp/rclcpp.hpp"
@@ -18,7 +14,8 @@
 
 class LowLevelCmdNode : public rclcpp::Node, public ManagerBasedEnv {
 public:
-  LowLevelCmdNode();
+  LowLevelCmdNode(std::vector<std::pair<std::string, std::string>>
+                   &policy_paths_and_description);
   ~LowLevelCmdNode();
 
   void Init();
@@ -68,7 +65,9 @@ private:
   std::shared_ptr<ObservationTerm> command;           // 3
   std::shared_ptr<ObservationTerm> dof_pos;           // 12
   std::shared_ptr<ObservationTerm> dof_vel;           // 16
-  std::shared_ptr<ObservationTerm> ray_caster_term;   // 400
+  std::shared_ptr<ActionObsTerm> action_obs_term;     // 16
+
+  std::shared_ptr<ActionTerm> action_term;
 
   torch::Tensor get_base_ang_vel();
   torch::Tensor get_projected_gravity();
@@ -78,4 +77,6 @@ private:
   torch::Tensor get_ray_caster_image();
 
   torch::Tensor gravity;
+
+  int policy_id = 0;
 };
