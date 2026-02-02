@@ -3,7 +3,13 @@
 
 RayCasterCamera::RayCasterCamera() {}
 
-RayCasterCamera::RayCasterCamera(mjModel *m, mjData *d, std::string cam_name,
+RayCasterCamera::RayCasterCamera(RayCasterCameraCfg &cfg) {
+  init(cfg.m, cfg.d, cfg.cam_name, cfg.focal_length, cfg.horizontal_aperture,
+       cfg.h_ray_num, cfg.v_ray_num, cfg.dis_range, cfg.vertical_aperture,
+       cfg.is_detect_parentbody);
+}
+
+RayCasterCamera::RayCasterCamera(const mjModel *m, mjData *d, std::string cam_name,
                                  mjtNum focal_length,
                                  mjtNum horizontal_aperture, int h_ray_num,
                                  int v_ray_num,
@@ -22,7 +28,7 @@ RayCasterCamera::~RayCasterCamera() {
   // delete[] dist_ratio;
 }
 
-void RayCasterCamera::init(mjModel *m, mjData *d, std::string cam_name,
+void RayCasterCamera::init(const mjModel *m, mjData *d, std::string cam_name,
                            mjtNum focal_length, mjtNum horizontal_aperture,
                            int h_ray_num, int v_ray_num,
                            const std::array<mjtNum, 2> &dis_range,
@@ -43,10 +49,10 @@ void RayCasterCamera::init(mjModel *m, mjData *d, std::string cam_name,
 }
 
 void RayCasterCamera::compute_ray_vec_virtual_plane() {
-  mjtNum vertical_aperture = horizontal_aperture / aspect_ratio;
+  // mjtNum vertical_aperture = horizontal_aperture / aspect_ratio;
 
-  mjtNum half_width = horizontal_aperture / 2.0;
-  mjtNum half_height = vertical_aperture / 2.0;
+  // mjtNum half_width = horizontal_aperture / 2.0;
+  // mjtNum half_height = vertical_aperture / 2.0;
 
   for (int i = 0; i < v_ray_num; i++) {
     for (int j = 0; j < h_ray_num; j++) {

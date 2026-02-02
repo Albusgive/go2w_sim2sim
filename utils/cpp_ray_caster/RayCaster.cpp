@@ -6,7 +6,12 @@
 
 RayCaster::RayCaster() {}
 
-RayCaster::RayCaster(mjModel *m, mjData *d, std::string cam_name,
+RayCaster::RayCaster(RayCasterCfg &cfg) {
+  init(cfg.m, cfg.d, cfg.cam_name, cfg.resolution, cfg.size, cfg.dis_range,
+       cfg.type, cfg.is_detect_parentbody);
+}
+
+RayCaster::RayCaster(const mjModel *m, mjData *d, std::string cam_name,
                      mjtNum resolution, const std::array<mjtNum, 2> &size,
                      const std::array<mjtNum, 2> &dis_range, RayCasterType type,
                      bool is_detect_parentbody) {
@@ -14,7 +19,7 @@ RayCaster::RayCaster(mjModel *m, mjData *d, std::string cam_name,
   init(m, d, cam_name, resolution, size, dis_range, type, is_detect_parentbody);
 }
 
-void RayCaster::init(mjModel *m, mjData *d, std::string cam_name,
+void RayCaster::init(const mjModel *m, mjData *d, std::string cam_name,
                      mjtNum resolution, const std::array<mjtNum, 2> &size,
                      const std::array<mjtNum, 2> &dis_range, RayCasterType type,
                      bool is_detect_parentbody) {
@@ -34,7 +39,7 @@ RayCaster::~RayCaster() {
   // delete[] dist_ratio;
 }
 
-void RayCaster::_init(mjModel *m, mjData *d, std::string cam_name,
+void RayCaster::_init(const mjModel *m, mjData *d, std::string cam_name,
                       int h_ray_num, int v_ray_num,
                       const std::array<mjtNum, 2> &dis_range,
                       bool is_detect_parentbody) {
@@ -70,6 +75,7 @@ void RayCaster::_init(mjModel *m, mjData *d, std::string cam_name,
   _ray_vec_offset = new mjtNum[h_ray_num * v_ray_num * 3];
   ray_vec_offset = new mjtNum[h_ray_num * v_ray_num * 3];
   pos_w = new mjtNum[h_ray_num * v_ray_num * 3];
+  pos_b = new mjtNum[h_ray_num * v_ray_num * 3];
 
   geomids = new int[h_ray_num * v_ray_num];
   dist = new mjtNum[h_ray_num * v_ray_num];
@@ -89,6 +95,11 @@ int RayCaster::get_idx(int v, int h) {
 }
 
 int RayCaster::_get_idx(int v, int h) { return v * h_ray_num + h; }
+
+int RayCaster::get_nray(RayCasterCfg &cfg) {
+  return ((int)(cfg.size[0] / cfg.resolution) + 1) *
+         ((int)(cfg.size[1] / cfg.resolution) + 1);
+}
 
 void RayCaster::setNoise(ray_noise::RayNoise2 noise) {
   delete _noise;
@@ -231,30 +242,37 @@ void RayCaster::compute_distance() {
   }
   if (is_compute_hit)
     compute_hit();
+  if (is_compute_hit_b)
+    compute_hit_b();
   _noise->produce_united_noise();
 }
 
 void RayCaster::get_inv_image_data(unsigned char *image_data, bool is_noise,
                                    bool is_inf_max) {
-  if (!is_noise) {
-    _get_normal_data_from_ratio(image_data, is_inf_max, true, 255);
-  } else {
-    _get_normal_data(image_data, is_inf_max, true, 255);
-  }
+  get_image_data(image_data, is_noise, is_inf_max, true);
 }
 
 void RayCaster::get_image_data(unsigned char *image_data, bool is_noise,
-                               bool is_inf_max) {
+                               bool is_inf_max, bool is_inv) {
   if (!is_noise) {
-    _get_normal_data_from_ratio(image_data, is_inf_max, false, 255);
+    _get_normal_data_from_ratio(image_data, is_inf_max, is_inv, 255);
   } else {
-    _get_normal_data(image_data, is_inf_max, false, 255);
+    _get_normal_data(image_data, is_inf_max, is_inv, 255);
   }
 }
 
 void RayCaster::get_normal_data(double *data, bool is_inf_max, bool is_inv,
                                 double scale) {
   _get_normal_data(data, is_inf_max, is_inv, scale);
+}
+
+void RayCaster::get_normal_data(double *data, bool is_noise, bool is_inf_max,
+                                bool is_inv, double scale) {
+  if (!is_noise) {
+    _get_normal_data_from_ratio(data, is_inf_max, is_inv, scale);
+  } else {
+    _get_normal_data(data, is_inf_max, is_inv, scale);
+  }
 }
 
 std::vector<double> RayCaster::get_normal_data(bool is_inf_max, bool is_inv,
@@ -292,12 +310,24 @@ std::vector<double> RayCaster::get_data(bool is_inf_max) {
   }
 }
 
-void RayCaster::get_data_pos_w(double *data) { _get_data_pos_w_dim1(data); }
+void RayCaster::get_data_pos_w(double *data) {
+  _get_data_pos_dim1(data, pos_w);
+}
 
 std::vector<std::vector<double>> RayCaster::get_data_pos_w() {
-  std::vector<std::vector<double>> pos_w(nray, std::vector<double>(3, 0));
-  _get_data_pos_w_dim2(pos_w);
-  return pos_w;
+  std::vector<std::vector<double>> pos(nray, std::vector<double>(3, 0));
+  _get_data_pos_dim2(pos, pos_w);
+  return pos;
+}
+
+void RayCaster::get_data_pos_b(double *data) {
+  _get_data_pos_dim1(data, pos_b);
+}
+
+std::vector<std::vector<double>> RayCaster::get_data_pos_b() {
+  std::vector<std::vector<double>> pos(nray, std::vector<double>(3, 0));
+  _get_data_pos_dim2(pos, pos_b);
+  return pos;
 }
 
 void RayCaster::draw_line(mjvScene *scn, mjtNum *from, mjtNum *to, mjtNum width,
@@ -441,6 +471,23 @@ void RayCaster::compute_hit() {
         pos_w[idx * 3 + 2] += ray_vec_offset[idx * 3 + 2];
       }
       mju_addToScl3(pos_w + (idx * 3), ray_vec + (idx * 3), dist_ratio[idx]);
+    }
+  }
+}
+
+void RayCaster::compute_hit_b() {
+  for (int i = 0; i < v_ray_num; i++) {
+    for (int j = 0; j < h_ray_num; j++) {
+      int idx = _get_idx(i, j);
+      pos_b[idx * 3] = 0.0;
+      pos_b[idx * 3 + 1] = 0.0;
+      pos_b[idx * 3 + 2] = 0.0;
+      if (is_offert) {
+        pos_b[idx * 3] += _ray_vec_offset[idx * 3];
+        pos_b[idx * 3 + 1] += _ray_vec_offset[idx * 3 + 1];
+        pos_b[idx * 3 + 2] += _ray_vec_offset[idx * 3 + 2];
+      }
+      mju_addToScl3(pos_b + (idx * 3), _ray_vec + (idx * 3), dist_ratio[idx]);
     }
   }
 }

@@ -87,4 +87,5 @@ private:
   torch::Tensor gravity;
 
   int policy_id = 1;
+  void deep_mul_gradient(std::vector<double> data);
 };
