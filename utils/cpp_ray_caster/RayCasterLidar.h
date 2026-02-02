@@ -4,9 +4,9 @@
 #include <mujoco/mujoco.h>
 #include <string>
 
-class RayCasterLidarCameraCfg {
+class RayCasterLidarCfg {
 public:
-  mjModel *m;
+  const mjModel *m;
   mjData *d;
   std::string cam_name;
   mjtNum fov_h;
@@ -20,6 +20,7 @@ public:
 class RayCasterLidar : public RayCaster {
 public:
   RayCasterLidar();
+  RayCasterLidar(RayCasterLidarCfg &cfg);
   /** @brief 初始化相机 - 使用焦距和孔径
    * @param m mjModel
    * @param d mjData
@@ -30,12 +31,12 @@ public:
    * @param v_ray_num 垂直射线数量
    * @param dis_range 距离范围 [最小，最大] (M)
    */
-  RayCasterLidar(mjModel *m, mjData *d, std::string cam_name, mjtNum fov_h,
+  RayCasterLidar(const mjModel *m, mjData *d, std::string cam_name, mjtNum fov_h,
                  mjtNum fov_v, int h_ray_num, int v_ray_num,
                  const std::array<mjtNum, 2> &dis_range,
                  bool is_detect_self = false);
   ~RayCasterLidar();
-  void init(mjModel *m, mjData *d, std::string cam_name, mjtNum fov_h,
+  void init(const mjModel *m, mjData *d, std::string cam_name, mjtNum fov_h,
             mjtNum fov_v, int h_ray_num, int v_ray_num,
             const std::array<mjtNum, 2> &dis_range,
             bool is_detect_self = false);

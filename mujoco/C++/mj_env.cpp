@@ -12,6 +12,12 @@
 #include <functional>
 #include <memory>
 #include <mujoco/mujoco.h>
+#include <opencv2/core.hpp>
+#include <opencv2/core/hal/interface.h>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/core/types.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/opencv.hpp>
 #include <string>
 #include <torch/types.h>
 #include <vector>
@@ -50,10 +56,10 @@ MJ_ENV::MJ_ENV(std::string model_file,
 
   ray_caster_camera = RayCasterCamera(m, d, "RayCasterCamera", 11.41, 20.955,
                                       32, 18, {0.3, 2.0}, 12.64);
-  // ray_caster_camera.setNoise(ray_noise::RayNoise2(-0.01, 0.01, 0.005, 160.0,
-  // 175.0, 0.2, 0.8));
   ray_caster_camera.setNoise(
-      ray_noise::RayNoise3(-0.01, 0.01, 0.005, 2.0, 10.0, 0.2, 0.6));
+      ray_noise::RayNoise2(-0.01, 0.01, 0.005, 160.0, 175.0, 0.2, 0.8));
+  // ray_caster_camera.setNoise(
+  //     ray_noise::RayNoise3(-0.01, 0.01, 0.005, 2.0, 10.0, 0.2, 0.6));
   // img
   ray_caster_camera_img = new unsigned char[ray_caster_camera.h_ray_num *
                                             ray_caster_camera.v_ray_num];
@@ -107,6 +113,9 @@ void MJ_ENV::step_unlock() {
     ray_caster_camera.get_inv_image_data(ray_caster_camera_noise_inv_img, true);
     ray_caster_camera.get_image_data(ray_caster_camera_img);
     ray_caster_camera.get_image_data(ray_caster_camera_noise_img, true);
+    std::vector<double> image =
+        ray_caster_camera.get_normal_data(true, false, 1.0);
+    deep_mul_gradient(image);
   }
 }
 
@@ -333,4 +342,40 @@ void MJ_ENV::init_gamepad() {
     }
   }
   pad->readGamePad();
+}
+
+void MJ_ENV::deep_mul_gradient(std::vector<double> data) {
+  cv::Mat depth = cv::Mat(ray_caster_camera.v_ray_num,
+                          ray_caster_camera.h_ray_num, CV_64FC1, data.data());
+  // 梯度
+  cv::Mat gradient_src;
+  cv::blur(depth, gradient_src, cv::Size(5, 5));
+  cv::Mat scharr_x, scharr_y;
+  cv::Mat scharr_grad;
+  cv::Scharr(gradient_src, scharr_x, CV_64FC1, 1, 0, 1, 0, cv::BORDER_DEFAULT);
+  cv::Scharr(gradient_src, scharr_y, CV_64FC1, 0, 1, 1, 0, cv::BORDER_DEFAULT);
+  cv::magnitude(scharr_x, scharr_y, scharr_grad);
+
+  cv::Mat deep_gradient;
+  depth = 1.0 - depth;
+  cv::multiply(depth, scharr_grad, deep_gradient);
+
+  cv::normalize(scharr_grad, scharr_grad, 0, 1, cv::NORM_MINMAX, CV_64FC1);
+  cv::normalize(deep_gradient, deep_gradient, 0, 1, cv::NORM_MINMAX, CV_64FC1);
+
+  cv::resize(depth, depth,
+             cv::Size(ray_caster_camera.h_ray_num * 10,
+                      ray_caster_camera.v_ray_num * 10));
+  cv::resize(scharr_grad, scharr_grad,
+             cv::Size(ray_caster_camera.h_ray_num * 10,
+                      ray_caster_camera.v_ray_num * 10));
+  cv::resize(deep_gradient, deep_gradient,
+             cv::Size(ray_caster_camera.h_ray_num * 10,
+                      ray_caster_camera.v_ray_num * 10));
+
+  cv::imshow("depth", depth);
+  cv::imshow("scharr_grad", scharr_grad);
+
+  cv::imshow("deep_mul_gradient", deep_gradient);
+  cv::waitKey(1);
 }

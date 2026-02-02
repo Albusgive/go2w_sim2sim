@@ -3,9 +3,16 @@
 
 RayCasterLidar::RayCasterLidar() {}
 
-RayCasterLidar::RayCasterLidar(mjModel *m, mjData *d, std::string cam_name,
+RayCasterLidar::RayCasterLidar(RayCasterLidarCfg &cfg) {
+
+  init(cfg.m, cfg.d, cfg.cam_name, cfg.fov_h, cfg.fov_v, cfg.h_ray_num,
+       cfg.v_ray_num, cfg.dis_range, cfg.is_detect_self);
+}
+
+RayCasterLidar::RayCasterLidar(const mjModel *m, mjData *d, std::string cam_name,
                                mjtNum fov_h, mjtNum fov_v, int h_ray_num,
-                               int v_ray_num, const std::array<mjtNum, 2> & dis_range,
+                               int v_ray_num,
+                               const std::array<mjtNum, 2> &dis_range,
                                bool is_detect_self) {
   init(m, d, cam_name, fov_h, fov_v, h_ray_num, v_ray_num, dis_range,
        is_detect_self);
@@ -19,9 +26,9 @@ RayCasterLidar::~RayCasterLidar() {
   // delete[] dist_ratio;
 }
 
-void RayCasterLidar::init(mjModel *m, mjData *d, std::string cam_name,
+void RayCasterLidar::init(const mjModel *m, mjData *d, std::string cam_name,
                           mjtNum fov_h, mjtNum fov_v, int h_ray_num,
-                          int v_ray_num,const std::array<mjtNum, 2> & dis_range,
+                          int v_ray_num, const std::array<mjtNum, 2> &dis_range,
                           bool is_detect_self) {
   this->fov_h = fov_h;
   this->fov_v = fov_v;

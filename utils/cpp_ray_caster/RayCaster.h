@@ -1,5 +1,6 @@
 #pragma once
 #include "RayNoise.hpp"
+#include "mujoco/mjtnum.h"
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -14,20 +15,22 @@ enum RayCasterType { base, yaw, world, none };
 
 class RayCasterCfg {
 public:
-  mjModel *m;
+  const mjModel *m;
   mjData *d;
   std::string cam_name;
   mjtNum resolution;
   std::array<mjtNum, 2> size;
   std::array<mjtNum, 2> dis_range;
+  RayCasterType type = RayCasterType::none;
   bool is_detect_parentbody = false;
 };
 
 class RayCaster {
 public:
   RayCaster();
-  RayCaster(mjModel *m, mjData *d, std::string cam_name, mjtNum resolution,
-            const std::array<mjtNum, 2> &size,
+  RayCaster(RayCasterCfg &cfg);
+  RayCaster(const mjModel *m, mjData *d, std::string cam_name,
+            mjtNum resolution, const std::array<mjtNum, 2> &size,
             const std::array<mjtNum, 2> &dis_range,
             RayCasterType type = RayCasterType::none,
             bool is_detect_parentbody = false);
@@ -41,7 +44,7 @@ public:
    * @param dis_range 距离范围 [最小，最大] (M)
    * @param is_detect_parentbody 是否检测自身
    */
-  void _init(mjModel *m, mjData *d, std::string cam_name, int h_ray_num,
+  void _init(const mjModel *m, mjData *d, std::string cam_name, int h_ray_num,
              int v_ray_num, const std::array<mjtNum, 2> &dis_range,
              bool is_detect_parentbody);
 
@@ -94,6 +97,8 @@ public:
     delete _noise;
     _noise = new NoiseType(noise);
   }
+
+  static int get_nray(RayCasterCfg &cfg);
   void setNoise(ray_noise::RayNoise2 noise);
 #ifdef USE_OPENCV
   void setNoise(ray_noise::RayNoise3 noise);
@@ -104,7 +109,7 @@ public:
   int nray;                   // 射线数量
   int no_detect_body_id = -1; // 是否检测 id 不检测就是-1
 
-  mjModel *m;
+  const mjModel *m;
   mjData *d;
   int cam_id;  // 相机id
   mjtNum *pos; // 相机位置
@@ -137,11 +142,15 @@ public:
 
   void get_inv_image_data(unsigned char *image_data, bool is_noise = false,
                           bool is_inf_max = true);
+
   void get_image_data(unsigned char *image_data, bool is_noise = false,
-                      bool is_inf_max = true);
+                      bool is_inf_max = true, bool is_inv = false);
 
   void get_normal_data(double *data, bool is_inf_max = true,
                        bool is_inv = false, double scale = 1.0);
+  void get_normal_data(double *data, bool is_noise = false,
+                       bool is_inf_max = true, bool is_inv = false,
+                       double scale = 1.0);
   std::vector<double> get_normal_data(bool is_inf_max = true,
                                       bool is_inv = false, double scale = 1.0);
 
@@ -152,6 +161,9 @@ public:
   // 世界坐标系命中位置 没命中的返回(NAN,NAN,NAN)
   void get_data_pos_w(double *data);
   std::vector<std::vector<double>> get_data_pos_w();
+  // 自身坐标系命中位置 没命中的返回(NAN,NAN,NAN)
+  void get_data_pos_b(double *data);
+  std::vector<std::vector<double>> get_data_pos_b();
 
   void draw_line(mjvScene *scn, mjtNum *from, mjtNum *to, mjtNum width,
                  float *rgba);
@@ -161,10 +173,13 @@ public:
   void rotate_vector_with_yaw(mjtNum result[3], mjtNum yaw,
                               const mjtNum vec[3]);
 
-  // 如果不绘制落点可以关掉提高性能，ray_noise::RayNoise2会自动开启
+  // 如果不绘制落点可以关掉提高性能，ray_noise::RayNoise2会自动开启is_compute_hit
   bool is_compute_hit = true;
+  bool is_compute_hit_b = true;
   mjtNum *pos_w; // 命中位置
+  mjtNum *pos_b; // 命中位置
   void compute_hit();
+  void compute_hit_b();
 
 private:
   void draw_ary(int idx, int width, float *color, mjvScene *scn, bool is_scale);
@@ -182,8 +197,8 @@ private:
    * @param dis_range 距离范围 [最小，最大] (M)
    * @param is_detect_parentbody 是否检测自身
    */
-  void init(mjModel *m, mjData *d, std::string cam_name, mjtNum resolution,
-            const std::array<mjtNum, 2> &size,
+  void init(const mjModel *m, mjData *d, std::string cam_name,
+            mjtNum resolution, const std::array<mjtNum, 2> &size,
             const std::array<mjtNum, 2> &dis_range, RayCasterType type,
             bool is_detect_parentbody);
 
@@ -268,26 +283,24 @@ private:
     }
   }
 
-  template <typename T> void _get_data_pos_w_dim1(T &data) {
-    compute_hit();
+  template <typename T> void _get_data_pos_dim1(T &data,const mjtNum* pos) {
     for (int i = 0; i < v_ray_num; i++) {
       for (int j = 0; j < h_ray_num; j++) {
         int idx = _get_idx(i, j);
-        data[idx * 3] = pos_w[idx * 3];
-        data[idx * 3 + 1] = pos_w[idx * 3 + 1];
-        data[idx * 3 + 2] = pos_w[idx * 3 + 2];
+        data[idx * 3] = pos[idx * 3];
+        data[idx * 3 + 1] = pos[idx * 3 + 1];
+        data[idx * 3 + 2] = pos[idx * 3 + 2];
       }
     }
   }
 
-  template <typename T> void _get_data_pos_w_dim2(T &data) {
-    compute_hit();
+  template <typename T> void _get_data_pos_dim2(T &data,const mjtNum* pos) {
     for (int i = 0; i < v_ray_num; i++) {
       for (int j = 0; j < h_ray_num; j++) {
         int idx = _get_idx(i, j);
-        data[idx][0] = pos_w[idx * 3];
-        data[idx][1] = pos_w[idx * 3 + 1];
-        data[idx][2] = pos_w[idx * 3 + 2];
+        data[idx][0] = pos[idx * 3];
+        data[idx][1] = pos[idx * 3 + 1];
+        data[idx][2] = pos[idx * 3 + 2];
       }
     }
   }

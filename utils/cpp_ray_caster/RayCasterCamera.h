@@ -6,7 +6,7 @@
 
 class RayCasterCameraCfg {
 public:
-  mjModel *m;
+  const mjModel *m;
   mjData *d;
   std::string cam_name;
   mjtNum focal_length = 24.0;          // 焦距 (cm)
@@ -15,12 +15,13 @@ public:
   int h_ray_num = 160;
   int v_ray_num = 90;
   std::array<mjtNum, 2> dis_range;
-  bool is_detect_self = false; // 是否检测自身
+  bool is_detect_parentbody = false;
 };
 
 class RayCasterCamera : public RayCaster {
 public:
   RayCasterCamera();
+  RayCasterCamera(RayCasterCameraCfg &cfg);
   /** @brief 初始化相机 - 使用焦距和孔径
    * @param m mjModel
    * @param d mjData
@@ -31,14 +32,14 @@ public:
    * @param v_ray_num 垂直射线数量
    * @param dis_range 距离范围 [最小，最大] (M)
    */
-  RayCasterCamera(mjModel *m, mjData *d, std::string cam_name,
+  RayCasterCamera(const mjModel *m, mjData *d, std::string cam_name,
                   mjtNum focal_length, mjtNum horizontal_aperture,
                   int h_ray_num, int v_ray_num,
                   const std::array<mjtNum, 2> &dis_range,
                   mjtNum vertical_aperture = 0,
                   bool is_detect_parentbody = false);
   ~RayCasterCamera();
-  void init(mjModel *m, mjData *d, std::string cam_name, mjtNum focal_length,
+  void init(const mjModel *m, mjData *d, std::string cam_name, mjtNum focal_length,
             mjtNum horizontal_aperture, int h_ray_num, int v_ray_num,
             const std::array<mjtNum, 2> &dis_range, mjtNum vertical_aperture,
             bool is_detect_parentbody);
