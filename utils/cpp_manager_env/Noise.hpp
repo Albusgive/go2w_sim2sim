@@ -1,11 +1,13 @@
 #pragma once
-#include <torch/torch.h>
+#include "SimpleTensor.hpp"
+#include <random>
+
 class Noise {
 public:
   Noise() {};
-  ~Noise() {};
+  virtual ~Noise() {};
 
-  virtual void produce_noise(torch::Tensor &input) {};
+  virtual void produce_noise(SimpleTensor &input) {};
   double mean = 0.0;
   double std = 0.0;
   double low = 0.0;
@@ -19,9 +21,14 @@ public:
     this->std = std;
   }
 
-  void produce_noise(torch::Tensor &input) {
-    torch::Tensor noise = torch::randn_like(input) * std + mean;
-    input += noise;
+  void produce_noise(SimpleTensor &input) override {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::normal_distribution<float> d(mean, std);
+
+    for (auto& val : input.data_) {
+        val += d(gen);
+    }
   }
 };
 
@@ -32,8 +39,13 @@ public:
     this->high = high;
   }
 
-  void produce_noise(torch::Tensor &input) {
-    torch::Tensor noise = torch::rand_like(input) * (high - low) + low;
-    input += noise;
+  void produce_noise(SimpleTensor &input) override {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> d(low, high);
+
+    for (auto& val : input.data_) {
+        val += d(gen);
+    }
   }
 };
