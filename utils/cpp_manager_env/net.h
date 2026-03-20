@@ -1,13 +1,14 @@
 // net.h
 #pragma once
 
-#include <string>
-#include <vector>
-#include <iostream>
-#include <filesystem>
 #include <algorithm>
-#include <regex>
+#include <filesystem>
+#include <iostream>
 #include <memory>
+#include <regex>
+#include <string>
+#include <utility>
+#include <vector>
 
 // 引入 SimpleTensor
 #include "SimpleTensor.hpp"
@@ -18,6 +19,53 @@
 enum class InferenceDevice {
     CPU,
     CUDA
+};
+
+enum class PolicyArchitecture {
+    MLP,
+    SRU
+};
+
+struct PolicyMemorySpec {
+    std::string type = "";
+    int num_layers = 0;
+    int hidden_dim = 0;
+
+    bool valid() const {
+        return !type.empty() && num_layers > 0 && hidden_dim > 0;
+    }
+};
+
+struct PolicySpec {
+    std::string path;
+    std::string description;
+    PolicyArchitecture architecture = PolicyArchitecture::MLP;
+    PolicyMemorySpec memory;
+    int default_auto_reset_interval_steps = 0;
+    bool default_auto_reset_enabled = false;
+
+    bool is_sru() const {
+        return architecture == PolicyArchitecture::SRU;
+    }
+
+    static PolicySpec MLP(std::string path, std::string description) {
+        return PolicySpec{std::move(path), std::move(description),
+                          PolicyArchitecture::MLP, {}, 0, false};
+    }
+
+    static PolicySpec SRU(std::string path, std::string description,
+                          int num_layers, int hidden_dim,
+                          int default_auto_reset_interval_steps = 500,
+                          std::string memory_type = "lstm_sru",
+                          bool default_auto_reset_enabled = true) {
+        return PolicySpec{std::move(path), std::move(description),
+                          PolicyArchitecture::SRU,
+                          PolicyMemorySpec{std::move(memory_type), num_layers,
+                                           hidden_dim},
+                          std::max(default_auto_reset_interval_steps, 0),
+                          default_auto_reset_enabled &&
+                              std::max(default_auto_reset_interval_steps, 0) > 0};
+    }
 };
 
 // ==========================================
@@ -45,19 +93,20 @@ public:
     // ==========================================
     SimpleTensor get_action(SimpleTensor obs);
     std::vector<float> get_action(std::vector<float> obs);
+    void reset_state();
 
     // 新增：检查并转换 ONNX 的辅助函数声明
     void check_and_convert_to_onnx(const std::string& model_path);
 
 #ifdef USE_ONNX
-    // ONNX Load 增加 device 参数
+    std::string load(const PolicySpec& spec, InferenceDevice device = InferenceDevice::CPU);
     std::string load(std::string filename, InferenceDevice device = InferenceDevice::CPU);
 #else
-    // LibTorch 构造和 Load 增加 device 参数
     Policy(std::string filename, InferenceDevice device = InferenceDevice::CPU, torch::Dtype dtype = torch::kFloat32);
+    std::string load(const PolicySpec& spec, InferenceDevice device = InferenceDevice::CPU, torch::Dtype dtype = torch::kFloat32);
     std::string load(std::string filename, InferenceDevice device = InferenceDevice::CPU, torch::Dtype dtype = torch::kFloat32);
     torch::Tensor get_action(torch::Tensor obs);
-    
+
     torch::Dtype dtype_ = torch::kFloat32;
     torch::TensorOptions options_;
 #endif
@@ -66,15 +115,26 @@ public:
     InferenceDevice device_ = InferenceDevice::CPU;
 
 private:
+    PolicySpec spec_;
+
+    void configure_from_model_metadata(const std::string& model_path);
+    void validate_recurrent_spec() const;
+
 #ifdef USE_ONNX
+    void ensure_recurrent_state_for_batch(int64_t batch_size);
     std::shared_ptr<Ort::Env> env_{nullptr};
     std::shared_ptr<Ort::Session> session_{nullptr};
     std::vector<const char*> input_node_names_;
     std::vector<std::string> input_node_names_alloc_;
     std::vector<const char*> output_node_names_;
     std::vector<std::string> output_node_names_alloc_;
+    SimpleTensor hidden_state_;
+    SimpleTensor cell_state_;
 #else
+    void ensure_recurrent_state_for_batch(int64_t batch_size);
     torch::jit::script::Module module;
-    torch::Device get_torch_device(); // 辅助函数
+    torch::Device get_torch_device();
+    torch::Tensor hidden_state_;
+    torch::Tensor cell_state_;
 #endif
 };

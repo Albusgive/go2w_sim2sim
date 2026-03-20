@@ -47,12 +47,17 @@ void mujoco_thread::reset() {
   std::lock_guard<std::mutex> lk(m_mtx);
   mj_resetData(m, d);
   mj_forward(m, d);
+  reset_callback(m, d);
   for (auto &q : bodys_tracks) {
     q.clear();
   }
   for (auto &n : tracks_n_step) {
     n = 0;
   }
+}
+
+void mujoco_thread::reset_callback(const mjModel *m, mjData *d) {
+  
 }
 
 void mujoco_thread::connect_windows_sim() { connect_windows.store(true); }
@@ -74,8 +79,7 @@ void mujoco_thread::load_model(std::string model_file) {
   realtime.store(m->vis.global.realtime);
   mj_forward(m, d);
 
-  cam_type.push_back(mjCAMERA_FREE);
-  for (int i = 1; i < m->ncam; i++) {
+  for (int i = 0; i < m->ncam; i++) {
     if (m->cam_mode[i] == mjCAMLIGHT_FIXED) {
       cam_type.push_back(mjCAMERA_FIXED);
     } else {
@@ -91,10 +95,11 @@ void mujoco_thread::sim() {
     if (is_step.load()) {
       std::unique_lock<std::mutex> lk(m_mtx);
       step();
-      for (int i = 0; i < sub_step; i++) {
+      for (int i = 0; i < _sub_step; i++) {
         mj_step(m, d);
         // 记录轨迹
         track();
+        sub_step();
       }
       lk.unlock();
       step_unlock();
@@ -103,7 +108,7 @@ void mujoco_thread::sim() {
     auto current_time = std::chrono::high_resolution_clock::now();
     double elapsed_sec =
         std::chrono::duration<double>(current_time - step_start).count();
-    double time_until_next_step = m->opt.timestep * sub_step - elapsed_sec;
+    double time_until_next_step = m->opt.timestep * _sub_step - elapsed_sec;
     if (time_until_next_step > 0.0) {
       auto sleep_duration = std::chrono::duration<double>(time_until_next_step);
       std::this_thread::sleep_for(sleep_duration / realtime.load());
@@ -116,6 +121,7 @@ void mujoco_thread::sim2thread() {
   sim_thread.detach();
 }
 
+void mujoco_thread::sub_step() {}
 void mujoco_thread::step_unlock() {}
 void mujoco_thread::vis_cfg() {}
 void mujoco_thread::draw() {}
@@ -344,6 +350,14 @@ void mujoco_thread::keyboard(int key, int scancode, int act, int mods) {
       cam.fixedcamid = cam_id;
       cam.type = cam_type[cam_id];
       cam.trackbodyid = m->cam_targetbodyid[cam_id];
+    } break;
+    case GLFW_KEY_RIGHT_ALT: {
+      cam_id++;
+      if (cam_id > m->ncam - 1)
+        cam_id = 0;
+      cam.fixedcamid = 0;
+      cam.type = mjCAMERA_FREE;
+      cam.trackbodyid = this->pert.select;
     } break;
     }
     auto _realtime = realtime.load();

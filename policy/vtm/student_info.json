@@ -1,0 +1,30 @@
+{
+    "model_name": "student",
+    "total_input_length": 3609,
+    "input_segments": [
+        {
+            "group": "policy_normal",
+            "type": "1D",
+            "range": [
+                0,
+                153
+            ],
+            "shape": [
+                153
+            ]
+        },
+        {
+            "group": "policy_image",
+            "type": "2D",
+            "range": [
+                153,
+                3609
+            ],
+            "shape": [
+                6,
+                18,
+                32
+            ]
+        }
+    ]
+}

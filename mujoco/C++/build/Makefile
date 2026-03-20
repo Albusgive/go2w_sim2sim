@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/albusgive2/go2w_sim2sim_v2/mujoco/C++
+CMAKE_SOURCE_DIR = /home/albusgive2/go2w_sim2sim/mujoco/C++
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build
+CMAKE_BINARY_DIR = /home/albusgive2/go2w_sim2sim/mujoco/C++/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -97,9 +97,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles /home/albusgive2/go2w_sim2sim/mujoco/C++/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -165,173 +165,268 @@ lab2mj/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/build
 .PHONY : lab2mj/fast
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.o: home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.o
+#=============================================================================
+# Target rules for targets named camera_test
+
+# Build rule for target.
+camera_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 camera_test
+.PHONY : camera_test
+
+# fast build rule for target.
+camera_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/build
+.PHONY : camera_test/fast
+
+#=============================================================================
+# Target rules for targets named camera_quat
+
+# Build rule for target.
+camera_quat: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 camera_quat
+.PHONY : camera_quat
+
+# fast build rule for target.
+camera_quat/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_quat.dir/build.make CMakeFiles/camera_quat.dir/build
+.PHONY : camera_quat/fast
+
+camera_quat_lab2mj/camera_quat.o: camera_quat_lab2mj/camera_quat.cpp.o
+.PHONY : camera_quat_lab2mj/camera_quat.o
 
 # target to build an object file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o
+camera_quat_lab2mj/camera_quat.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_quat.dir/build.make CMakeFiles/camera_quat.dir/camera_quat_lab2mj/camera_quat.cpp.o
+.PHONY : camera_quat_lab2mj/camera_quat.cpp.o
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.i: home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.i
+camera_quat_lab2mj/camera_quat.i: camera_quat_lab2mj/camera_quat.cpp.i
+.PHONY : camera_quat_lab2mj/camera_quat.i
 
 # target to preprocess a source file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.i
+camera_quat_lab2mj/camera_quat.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_quat.dir/build.make CMakeFiles/camera_quat.dir/camera_quat_lab2mj/camera_quat.cpp.i
+.PHONY : camera_quat_lab2mj/camera_quat.cpp.i
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.s: home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.s
+camera_quat_lab2mj/camera_quat.s: camera_quat_lab2mj/camera_quat.cpp.s
+.PHONY : camera_quat_lab2mj/camera_quat.s
 
 # target to generate assembly for a file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.s
+camera_quat_lab2mj/camera_quat.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_quat.dir/build.make CMakeFiles/camera_quat.dir/camera_quat_lab2mj/camera_quat.cpp.s
+.PHONY : camera_quat_lab2mj/camera_quat.cpp.s
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.o: home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.o
+camera_test/camera_test.o: camera_test/camera_test.cpp.o
+.PHONY : camera_test/camera_test.o
 
 # target to build an object file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o
+camera_test/camera_test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/camera_test/camera_test.cpp.o
+.PHONY : camera_test/camera_test.cpp.o
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.i: home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.i
+camera_test/camera_test.i: camera_test/camera_test.cpp.i
+.PHONY : camera_test/camera_test.i
 
 # target to preprocess a source file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.i
+camera_test/camera_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/camera_test/camera_test.cpp.i
+.PHONY : camera_test/camera_test.cpp.i
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.s: home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.s
+camera_test/camera_test.s: camera_test/camera_test.cpp.s
+.PHONY : camera_test/camera_test.s
 
 # target to generate assembly for a file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.s
+camera_test/camera_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/camera_test/camera_test.cpp.s
+.PHONY : camera_test/camera_test.cpp.s
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.o: home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.o
+home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.o: home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.o
 
 # target to build an object file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o
+home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.i: home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.i
+home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.i: home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.i
 
 # target to preprocess a source file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.i
+home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.i
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.s: home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.s
+home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.s: home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.s
 
 # target to generate assembly for a file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.s
+home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.s
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.o: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.o
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.o: home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.o
 
 # target to build an object file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.i: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.i
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.i: home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.i
 
 # target to preprocess a source file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.i
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.i
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.s: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.s
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.s: home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.s
 
 # target to generate assembly for a file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.s
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.s
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.o: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.o
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.o: home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.o
 
 # target to build an object file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.i: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.i
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.i: home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.i
 
 # target to preprocess a source file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.i
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.i
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.s: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.s
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.s: home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.s
 
 # target to generate assembly for a file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.s
+home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.s
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.o: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.o
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.o: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.o
 
 # target to build an object file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.i: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.i
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.i: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.i
 
 # target to preprocess a source file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.i
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.i
 
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.s: home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.s
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.s: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.s
 
 # target to generate assembly for a file
-home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.s
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.s
 
-home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.o: home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.o
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.o: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.o
 
 # target to build an object file
-home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o
 
-home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.i: home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.i
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.i: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.i
 
 # target to preprocess a source file
-home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.i
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.i
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.i
 
-home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.s: home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.s
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.s: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.s
 
 # target to generate assembly for a file
-home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.s
-.PHONY : home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.s
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.s
+
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.o: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.o
+
+# target to build an object file
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o
+
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.i: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.i
+
+# target to preprocess a source file
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.i
+
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.s: home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.s
+
+# target to generate assembly for a file
+home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.s
+
+home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.o: home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.o
+
+# target to build an object file
+home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o
+
+home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.i: home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.i
+
+# target to preprocess a source file
+home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.i
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.i
+
+home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.s: home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.s
+
+# target to generate assembly for a file
+home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/camera_test.dir/build.make CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.s
+.PHONY : home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.s
 
 lab2mj.o: lab2mj.cpp.o
 .PHONY : lab2mj.o
@@ -392,28 +487,36 @@ help:
 	@echo "... test"
 	@echo "... MUJOCO_T_uninstall"
 	@echo "... uninstall"
+	@echo "... camera_quat"
+	@echo "... camera_test"
 	@echo "... lab2mj"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.o"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.i"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.s"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.o"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.i"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.s"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.o"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.i"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.s"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.o"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.i"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.s"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.o"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.i"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.s"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.o"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.i"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.s"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.o"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.i"
-	@echo "... home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.s"
+	@echo "... camera_quat_lab2mj/camera_quat.o"
+	@echo "... camera_quat_lab2mj/camera_quat.i"
+	@echo "... camera_quat_lab2mj/camera_quat.s"
+	@echo "... camera_test/camera_test.o"
+	@echo "... camera_test/camera_test.i"
+	@echo "... camera_test/camera_test.s"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.o"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.i"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.s"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.o"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.i"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.s"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.o"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.i"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.s"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.o"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.i"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.s"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.o"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.i"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.s"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.o"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.i"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.s"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.o"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.i"
+	@echo "... home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.s"
 	@echo "... lab2mj.o"
 	@echo "... lab2mj.i"
 	@echo "... lab2mj.s"

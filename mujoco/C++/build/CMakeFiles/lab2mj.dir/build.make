@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/albusgive2/go2w_sim2sim_v2/mujoco/C++
+CMAKE_SOURCE_DIR = /home/albusgive2/go2w_sim2sim/mujoco/C++
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build
+CMAKE_BINARY_DIR = /home/albusgive2/go2w_sim2sim/mujoco/C++/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/lab2mj.dir/depend.make
@@ -72,155 +72,155 @@ include CMakeFiles/lab2mj.dir/flags.make
 CMakeFiles/lab2mj.dir/lab2mj.cpp.o: CMakeFiles/lab2mj.dir/flags.make
 CMakeFiles/lab2mj.dir/lab2mj.cpp.o: ../lab2mj.cpp
 CMakeFiles/lab2mj.dir/lab2mj.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/lab2mj.dir/lab2mj.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/lab2mj.cpp.o -MF CMakeFiles/lab2mj.dir/lab2mj.cpp.o.d -o CMakeFiles/lab2mj.dir/lab2mj.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/lab2mj.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/lab2mj.dir/lab2mj.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/lab2mj.cpp.o -MF CMakeFiles/lab2mj.dir/lab2mj.cpp.o.d -o CMakeFiles/lab2mj.dir/lab2mj.cpp.o -c /home/albusgive2/go2w_sim2sim/mujoco/C++/lab2mj.cpp
 
 CMakeFiles/lab2mj.dir/lab2mj.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/lab2mj.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/lab2mj.cpp > CMakeFiles/lab2mj.dir/lab2mj.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/mujoco/C++/lab2mj.cpp > CMakeFiles/lab2mj.dir/lab2mj.cpp.i
 
 CMakeFiles/lab2mj.dir/lab2mj.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/lab2mj.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/lab2mj.cpp -o CMakeFiles/lab2mj.dir/lab2mj.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/mujoco/C++/lab2mj.cpp -o CMakeFiles/lab2mj.dir/lab2mj.cpp.s
 
 CMakeFiles/lab2mj.dir/mj_env.cpp.o: CMakeFiles/lab2mj.dir/flags.make
 CMakeFiles/lab2mj.dir/mj_env.cpp.o: ../mj_env.cpp
 CMakeFiles/lab2mj.dir/mj_env.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/lab2mj.dir/mj_env.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/mj_env.cpp.o -MF CMakeFiles/lab2mj.dir/mj_env.cpp.o.d -o CMakeFiles/lab2mj.dir/mj_env.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/mj_env.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/lab2mj.dir/mj_env.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/mj_env.cpp.o -MF CMakeFiles/lab2mj.dir/mj_env.cpp.o.d -o CMakeFiles/lab2mj.dir/mj_env.cpp.o -c /home/albusgive2/go2w_sim2sim/mujoco/C++/mj_env.cpp
 
 CMakeFiles/lab2mj.dir/mj_env.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/mj_env.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/mj_env.cpp > CMakeFiles/lab2mj.dir/mj_env.cpp.i
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/mujoco/C++/mj_env.cpp > CMakeFiles/lab2mj.dir/mj_env.cpp.i
 
 CMakeFiles/lab2mj.dir/mj_env.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/mj_env.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/mj_env.cpp -o CMakeFiles/lab2mj.dir/mj_env.cpp.s
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/mujoco/C++/mj_env.cpp -o CMakeFiles/lab2mj.dir/mj_env.cpp.s
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o: CMakeFiles/lab2mj.dir/flags.make
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o: /home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o: CMakeFiles/lab2mj.dir/flags.make
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o: /home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o -c /home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.i
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.i
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.s
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.s
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o: CMakeFiles/lab2mj.dir/flags.make
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o: /home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o: CMakeFiles/lab2mj.dir/flags.make
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o: /home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o -c /home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.i
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.i
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.s
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.s
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o: CMakeFiles/lab2mj.dir/flags.make
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o: /home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o: CMakeFiles/lab2mj.dir/flags.make
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o: /home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o -c /home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.i
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.i
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.s
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.s
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o: CMakeFiles/lab2mj.dir/flags.make
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o: /home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o: CMakeFiles/lab2mj.dir/flags.make
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o: /home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o -c /home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.i
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.i
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.s
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.s
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o: CMakeFiles/lab2mj.dir/flags.make
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o: /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o: CMakeFiles/lab2mj.dir/flags.make
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o: /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o -c /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.i
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.i
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.s
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.s
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o: CMakeFiles/lab2mj.dir/flags.make
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o: /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o: CMakeFiles/lab2mj.dir/flags.make
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o: /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o -c /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.i
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.i
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.s
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.s
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o: CMakeFiles/lab2mj.dir/flags.make
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o: /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o -c /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o: CMakeFiles/lab2mj.dir/flags.make
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o: /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o: CMakeFiles/lab2mj.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o -MF CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o.d -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o -c /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.i
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp > CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.i
 
-CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.s
+CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp -o CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.s
 
 # Object files for target lab2mj
 lab2mj_OBJECTS = \
 "CMakeFiles/lab2mj.dir/lab2mj.cpp.o" \
 "CMakeFiles/lab2mj.dir/mj_env.cpp.o" \
-"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o" \
-"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o" \
-"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o" \
-"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o" \
-"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o" \
-"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o" \
-"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o"
+"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o" \
+"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o" \
+"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o" \
+"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o" \
+"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o" \
+"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o" \
+"CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o"
 
 # External object files for target lab2mj
 lab2mj_EXTERNAL_OBJECTS =
 
 lab2mj: CMakeFiles/lab2mj.dir/lab2mj.cpp.o
 lab2mj: CMakeFiles/lab2mj.dir/mj_env.cpp.o
-lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/mujoco_thread/mujoco_thread.cpp.o
-lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_gamepad/gamepad.cpp.o
-lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/ManagerEnv.cpp.o
-lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_manager_env/net.cpp.o
-lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCaster.cpp.o
-lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterCamera.cpp.o
-lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim_v2/utils/cpp_ray_caster/RayCasterLidar.cpp.o
+lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujoco_thread.cpp.o
+lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_gamepad/gamepad.cpp.o
+lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/ManagerEnv.cpp.o
+lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/cpp_manager_env/net.cpp.o
+lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCaster.cpp.o
+lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.cpp.o
+lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o
 lab2mj: CMakeFiles/lab2mj.dir/build.make
-lab2mj: /opt/mujoco/lib/libmujoco.so.3.3.6
+lab2mj: /opt/mujoco/lib/libmujoco.so.3.4.1
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_stitching.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_alphamat.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_aruco.so.4.5.4d
@@ -256,7 +256,9 @@ lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_viz.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_wechat_qrcode.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_xobjdetect.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_xphoto.so.4.5.4d
-lab2mj: /home/albusgive2/software/onnxruntime-linux-x64-gpu-1.23.2/lib/libonnxruntime.so
+lab2mj: /home/albusgive2/libtorch/lib/libtorch.so
+lab2mj: /home/albusgive2/libtorch/lib/libc10.so
+lab2mj: /home/albusgive2/libtorch/lib/libkineto.a
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_highgui.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_datasets.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_plot.so.4.5.4d
@@ -276,8 +278,9 @@ lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_flann.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_photo.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_imgproc.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_core.so.4.5.4d
+lab2mj: /home/albusgive2/libtorch/lib/libc10.so
 lab2mj: CMakeFiles/lab2mj.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable lab2mj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable lab2mj"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/lab2mj.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -289,6 +292,6 @@ CMakeFiles/lab2mj.dir/clean:
 .PHONY : CMakeFiles/lab2mj.dir/clean
 
 CMakeFiles/lab2mj.dir/depend:
-	cd /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/albusgive2/go2w_sim2sim_v2/mujoco/C++ /home/albusgive2/go2w_sim2sim_v2/mujoco/C++ /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build /home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/CMakeFiles/lab2mj.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/albusgive2/go2w_sim2sim/mujoco/C++/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/albusgive2/go2w_sim2sim/mujoco/C++ /home/albusgive2/go2w_sim2sim/mujoco/C++ /home/albusgive2/go2w_sim2sim/mujoco/C++/build /home/albusgive2/go2w_sim2sim/mujoco/C++/build /home/albusgive2/go2w_sim2sim/mujoco/C++/build/CMakeFiles/lab2mj.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/lab2mj.dir/depend
 

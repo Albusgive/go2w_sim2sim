@@ -1,4 +1,4 @@
-# Install script for directory: /home/albusgive2/go2w_sim2sim_v2/mujoco/C++
+# Install script for directory: /home/albusgive2/go2w_sim2sim/mujoco/C++
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -50,5 +50,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/albusgive2/go2w_sim2sim_v2/mujoco/C++/build/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/albusgive2/go2w_sim2sim/mujoco/C++/build/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

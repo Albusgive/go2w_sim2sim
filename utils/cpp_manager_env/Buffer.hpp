@@ -2,6 +2,7 @@
 #include "SimpleTensor.hpp"
 #include <stdexcept>
 #include <string>
+#include <deque>
 
 class ObservationBuffer {
 public:
@@ -94,4 +95,62 @@ private:
   bool is_first_append_ = true;
   bool is_single_;
   SimpleTensor buffer_;
+};
+
+
+class ImageHistoryBuffer {
+public:
+  // element_size = C * H * W
+  ImageHistoryBuffer(size_t history_length, size_t element_size)
+      : history_length_(history_length), element_size_(element_size) {
+    
+    // 使用 vector 模拟环形缓冲区，避免 SimpleTensor 的频繁 resize
+    buffer_.resize(history_length_);
+    for(auto& t : buffer_) {
+        t = SimpleTensor::zeros({static_cast<int64_t>(element_size_)});
+    }
+  }
+  void append(const SimpleTensor& data) {
+    // 写入当前指针位置 (覆盖最旧的数据)
+    buffer_[pointer_] = data.clone(); // 必须 clone，因为 data 可能是临时变量
+    
+    // 移动指针
+    pointer_ = (pointer_ + 1) % history_length_;
+    
+    if (is_first_append_) {
+        is_first_append_ = false;
+    }
+  }
+  void clear() {
+      for (auto& t : buffer_) {
+          t.fill_(0.0f);
+      }
+      pointer_ = 0;
+      is_first_append_ = true;
+  }
+  void fill(const SimpleTensor& data) {
+      for (auto& t : buffer_) {
+          t = data.clone();
+      }
+      pointer_ = 0;
+      is_first_append_ = false;
+  }
+  // 获取按时间顺序排列的历史数据: [Oldest, ..., Newest_History]
+  SimpleTensor get_history_stack() const {
+      std::vector<SimpleTensor> ordered_frames;
+      ordered_frames.reserve(history_length_);
+      for (size_t i = 0; i < history_length_; ++i) {
+          // 从 pointer (最旧) 开始读取
+          size_t idx = (pointer_ + i) % history_length_;
+          ordered_frames.push_back(buffer_[idx]);
+      }
+      
+      return SimpleTensor::cat(ordered_frames);
+  }
+private:
+  size_t history_length_;
+  size_t element_size_;
+  size_t pointer_ = 0;
+  bool is_first_append_ = true;
+  std::vector<SimpleTensor> buffer_;
 };

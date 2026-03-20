@@ -96,20 +96,15 @@ set(cpp_manager_env_path ${CMAKE_CURRENT_SOURCE_DIR}/../../utils/cpp_manager_env
 include_directories(${cpp_manager_env_path})
 file(GLOB cpp_manager_env ${cpp_manager_env_path}/*.cpp)
 
-set(ray_caster_path ${CMAKE_CURRENT_SOURCE_DIR}/../../utils/cpp_ray_caster)
+set(ray_caster_path ${CMAKE_CURRENT_SOURCE_DIR}/../../utils/mujoco_ray_caster/raycaster_src)
 include_directories(${ray_caster_path})
 file(GLOB ray_caster ${ray_caster_path}/*.cpp)
 
 file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/demo)
-file(GLOB DEMO_SRC ${CMAKE_CURRENT_SOURCE_DIR}/demo/*.cpp)
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/real2sim)
 file(GLOB REAL2SIM_SRC ${CMAKE_CURRENT_SOURCE_DIR}/real2sim/*.cpp)
  
-# add_executable(demo ${DEMO_SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
-# target_link_libraries(demo ${LIB_LIST})
 
 # =============================================================================
 # 5. 生成可执行文件
@@ -117,6 +112,12 @@ file(GLOB REAL2SIM_SRC ${CMAKE_CURRENT_SOURCE_DIR}/real2sim/*.cpp)
 
 add_executable(lab2mj ${SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
 target_link_libraries(lab2mj ${LIB_LIST})
+
+add_executable(camera_test ${CMAKE_CURRENT_SOURCE_DIR}/camera_test/camera_test.cpp ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
+target_link_libraries(camera_test ${LIB_LIST})
+
+add_executable(camera_quat ${CMAKE_CURRENT_SOURCE_DIR}/camera_quat_lab2mj/camera_quat.cpp)
+target_link_libraries(camera_quat mujoco::mujoco)
 
 # add_executable(real2sim ${REAL2SIM_SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
 # target_link_libraries(real2sim ${LIB_LIST})
@@ -128,12 +129,24 @@ target_link_libraries(lab2mj ${LIB_LIST})
 # =============================================================================
 set(policy_path "${CMAKE_SOURCE_DIR}/../../policy/raycam/")
 add_definitions(-DPOLICY_PATH="${policy_path}")
-set(mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_float_box.xml")
+set(mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_parkour.xml")
 add_definitions(-DMJCF_PATH="${mjcf_path}")
+set(mjcf_camera_test_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_camera_test.xml")
+add_definitions(-DMJCF_CAMERA_TEST_PATH="${mjcf_camera_test_path}")
 
 set(demo_policy_path "${CMAKE_SOURCE_DIR}/../../policy/history_1/")
 add_definitions(-DDEMO_POLICY_PATH="${demo_policy_path}")
+set(demo_policy_path2 "${CMAKE_SOURCE_DIR}/../../policy/history_5/")
+add_definitions(-DDEMO_POLICY_PATH2="${demo_policy_path2}")
+set(vtm_policy_path "${CMAKE_SOURCE_DIR}/../../policy/vtm/")
+add_definitions(-DVTM_POLICY_PATH="${vtm_policy_path}")
+set(vtm_sru_policy_path "${CMAKE_SOURCE_DIR}/../../policy/vtm_sru/")
+add_definitions(-DVTM_SRU_POLICY_PATH="${vtm_sru_policy_path}")
+set(mt_policy_path "${CMAKE_SOURCE_DIR}/../../policy/motion_tracking/")
+add_definitions(-DMOTION_POLICY_PATH="${mt_policy_path}")
 set(demo_mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_demo.xml")
 add_definitions(-DDEMO_MJCF_PATH="${demo_mjcf_path}")
 
-add_definitions(-DUSE_OPENCV)
+
+
+# add_definitions(-DUSE_OPENCV)

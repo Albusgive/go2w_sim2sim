@@ -1,2 +1,4 @@
 /build/
 /.cache/
+/mujoco/C++/build/
+.cache/
