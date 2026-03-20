@@ -2,3 +2,4 @@
 /.cache/
 /mujoco/C++/build/
 .cache/
+utils/mujoco_ray_caster/
