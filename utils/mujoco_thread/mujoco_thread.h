@@ -30,6 +30,7 @@ public:
   mjtFontScale font_scale = mjtFontScale::mjFONTSCALE_150;
 
   void reset();
+  virtual void reset_callback(const mjModel *m, mjData *d);
 
   // 键盘回调,继承后可重载后接收键盘事件，可用于自定义cmd
   virtual void keyboard_press(std::string key) {};
@@ -42,6 +43,7 @@ public:
   void sim2thread();
   std::thread sim_thread;
   virtual void step() = 0;
+  virtual void sub_step();
   // 在step之后 不影响渲染线程的操作建议在这执行
   virtual void step_unlock();
   virtual void vis_cfg();
@@ -77,7 +79,7 @@ public:
   void bind_target_point(std::string body_name);
 
   std::atomic<double> realtime = 1.0;
-  int sub_step = 1;
+  int _sub_step = 1;
   // 渲染
   void render();
   int id = 0;

@@ -1,0 +1,54 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "LAB2MJ", 
+            "type": "cppdbg",
+            "request": "launch",
+            // 1.这里必须是你编译出来的exe的具体路径 (Windows下通常是build/Debug/你的程序名.exe)
+            "program": "${workspaceFolder}/build/lab2mj", 
+            
+            // 2. 这里就是我们要传入的参数
+            "args": [
+                "vtm loc=/home/albusgive2/go2w_sim2sim/policy/vtm/student_2000.pt",
+            ],
+            
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}", // 建议改为工作区目录，方便相对路径查找
+            "environment": [],
+            "externalConsole": false, // 如果想看控制台弹窗改成 true
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "CAMERA-TEST", 
+            "type": "cppdbg",
+            "request": "launch",
+            // 1.这里必须是你编译出来的exe的具体路径 (Windows下通常是build/Debug/你的程序名.exe)
+            "program": "${workspaceFolder}/build/camera_test", 
+            
+            // 2. 这里就是我们要传入的参数
+            "args": [
+
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}", // 建议改为工作区目录，方便相对路径查找
+            "environment": [],
+            "externalConsole": false, // 如果想看控制台弹窗改成 true
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}
