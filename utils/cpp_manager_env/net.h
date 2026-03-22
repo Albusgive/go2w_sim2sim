@@ -41,8 +41,6 @@ struct PolicySpec {
     std::string description;
     PolicyArchitecture architecture = PolicyArchitecture::MLP;
     PolicyMemorySpec memory;
-    int default_auto_reset_interval_steps = 0;
-    bool default_auto_reset_enabled = false;
 
     bool is_sru() const {
         return architecture == PolicyArchitecture::SRU;
@@ -50,21 +48,16 @@ struct PolicySpec {
 
     static PolicySpec MLP(std::string path, std::string description) {
         return PolicySpec{std::move(path), std::move(description),
-                          PolicyArchitecture::MLP, {}, 0, false};
+                          PolicyArchitecture::MLP, {}};
     }
 
     static PolicySpec SRU(std::string path, std::string description,
                           int num_layers, int hidden_dim,
-                          int default_auto_reset_interval_steps = 500,
-                          std::string memory_type = "lstm_sru",
-                          bool default_auto_reset_enabled = true) {
+                          std::string memory_type = "lstm_sru") {
         return PolicySpec{std::move(path), std::move(description),
                           PolicyArchitecture::SRU,
                           PolicyMemorySpec{std::move(memory_type), num_layers,
-                                           hidden_dim},
-                          std::max(default_auto_reset_interval_steps, 0),
-                          default_auto_reset_enabled &&
-                              std::max(default_auto_reset_interval_steps, 0) > 0};
+                                           hidden_dim}};
     }
 };
 
@@ -136,5 +129,8 @@ private:
     torch::Device get_torch_device();
     torch::Tensor hidden_state_;
     torch::Tensor cell_state_;
+    bool torchscript_uses_internal_recurrent_state_ = false;
+    bool torchscript_has_reset_method_ = false;
+    bool torchscript_has_reset_done_method_ = false;
 #endif
 };
