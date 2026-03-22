@@ -6,6 +6,20 @@
 #include <iostream>
 #include <opencv2/core/mat.hpp>
 
+namespace {
+
+constexpr float kPlayLikeDefaultCmd[3] = {0.7f, 0.0f, 0.0f};
+
+bool is_zero_cmd(const std::vector<float> &cmd) {
+  if (cmd.size() < 3) {
+    return true;
+  }
+  return std::abs(cmd[0]) < 1.0e-4f && std::abs(cmd[1]) < 1.0e-4f &&
+         std::abs(cmd[2]) < 1.0e-4f;
+}
+
+} // namespace
+
 MJ_ENV::MJ_ENV(std::string model_file,
                const std::vector<PolicySpec> &policy_specs,
                InferenceDevice device, double max_FPS)
@@ -28,6 +42,8 @@ MJ_ENV::MJ_ENV(std::string model_file,
   // 3. 初始化参数
   gravity = SimpleTensor::wrap({0.0f, 0.0f, -1.0f});
   obs_default_dof_pos = obs_default_dof_pos_vec;
+  policy_id = 3;
+  cmd = {kPlayLikeDefaultCmd[0], kPlayLikeDefaultCmd[1], kPlayLikeDefaultCmd[2]};
 
   // Action Scales (硬编码示例)
   action_scale_vec = {0.125, 0.25,  0.25, 0.125, 0.25, 0.25, 0.125, 0.25,
@@ -250,12 +266,12 @@ void MJ_ENV::reset_callback(const mjModel *m, mjData *d) {
   ray_update_setp = 0;
   pending_policy_id.store(-1, std::memory_order_relaxed);
   pending_sensor_toggle.store(false, std::memory_order_relaxed);
-  pending_auto_reset_toggle.store(false, std::memory_order_relaxed);
-  last_gamepad_lb = false;
   last_gamepad_rb = false;
+  last_gamepad_menu = false;
   ray_caster_camera.enable_sensor(is_enable_sensor);
   reset_observation_buffers();
   reset_policy_states();
+  apply_play_like_defaults_for_policy(policy_id);
   force_refresh_visual_obs(true);
 }
 
@@ -277,17 +293,8 @@ void MJ_ENV::draw_windows() {
 }
 
 std::vector<std::pair<std::string, std::string>> MJ_ENV::draw_left_table() {
-  const int auto_reset_interval = get_policy_auto_reset_interval(policy_id);
-  const bool auto_reset_enabled = is_policy_auto_reset_enabled(policy_id);
-  const std::string auto_reset_label =
-      auto_reset_interval > 0
-          ? ((auto_reset_enabled ? "on" : "off") +
-             ("(" + std::to_string(auto_reset_interval) + ")"))
-          : "off";
-
   return {{"Policy ID", std::to_string(policy_id)},
           {"Sensor", is_enable_sensor ? "on" : "off"},
-          {"AutoReset", auto_reset_label},
           {"Run Steps", std::to_string(get_policy_active_run_steps(policy_id))},
           {"Cmd X", std::to_string(cmd[0])},
           {"Cmd Y", std::to_string(cmd[1])},
@@ -309,6 +316,17 @@ void MJ_ENV::set_policy_id(int new_policy_id) {
 
 bool MJ_ENV::uses_visual_policy(int policy_idx) const {
   return policy_idx == 2 || policy_idx == 3;
+}
+
+void MJ_ENV::apply_play_like_defaults_for_policy(int policy_idx) {
+  if (!uses_visual_policy(policy_idx)) {
+    return;
+  }
+  if (is_zero_cmd(cmd)) {
+    cmd[0] = kPlayLikeDefaultCmd[0];
+    cmd[1] = kPlayLikeDefaultCmd[1];
+    cmd[2] = kPlayLikeDefaultCmd[2];
+  }
 }
 
 void MJ_ENV::force_refresh_visual_obs(bool warm_start_history) {
@@ -353,15 +371,11 @@ void MJ_ENV::apply_pending_runtime_changes() {
     reset_observation_buffers(requested_policy_id);
     reset_policy_states(requested_policy_id);
     policy_id = requested_policy_id;
+    apply_play_like_defaults_for_policy(policy_id);
     if (uses_visual_policy(policy_id)) {
       need_refresh_visual_obs = true;
       warm_start_visual_history = true;
     }
-  }
-
-  if (pending_auto_reset_toggle.exchange(false, std::memory_order_relaxed)) {
-    const bool enabled = is_policy_auto_reset_enabled(policy_id);
-    set_policy_auto_reset_enabled(policy_id, !enabled);
   }
 
   if (need_refresh_visual_obs) {
@@ -394,6 +408,8 @@ void MJ_ENV::keyboard_press(std::string key) {
     set_policy_id(2);
   else if (key == "4")
     set_policy_id(3);
+  else if (key == "r")
+    request_policy_state_reset(policy_id);
 }
 
 void MJ_ENV::init_gamepad() {
@@ -414,14 +430,14 @@ void MJ_ENV::init_gamepad() {
         set_policy_id(2);
       if (m.x)
         set_policy_id(3);
-      if (m.lb && !last_gamepad_lb) {
-        pending_auto_reset_toggle.store(true, std::memory_order_relaxed);
-      }
       if (m.rb && !last_gamepad_rb) {
         pending_sensor_toggle.store(true, std::memory_order_relaxed);
       }
-      last_gamepad_lb = static_cast<bool>(m.lb);
+      if (m.menu && !last_gamepad_menu) {
+        request_policy_state_reset(policy_id);
+      }
       last_gamepad_rb = static_cast<bool>(m.rb);
+      last_gamepad_menu = static_cast<bool>(m.menu);
     });
     pad->readGamePad();
   }
@@ -604,7 +620,7 @@ void MJ_ENV::registerManager3() {
 
   auto action = std::make_shared<ActionTerm>();
   action->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-  action->scale_ = SimpleTensor::wrap(action_scale_vec);
+  action->scale_ = SimpleTensor::wrap(action2_scale_vec);
 
   registerTerms(obs, action);
 }
@@ -674,7 +690,7 @@ void MJ_ENV::registerManager4() {
 
   auto action = std::make_shared<ActionTerm>();
   action->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-  action->scale_ = SimpleTensor::wrap(action_scale_vec);
+  action->scale_ = SimpleTensor::wrap(action2_scale_vec);
 
   registerTerms(obs, action);
 }

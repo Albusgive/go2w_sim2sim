@@ -206,11 +206,6 @@ ManagerBasedEnv::ManagerBasedEnv(const std::vector<PolicySpec> &policy_specs,
     const auto &spec = policy_specs[i];
     this->policy_paths.push_back(spec.path);
     this->policy_description.push_back(spec.description);
-    policy_state_runtime_controls_[i].auto_reset_interval_steps =
-        std::max(spec.default_auto_reset_interval_steps, 0);
-    policy_state_runtime_controls_[i].auto_reset_enabled =
-        spec.default_auto_reset_enabled &&
-        policy_state_runtime_controls_[i].auto_reset_interval_steps > 0;
   }
 }
 
@@ -369,43 +364,6 @@ void ManagerBasedEnv::reset_policy_states(int id) {
   }
 }
 
-void ManagerBasedEnv::set_policy_auto_reset_interval(int id, int interval_steps) {
-  std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-  if (!is_valid_policy_id(id)) {
-    return;
-  }
-  auto &control = policy_state_runtime_controls_[id];
-  control.auto_reset_interval_steps = std::max(interval_steps, 0);
-  if (control.auto_reset_interval_steps <= 0) {
-    control.auto_reset_enabled = false;
-  }
-}
-
-void ManagerBasedEnv::set_policy_auto_reset_enabled(int id, bool enabled) {
-  std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-  if (!is_valid_policy_id(id)) {
-    return;
-  }
-  auto &control = policy_state_runtime_controls_[id];
-  control.auto_reset_enabled = enabled && control.auto_reset_interval_steps > 0;
-}
-
-int ManagerBasedEnv::get_policy_auto_reset_interval(int id) const {
-  std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-  if (!is_valid_policy_id(id)) {
-    return 0;
-  }
-  return policy_state_runtime_controls_[id].auto_reset_interval_steps;
-}
-
-bool ManagerBasedEnv::is_policy_auto_reset_enabled(int id) const {
-  std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-  if (!is_valid_policy_id(id)) {
-    return false;
-  }
-  return policy_state_runtime_controls_[id].auto_reset_enabled;
-}
-
 int64_t ManagerBasedEnv::get_policy_active_run_steps(int id) const {
   std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
   if (!is_valid_policy_id(id)) {
@@ -420,14 +378,6 @@ void ManagerBasedEnv::request_policy_state_reset(int id) {
     return;
   }
   policy_state_runtime_controls_[id].pending_manual_reset = true;
-}
-
-void ManagerBasedEnv::clear_policy_state_reset_request(int id) {
-  std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-  if (!is_valid_policy_id(id)) {
-    return;
-  }
-  policy_state_runtime_controls_[id].pending_manual_reset = false;
 }
 
 void ManagerBasedEnv::reset_policy_runtime_controls(int id) {
@@ -551,11 +501,6 @@ void ManagerBasedEnv::apply_policy_runtime_controls(int active_policy_id) {
     auto &control = policy_state_runtime_controls_[active_policy_id];
     if (control.pending_manual_reset) {
       control.pending_manual_reset = false;
-      control.active_run_steps = 0;
-      should_reset_state = true;
-    } else if (control.auto_reset_enabled &&
-               control.auto_reset_interval_steps > 0 &&
-               control.active_run_steps >= control.auto_reset_interval_steps) {
       control.active_run_steps = 0;
       should_reset_state = true;
     }

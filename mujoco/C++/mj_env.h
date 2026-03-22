@@ -49,7 +49,7 @@ public:
 
   // 状态变量
   std::vector<float> cmd = {0.0f, 0.0f, 0.0f}; // [vx, vy, w]
-  float cmd_pad_scale[3] = {1.0f, 1.0f, 2.0f};
+  float cmd_pad_scale[3] = {1.0f, 0.0f, 2.0f};
   int policy_id = 0;
   std::vector<std::string> policy_description;
 
@@ -114,12 +114,12 @@ private:
   void deep_mul_gradient(std::vector<double> data);
   void set_policy_id(int new_policy_id);
   bool uses_visual_policy(int policy_idx) const;
+  void apply_play_like_defaults_for_policy(int policy_idx);
   void apply_pending_runtime_changes();
   void force_refresh_visual_obs(bool warm_start_history = false);
   void on_policy_runtime_state_reset(int id) override;
   std::atomic<int> pending_policy_id{-1};
   std::atomic<bool> pending_sensor_toggle{false};
-  std::atomic<bool> pending_auto_reset_toggle{false};
-  bool last_gamepad_lb = false;
   bool last_gamepad_rb = false;
+  bool last_gamepad_menu = false;
 };

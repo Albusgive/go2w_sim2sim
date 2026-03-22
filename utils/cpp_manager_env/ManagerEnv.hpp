@@ -102,8 +102,6 @@ public:
 };
 
 struct PolicyStateRuntimeControl {
-  bool auto_reset_enabled = false;
-  int auto_reset_interval_steps = 0;
   bool pending_manual_reset = false;
   int64_t active_run_steps = 0;
 };
@@ -122,13 +120,8 @@ public:
   void reset_policy_states(int id = -1);
   void reset_observation_buffers(int id = -1);
 
-  void set_policy_auto_reset_interval(int id, int interval_steps);
-  void set_policy_auto_reset_enabled(int id, bool enabled);
-  int get_policy_auto_reset_interval(int id) const;
-  bool is_policy_auto_reset_enabled(int id) const;
   int64_t get_policy_active_run_steps(int id) const;
   void request_policy_state_reset(int id);
-  void clear_policy_state_reset_request(int id);
   void reset_policy_runtime_controls(int id = -1);
 
   std::vector<SimpleTensor> policcy_obs;

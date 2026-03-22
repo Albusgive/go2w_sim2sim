@@ -212,6 +212,17 @@ void Policy::reset_state() {
 #else
     hidden_state_ = torch::Tensor();
     cell_state_ = torch::Tensor();
+    if (spec_.architecture == PolicyArchitecture::SRU &&
+        torchscript_uses_internal_recurrent_state_ &&
+        torchscript_has_reset_method_) {
+        try {
+            module.get_method("reset")({});
+        } catch (const c10::Error& e) {
+            throw std::runtime_error(
+                "Failed to reset SRU TorchScript runtime state: " +
+                std::string(e.what()));
+        }
+    }
 #endif
 }
 
@@ -445,16 +456,40 @@ std::string Policy::load(const PolicySpec& spec, InferenceDevice device, torch::
     this->device_ = device;
     this->dtype_ = dtype;
     this->spec_ = spec;
+    this->torchscript_uses_internal_recurrent_state_ = false;
+    this->torchscript_has_reset_method_ = false;
+    this->torchscript_has_reset_done_method_ = false;
     if (spec_.architecture == PolicyArchitecture::SRU && spec_.memory.type.empty()) {
         spec_.memory.type = "lstm_sru";
     }
 
     std::string model_path = find_model_file(spec_, ".pt");
     configure_from_model_metadata(model_path);
-    validate_recurrent_spec();
 
     try {
         module = torch::jit::load(model_path);
+
+        if (spec_.architecture == PolicyArchitecture::SRU) {
+            try {
+                module.get_method("reset");
+                torchscript_has_reset_method_ = true;
+            } catch (const c10::Error&) {
+                torchscript_has_reset_method_ = false;
+            }
+            try {
+                module.get_method("reset_done");
+                torchscript_has_reset_done_method_ = true;
+            } catch (const c10::Error&) {
+                torchscript_has_reset_done_method_ = false;
+            }
+
+            if (!torchscript_has_reset_method_ || !torchscript_has_reset_done_method_) {
+                throw std::runtime_error(
+                    "SRU TorchScript deployment now only supports the new stateful model format: "
+                    "forward(obs) -> action, with exported reset() and reset_done() methods.");
+            }
+            torchscript_uses_internal_recurrent_state_ = true;
+        }
 
         torch::Device torch_dev = get_torch_device();
         module.to(torch_dev);
@@ -489,24 +524,12 @@ torch::Tensor Policy::get_action(torch::Tensor obs) {
     try {
         torch::Tensor output;
         if (spec_.architecture == PolicyArchitecture::SRU) {
-            ensure_recurrent_state_for_batch(obs_tensor.size(0));
-            inputs.push_back(hidden_state_);
-            inputs.push_back(cell_state_);
-
             auto output_ivalue = module.forward(inputs);
-            if (!output_ivalue.isTuple()) {
-                throw std::runtime_error("SRU TorchScript model must return a tuple of (actions, next_hidden_state, next_cell_state).");
+            if (!output_ivalue.isTensor()) {
+                throw std::runtime_error(
+                    "SRU TorchScript model must follow the new stateful exporter format and return a single action tensor.");
             }
-
-            auto tuple_ptr = output_ivalue.toTuple();
-            const auto& elements = tuple_ptr->elements();
-            if (elements.size() != 3) {
-                throw std::runtime_error("SRU TorchScript model must return exactly 3 tensors.");
-            }
-
-            output = elements[0].toTensor();
-            hidden_state_ = elements[1].toTensor();
-            cell_state_ = elements[2].toTensor();
+            output = output_ivalue.toTensor();
         } else {
             output = module.forward(inputs).toTensor();
         }

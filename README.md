@@ -16,6 +16,12 @@ cmake --build . 多线程编译使用 cmake --build . -j线程数
   `cmake -DCMAKE_INSTALL_PREFIX=/opt/mujoco .`
 * `sudo cmake --install .`
 
+#### mujoco_ray_caster 安装
+```
+cd utils
+git clone https://github.com/Albusgive/mujoco_ray_caster.git
+```
+
 #### MUJOCO Release版本
 替换CMakeLists.txt中寻找mujoco部分
 ```CMake

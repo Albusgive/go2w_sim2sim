@@ -8,8 +8,8 @@ int main(int argc, const char **argv) {
   policy_list.push_back(PolicySpec::MLP(DEMO_POLICY_PATH2, "base_mlp"));
   policy_list.push_back(PolicySpec::MLP(MOTION_POLICY_PATH, "motion_mlp"));
   policy_list.push_back(PolicySpec::MLP(VTM_POLICY_PATH, "vtm"));
-  policy_list.push_back(PolicySpec::SRU(VTM_SRU_POLICY_PATH, "vtm_sru", 
-    1, 128,200));
+  policy_list.push_back(
+      PolicySpec::SRU(VTM_SRU_POLICY_PATH, "vtm_sru", 1, 128));
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
