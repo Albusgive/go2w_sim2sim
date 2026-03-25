@@ -126,6 +126,7 @@ private:
                                        double sim_time,
                                        const std::string &detail = "");
   void ensure_split_record_headers_locked(const SplitDebugSnapshot &snapshot);
+  void record_render_view_locked(uint64_t inference_index, double sim_time);
   void write_split_record_meta_locked() const;
   void apply_play_like_defaults_for_policy(int policy_idx);
   void apply_pending_runtime_changes();
@@ -140,6 +141,9 @@ private:
   static void append_tensor_csv_row(std::ofstream &stream,
                                     uint64_t inference_index, double sim_time,
                                     const SimpleTensor &tensor);
+  static bool save_render_frame_image(const std::filesystem::path &path,
+                                      const std::vector<unsigned char> &rgb,
+                                      int width, int height);
   std::atomic<int> pending_policy_id{-1};
   std::atomic<int> pending_policy_direct_reset_id{-1};
   std::atomic<bool> pending_sensor_toggle{false};
@@ -156,13 +160,22 @@ private:
     std::ofstream latent_csv;
     std::ofstream actions_csv;
     std::ofstream events_csv;
+    std::ofstream render_frames_csv;
     bool tensor_headers_written = false;
     uint64_t written_steps = 0;
     uint64_t marker_count = 0;
+    uint64_t render_rows_written = 0;
+    uint64_t render_image_count = 0;
+    uint64_t last_saved_render_frame_id = 0;
     uint64_t first_inference_index = 0;
     uint64_t last_inference_index = 0;
     int policy_id = -1;
     std::string policy_description;
+    std::filesystem::path render_frames_dir;
+    std::string last_saved_render_file;
+    bool has_last_saved_render = false;
+    int render_width = 0;
+    int render_height = 0;
     std::vector<int64_t> obs_shape;
     std::vector<int64_t> encoded_obs_shape;
     std::vector<int64_t> latent_shape;

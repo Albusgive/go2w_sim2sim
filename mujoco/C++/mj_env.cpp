@@ -425,6 +425,26 @@ void MJ_ENV::append_tensor_csv_row(std::ofstream &stream,
   stream << "\n";
 }
 
+bool MJ_ENV::save_render_frame_image(const std::filesystem::path &path,
+                                     const std::vector<unsigned char> &rgb,
+                                     int width, int height) {
+  if (width <= 0 || height <= 0 || rgb.empty() ||
+      rgb.size() != static_cast<size_t>(width) * static_cast<size_t>(height) *
+                        static_cast<size_t>(3)) {
+    return false;
+  }
+
+  cv::Mat rgb_bottom_up(height, width, CV_8UC3,
+                        const_cast<unsigned char *>(rgb.data()));
+  cv::Mat rgb_top_down;
+  cv::flip(rgb_bottom_up, rgb_top_down, 0);
+  cv::Mat bgr;
+  cv::cvtColor(rgb_top_down, bgr, cv::COLOR_RGB2BGR);
+
+  std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 90};
+  return cv::imwrite(path.string(), bgr, params);
+}
+
 void MJ_ENV::write_split_record_event_locked(const std::string &event,
                                              double sim_time,
                                              const std::string &detail) {
@@ -490,6 +510,13 @@ void MJ_ENV::write_split_record_meta_locked() const {
             << ",\n";
   meta_file << "  \"marker_count\": " << split_record_session_.marker_count
             << ",\n";
+  meta_file << "  \"render_rows_written\": "
+            << split_record_session_.render_rows_written << ",\n";
+  meta_file << "  \"render_image_count\": "
+            << split_record_session_.render_image_count << ",\n";
+  meta_file << "  \"render_size\": ["
+            << split_record_session_.render_width << ", "
+            << split_record_session_.render_height << "],\n";
   meta_file << "  \"first_inference_index\": "
             << split_record_session_.first_inference_index << ",\n";
   meta_file << "  \"last_inference_index\": "
@@ -503,6 +530,64 @@ void MJ_ENV::write_split_record_meta_locked() const {
   meta_file << "  \"actions_shape\": "
             << shape_to_string(split_record_session_.actions_shape) << "\n";
   meta_file << "}\n";
+}
+
+void MJ_ENV::record_render_view_locked(uint64_t inference_index,
+                                       double sim_time) {
+  if (!split_record_session_.render_frames_csv.is_open()) {
+    return;
+  }
+
+  int width = 0;
+  int height = 0;
+  uint64_t render_frame_id = 0;
+  std::string file_name;
+
+  if (get_latest_render_frame_info(width, height, render_frame_id) &&
+      width > 0 && height > 0) {
+    if (split_record_session_.has_last_saved_render &&
+        split_record_session_.last_saved_render_frame_id == render_frame_id) {
+      file_name = split_record_session_.last_saved_render_file;
+    } else {
+      std::vector<unsigned char> rgb;
+      if (!copy_latest_render_rgb_frame(rgb, width, height, render_frame_id) ||
+          rgb.empty()) {
+        width = 0;
+        height = 0;
+        render_frame_id = 0;
+      } else {
+        std::ostringstream name_builder;
+        name_builder << "render_" << std::setw(8) << std::setfill('0')
+                     << render_frame_id << ".jpg";
+        file_name = (std::filesystem::path("render_frames") /
+                     name_builder.str())
+                        .generic_string();
+        const auto image_path = split_record_session_.directory / file_name;
+        if (save_render_frame_image(image_path, rgb, width, height)) {
+          split_record_session_.last_saved_render_frame_id = render_frame_id;
+          split_record_session_.last_saved_render_file = file_name;
+          split_record_session_.has_last_saved_render = true;
+          split_record_session_.render_width = width;
+          split_record_session_.render_height = height;
+          split_record_session_.render_image_count += 1;
+        } else {
+          EnvWarning("Failed to save render frame image to " +
+                     image_path.string());
+          file_name.clear();
+          width = 0;
+          height = 0;
+          render_frame_id = 0;
+        }
+      }
+    }
+  }
+
+  split_record_session_.render_frames_csv << inference_index << "," << std::fixed
+                                          << std::setprecision(6) << sim_time
+                                          << "," << render_frame_id << ","
+                                          << width << "," << height << ","
+                                          << file_name << "\n";
+  split_record_session_.render_rows_written += 1;
 }
 
 void MJ_ENV::start_split_recording_for_current_policy() {
@@ -526,6 +611,8 @@ void MJ_ENV::start_split_recording_for_current_policy() {
       "split_records" /
       (session.policy_description + "_" + make_record_timestamp());
   std::filesystem::create_directories(session.directory);
+  session.render_frames_dir = session.directory / "render_frames";
+  std::filesystem::create_directories(session.render_frames_dir);
 
   session.steps_csv.open(session.directory / "steps.csv");
   session.obs_csv.open(session.directory / "obs.csv");
@@ -533,10 +620,12 @@ void MJ_ENV::start_split_recording_for_current_policy() {
   session.latent_csv.open(session.directory / "latent.csv");
   session.actions_csv.open(session.directory / "actions.csv");
   session.events_csv.open(session.directory / "events.csv");
+  session.render_frames_csv.open(session.directory / "render_frames.csv");
 
   if (!session.steps_csv.is_open() || !session.obs_csv.is_open() ||
       !session.encoded_obs_csv.is_open() || !session.latent_csv.is_open() ||
-      !session.actions_csv.is_open() || !session.events_csv.is_open()) {
+      !session.actions_csv.is_open() || !session.events_csv.is_open() ||
+      !session.render_frames_csv.is_open()) {
     EnvWarning("Failed to open split recording files under " +
                session.directory.string());
     return;
@@ -544,9 +633,12 @@ void MJ_ENV::start_split_recording_for_current_policy() {
 
   session.steps_csv << "inference_index,sim_time,policy_id,cmd_x,cmd_y,cmd_yaw\n";
   session.events_csv << "inference_index,sim_time,event,detail\n";
+  session.render_frames_csv
+      << "inference_index,sim_time,render_frame_id,width,height,file\n";
 
   split_record_session_ = std::move(session);
   policys[policy_id].set_split_record_capture_enabled(true);
+  set_render_capture_enabled(true);
   write_split_record_event_locked("start_record", d ? d->time : 0.0, "");
   Log("Split recording started: " << split_record_session_.directory.string());
 }
@@ -591,9 +683,11 @@ void MJ_ENV::stop_split_recording(const std::string &reason) {
     split_record_session_.latent_csv.close();
     split_record_session_.actions_csv.close();
     split_record_session_.events_csv.close();
+    split_record_session_.render_frames_csv.close();
     split_record_session_ = SplitRecordSession{};
   }
 
+  set_render_capture_enabled(false);
   if (recorded_policy_id >= 0 &&
       recorded_policy_id < static_cast<int>(policys.size())) {
     policys[recorded_policy_id].set_split_record_capture_enabled(false);
@@ -644,6 +738,7 @@ void MJ_ENV::handle_split_snapshot_after_step(double sim_time) {
         append_tensor_csv_row(split_record_session_.actions_csv,
                               snapshot.inference_index, sim_time,
                               actions_tensor->values);
+        record_render_view_locked(snapshot.inference_index, sim_time);
 
         if (split_record_session_.written_steps == 0) {
           split_record_session_.first_inference_index = snapshot.inference_index;

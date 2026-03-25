@@ -1,0 +1,3 @@
+inference_index,sim_time,event,detail
+0,10.720000,start_record,
+3622,83.160000,stop_record,manual_stop

@@ -44,8 +44,8 @@ CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujo
  /usr/include/c++/12/bits/range_access.h /usr/include/c++/12/atomic \
  /usr/include/c++/12/bits/atomic_base.h \
  /usr/include/c++/12/bits/atomic_lockfree_defines.h \
- /usr/include/c++/12/cstdio /usr/include/stdio.h \
- /usr/lib/gcc/x86_64-linux-gnu/12/include/stdarg.h \
+ /usr/include/c++/12/cstdint /usr/include/c++/12/cstdio \
+ /usr/include/stdio.h /usr/lib/gcc/x86_64-linux-gnu/12/include/stdarg.h \
  /usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__mbstate_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__fpos64_t.h \
@@ -71,7 +71,7 @@ CMakeFiles/camera_test.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_thread/mujo
  /usr/include/c++/12/bits/cxxabi_init_exception.h \
  /usr/include/c++/12/typeinfo /usr/include/c++/12/bits/hash_bytes.h \
  /usr/include/c++/12/new /usr/include/c++/12/bits/nested_exception.h \
- /usr/include/c++/12/bits/char_traits.h /usr/include/c++/12/cstdint \
+ /usr/include/c++/12/bits/char_traits.h \
  /usr/include/c++/12/bits/localefwd.h \
  /usr/include/x86_64-linux-gnu/c++/12/bits/c++locale.h \
  /usr/include/c++/12/clocale /usr/include/locale.h \

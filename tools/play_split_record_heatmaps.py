@@ -7,6 +7,7 @@ an interactive HTML page that can:
   - jump to marks from events.csv
   - focus on a window around one or more marks
   - visualize:
+      * current MuJoCo render view
       * current image observation
       * current 1D observation strip
       * current encoded_obs strip
@@ -172,6 +173,25 @@ def load_events_csv(path: Path) -> list[dict[str, str | float | int]]:
                 }
             )
     return events
+
+
+def load_render_frames_csv(path: Path) -> dict[int, dict[str, str | int | float]]:
+    if not path.exists():
+        return {}
+
+    render_frames: dict[int, dict[str, str | int | float]] = {}
+    with path.open("r", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            inference_index = int(row["inference_index"])
+            render_frames[inference_index] = {
+                "sim_time": float(row["sim_time"]),
+                "render_frame_id": int(row["render_frame_id"]) if row["render_frame_id"] else 0,
+                "width": int(row["width"]) if row["width"] else 0,
+                "height": int(row["height"]) if row["height"] else 0,
+                "file": row.get("file", ""),
+            }
+    return render_frames
 
 
 def load_json(path: Path) -> dict:
@@ -435,6 +455,7 @@ def build_payload(
     actions = load_tensor_csv(record_dir / "actions.csv")
     steps = load_steps_csv(record_dir / "steps.csv")
     events = load_events_csv(record_dir / "events.csv")
+    render_frames = load_render_frames_csv(record_dir / "render_frames.csv")
     deploy = load_json(deploy_json)
     record_meta = load_json(record_dir / "meta.json") if (record_dir / "meta.json").exists() else {}
 
@@ -470,6 +491,24 @@ def build_payload(
     encoded_rows = gather_rows(encoded.values, selected_indices)
     latent_rows = gather_rows(latent.values, selected_indices)
     actions_rows = gather_rows(actions.values, selected_indices)
+    selected_inference_indices = gather_scalar_rows(steps["inference_index"], selected_indices)
+
+    render_rows = []
+    for inference_index in selected_inference_indices:
+        render_info = render_frames.get(int(inference_index))
+        if not render_info:
+            render_rows.append(None)
+            continue
+        file_value = str(render_info.get("file", "") or "")
+        render_rows.append(
+            {
+                "uri": (record_dir / file_value).resolve().as_uri() if file_value else "",
+                "file": file_value,
+                "renderFrameId": int(render_info.get("render_frame_id", 0)),
+                "width": int(render_info.get("width", 0)),
+                "height": int(render_info.get("height", 0)),
+            }
+        )
 
     obs_min, obs_max = compute_min_max(obs_rows)
     image_min, image_max = collect_image_stats(obs_rows, image_segments)
@@ -484,7 +523,7 @@ def build_payload(
         "contextRadius": max(1, context_radius),
         "initialFps": initial_fps,
         "steps": {
-            "inferenceIndex": gather_scalar_rows(steps["inference_index"], selected_indices),
+            "inferenceIndex": selected_inference_indices,
             "simTime": gather_scalar_rows(steps["sim_time"], selected_indices),
             "policyId": gather_scalar_rows(steps["policy_id"], selected_indices),
             "cmdX": gather_scalar_rows(steps["cmd_x"], selected_indices),
@@ -492,6 +531,7 @@ def build_payload(
             "cmdYaw": gather_scalar_rows(steps["cmd_yaw"], selected_indices),
         },
         "marks": marks,
+        "renderFrames": render_rows,
         "obs": obs_rows,
         "encodedObs": encoded_rows,
         "latent": latent_rows,
@@ -521,6 +561,10 @@ def build_payload(
                 [one_d_length, one_d_length + encoded_img_dim]
                 if encoded_img_dim > 0
                 else None
+            ),
+            "renderViewAvailable": any(
+                entry is not None and bool(entry.get("uri"))
+                for entry in render_rows
             ),
             "scales": {
                 "obs": {"min": obs_min, "max": obs_max},
@@ -622,7 +666,7 @@ def build_html(payload: dict) -> str:
     .layout {{
       display: grid;
       gap: 10px;
-      grid-template-columns: 1.08fr 0.96fr 0.96fr;
+      grid-template-columns: 1.02fr 1.02fr 0.72fr 0.72fr;
     }}
     .layout-wide {{
       display: grid;
@@ -647,8 +691,18 @@ def build_html(payload: dict) -> str:
     #timeline {{
       height: calc(80px * var(--panel-scale));
     }}
+    #renderViewImage {{
+      width: 100%;
+      height: calc(168px * var(--panel-scale));
+      display: block;
+      background: #0a0d12;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      object-fit: contain;
+      image-rendering: auto;
+    }}
     #obsImageCanvas {{
-      height: calc(180px * var(--panel-scale));
+      height: calc(168px * var(--panel-scale));
     }}
     #obs1dCanvas,
     #encodedCanvas,
@@ -665,6 +719,11 @@ def build_html(payload: dict) -> str:
     .caption {{
       color: var(--muted);
       font-size: 11px;
+    }}
+    .status-line {{
+      color: var(--muted);
+      font-size: 11px;
+      min-height: 16px;
     }}
     .small {{
       font-size: 12px;
@@ -722,6 +781,7 @@ def build_html(payload: dict) -> str:
       .top, .layout, .layout-wide {{
         grid-template-columns: 1fr;
       }}
+      #renderViewImage,
       #obsImageCanvas,
       #encodedContextCanvas,
       #latentContextCanvas,
@@ -776,6 +836,12 @@ def build_html(payload: dict) -> str:
   </div>
 
   <div class="layout">
+    <div class="panel canvas-wrap">
+      <h3>Render View</h3>
+      <img id="renderViewImage" alt="Recorded MuJoCo render view">
+      <div class="status-line" id="renderViewStatus"></div>
+      <div class="caption">Window framebuffer captured during split recording.</div>
+    </div>
     <div class="panel canvas-wrap">
       <h3>Obs Image</h3>
       <canvas id="obsImageCanvas" width="640" height="360"></canvas>
@@ -861,6 +927,8 @@ def build_html(payload: dict) -> str:
     markMeta: document.getElementById("markMeta"),
     summary: document.getElementById("summary"),
     timeline: document.getElementById("timeline"),
+    renderViewImage: document.getElementById("renderViewImage"),
+    renderViewStatus: document.getElementById("renderViewStatus"),
     obsImageCanvas: document.getElementById("obsImageCanvas"),
     obs1dCanvas: document.getElementById("obs1dCanvas"),
     encodedCanvas: document.getElementById("encodedCanvas"),
@@ -1137,6 +1205,7 @@ def build_html(payload: dict) -> str:
 
   function updateSummary(currentMark) {{
     const idx = state.frame;
+    const renderFrame = payload.renderFrames ? payload.renderFrames[idx] : null;
     const lines = [
       `record_dir: ${{payload.recordDir}}`,
       `deploy_json: ${{payload.deployJson}}`,
@@ -1148,6 +1217,7 @@ def build_html(payload: dict) -> str:
       `obs_dim / encoded_dim / latent_dim / action_dim: ` +
         `${{payload.meta.totalObsDim}} / ${{payload.meta.encodedObsDim}} / ` +
         `${{payload.meta.latentDim}} / ${{payload.meta.actionDim}}`,
+      `render_view: ${{renderFrame && renderFrame.uri ? `frame_id=${{renderFrame.renderFrameId}} size=${{renderFrame.width}}x${{renderFrame.height}}` : "missing"}}`,
       `visible_marks: ${{marks.length}}`,
     ];
     if (currentMark) {{
@@ -1220,10 +1290,22 @@ def build_html(payload: dict) -> str:
     const encodedRow = payload.encodedObs[idx];
     const latentRow = payload.latent[idx];
     const actionRow = payload.actions[idx];
+    const renderFrame = payload.renderFrames ? payload.renderFrames[idx] : null;
 
     const obs1d = buildObs1d(obsRow);
     const image = buildImageMatrix(obsRow);
     const encodedImage = getEncodedImageSlice(encodedRow);
+
+    if (renderFrame && renderFrame.uri) {{
+      elements.renderViewImage.src = renderFrame.uri;
+      elements.renderViewImage.style.visibility = "visible";
+      elements.renderViewStatus.textContent =
+        `render_frame_id=${{renderFrame.renderFrameId}} | size=${{renderFrame.width}}x${{renderFrame.height}}`;
+    }} else {{
+      elements.renderViewImage.removeAttribute("src");
+      elements.renderViewImage.style.visibility = "hidden";
+      elements.renderViewStatus.textContent = "No render frame recorded for this step.";
+    }}
 
     drawImageMatrix(
       elements.obsImageCanvas,
