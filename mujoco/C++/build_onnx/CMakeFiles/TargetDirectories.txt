@@ -1,0 +1,8 @@
+/home/albusgive2/go2w_sim2sim/mujoco/C++/build_onnx/CMakeFiles/uninstall.dir
+/home/albusgive2/go2w_sim2sim/mujoco/C++/build_onnx/CMakeFiles/MUJOCO_T_uninstall.dir
+/home/albusgive2/go2w_sim2sim/mujoco/C++/build_onnx/CMakeFiles/lab2mj.dir
+/home/albusgive2/go2w_sim2sim/mujoco/C++/build_onnx/CMakeFiles/camera_test.dir
+/home/albusgive2/go2w_sim2sim/mujoco/C++/build_onnx/CMakeFiles/camera_quat.dir
+/home/albusgive2/go2w_sim2sim/mujoco/C++/build_onnx/CMakeFiles/test.dir
+/home/albusgive2/go2w_sim2sim/mujoco/C++/build_onnx/CMakeFiles/edit_cache.dir
+/home/albusgive2/go2w_sim2sim/mujoco/C++/build_onnx/CMakeFiles/rebuild_cache.dir

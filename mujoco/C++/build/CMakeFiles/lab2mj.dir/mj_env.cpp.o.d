@@ -222,9 +222,12 @@ CMakeFiles/lab2mj.dir/mj_env.cpp.o: \
  /usr/include/c++/12/bits/atomic_base.h \
  /usr/include/c++/12/bits/atomic_lockfree_defines.h \
  /usr/include/c++/12/backward/auto_ptr.h \
- /usr/include/c++/12/pstl/glue_memory_defs.h /usr/include/c++/12/regex \
- /usr/include/c++/12/bitset /usr/include/c++/12/stack \
- /usr/include/c++/12/bits/stl_stack.h \
+ /usr/include/c++/12/pstl/glue_memory_defs.h /usr/include/c++/12/mutex \
+ /usr/include/c++/12/bits/std_mutex.h \
+ /usr/include/c++/12/bits/unique_lock.h /usr/include/c++/12/optional \
+ /usr/include/c++/12/bits/enable_special_members.h \
+ /usr/include/c++/12/regex /usr/include/c++/12/bitset \
+ /usr/include/c++/12/stack /usr/include/c++/12/bits/stl_stack.h \
  /usr/include/c++/12/bits/std_function.h \
  /usr/include/c++/12/bits/stl_tree.h \
  /usr/include/c++/12/bits/node_handle.h \
@@ -247,9 +250,7 @@ CMakeFiles/lab2mj.dir/mj_env.cpp.o: \
  /home/albusgive2/libtorch/include/ATen/Context.h \
  /home/albusgive2/libtorch/include/ATen/CPUGeneratorImpl.h \
  /home/albusgive2/libtorch/include/ATen/core/Generator.h \
- /usr/include/c++/12/mutex /usr/include/c++/12/bits/std_mutex.h \
- /usr/include/c++/12/bits/unique_lock.h /usr/include/c++/12/atomic \
- /usr/include/c++/12/cstddef \
+ /usr/include/c++/12/atomic /usr/include/c++/12/cstddef \
  /home/albusgive2/libtorch/include/c10/util/Exception.h \
  /home/albusgive2/libtorch/include/c10/macros/Macros.h \
  /usr/include/c++/12/cassert /usr/include/assert.h \
@@ -263,7 +264,6 @@ CMakeFiles/lab2mj.dir/mj_env.cpp.o: \
  /usr/include/c++/12/functional /usr/include/c++/12/unordered_map \
  /usr/include/c++/12/bits/hashtable.h \
  /usr/include/c++/12/bits/hashtable_policy.h \
- /usr/include/c++/12/bits/enable_special_members.h \
  /usr/include/c++/12/bits/unordered_map.h \
  /usr/include/c++/12/bits/erase_if.h /usr/include/c++/12/array \
  /usr/include/c++/12/compare \

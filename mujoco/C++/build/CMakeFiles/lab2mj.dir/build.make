@@ -221,6 +221,7 @@ lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_cast
 lab2mj: CMakeFiles/lab2mj.dir/home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster/raycaster_src/RayCasterLidar.cpp.o
 lab2mj: CMakeFiles/lab2mj.dir/build.make
 lab2mj: /opt/mujoco/lib/libmujoco.so.3.4.1
+lab2mj: /usr/lib/x86_64-linux-gnu/libjsoncpp.so
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_stitching.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_alphamat.so.4.5.4d
 lab2mj: /usr/lib/x86_64-linux-gnu/libopencv_aruco.so.4.5.4d

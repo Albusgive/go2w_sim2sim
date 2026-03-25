@@ -9,7 +9,7 @@ int main(int argc, const char **argv) {
   policy_list.push_back(PolicySpec::MLP(MOTION_POLICY_PATH, "motion_mlp"));
   policy_list.push_back(PolicySpec::MLP(VTM_POLICY_PATH, "vtm"));
   policy_list.push_back(
-      PolicySpec::SRU(VTM_SRU_POLICY_PATH, "vtm_sru", 1, 128));
+      PolicySpec::SRUSplit(VTM_SRU_POLICY_PATH, "vtm_sru", 1, 128));
 
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
@@ -47,7 +47,7 @@ int main(int argc, const char **argv) {
     }
   }
 
-  MJ_ENV mujoco(MJCF_PATH, policy_list, InferenceDevice::CUDA, 60);
+  MJ_ENV mujoco(MJCF_PATH, policy_list, InferenceDevice::CPU, 60);
   mujoco.init_manager();
   mujoco.init_gamepad();
   mujoco.connect_windows_sim();

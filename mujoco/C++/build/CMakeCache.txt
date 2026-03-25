@@ -241,6 +241,12 @@ CycloneDDS_DIR:PATH=/home/albusgive2/unitree_ros2/cyclonedds_ws/install/cycloned
 //The directory containing a CMake configuration file for Eigen3.
 Eigen3_DIR:PATH=/usr/share/eigen3/cmake
 
+//Path to a file.
+JSONCPP_INCLUDE_DIR:PATH=/usr/include/jsoncpp
+
+//Path to a library.
+JSONCPP_LIB:FILEPATH=/usr/lib/x86_64-linux-gnu/libjsoncpp.so
+
 //The directory containing a CMake configuration file for MKLDNN.
 MKLDNN_DIR:PATH=MKLDNN_DIR-NOTFOUND
 

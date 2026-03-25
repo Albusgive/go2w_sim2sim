@@ -4,7 +4,7 @@ project(MUJOCO_T)
 # =============================================================================
 # 1. 添加配置选项 (默认为 OFF，即使用 LibTorch)
 # =============================================================================
-option(USE_ONNX "Build with ONNX Runtime instead of LibTorch" OFF)
+option(USE_ONNX "Build with ONNX Runtime instead of LibTorch" ON)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/simulate)
 
@@ -27,6 +27,12 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_path(JSONCPP_INCLUDE_DIR NAMES json/json.h PATH_SUFFIXES jsoncpp)
+find_library(JSONCPP_LIB NAMES jsoncpp)
+if(NOT JSONCPP_INCLUDE_DIR OR NOT JSONCPP_LIB)
+    message(FATAL_ERROR "Could not find jsoncpp. Install libjsoncpp-dev or provide its include/library path.")
+endif()
+include_directories(${JSONCPP_INCLUDE_DIR})
 
 set (
   DEPENDENCY_LIST
@@ -42,6 +48,7 @@ set(BASE_LIBS
     mujoco::mujoco 
     glut GL GLU glfw udev 
     Eigen3::Eigen 
+    ${JSONCPP_LIB}
     ${OpenCV_LIBS}
 )
 

@@ -6,7 +6,10 @@
 #include "mujoco_thread.h"
 
 #include <atomic>
+#include <filesystem>
+#include <fstream>
 #include <memory>
+#include <mutex>
 #include <mujoco/mujoco.h>
 #include <opencv2/opencv.hpp>
 #include <string>
@@ -49,7 +52,7 @@ public:
 
   // 状态变量
   std::vector<float> cmd = {0.0f, 0.0f, 0.0f}; // [vx, vy, w]
-  float cmd_pad_scale[3] = {1.0f, 0.0f, 2.0f};
+  float cmd_pad_scale[3] = {1.0f, 1.0f, 1.5f};
   int policy_id = 0;
   std::vector<std::string> policy_description;
 
@@ -114,12 +117,58 @@ private:
   void deep_mul_gradient(std::vector<double> data);
   void set_policy_id(int new_policy_id);
   bool uses_visual_policy(int policy_idx) const;
+  bool current_policy_is_split_runtime() const;
+  void start_split_recording_for_current_policy();
+  void mark_split_recording_step();
+  void stop_split_recording(const std::string &reason = "manual_stop");
+  void handle_split_snapshot_after_step(double sim_time);
+  void write_split_record_event_locked(const std::string &event,
+                                       double sim_time,
+                                       const std::string &detail = "");
+  void ensure_split_record_headers_locked(const SplitDebugSnapshot &snapshot);
+  void write_split_record_meta_locked() const;
   void apply_play_like_defaults_for_policy(int policy_idx);
   void apply_pending_runtime_changes();
   void force_refresh_visual_obs(bool warm_start_history = false);
   void on_policy_runtime_state_reset(int id) override;
+  static std::filesystem::path resolve_repo_root();
+  static std::string make_record_timestamp();
+  static std::string shape_to_string(const std::vector<int64_t> &shape);
+  static const SplitTensorSnapshot *
+  find_split_tensor(const SplitDebugSnapshot &snapshot, const std::string &name);
+  static void write_tensor_csv_header(std::ofstream &stream, int64_t num_values);
+  static void append_tensor_csv_row(std::ofstream &stream,
+                                    uint64_t inference_index, double sim_time,
+                                    const SimpleTensor &tensor);
   std::atomic<int> pending_policy_id{-1};
+  std::atomic<int> pending_policy_direct_reset_id{-1};
   std::atomic<bool> pending_sensor_toggle{false};
+  bool last_gamepad_lb = false;
   bool last_gamepad_rb = false;
   bool last_gamepad_menu = false;
+
+  struct SplitRecordSession {
+    bool active = false;
+    std::filesystem::path directory;
+    std::ofstream steps_csv;
+    std::ofstream obs_csv;
+    std::ofstream encoded_obs_csv;
+    std::ofstream latent_csv;
+    std::ofstream actions_csv;
+    std::ofstream events_csv;
+    bool tensor_headers_written = false;
+    uint64_t written_steps = 0;
+    uint64_t marker_count = 0;
+    uint64_t first_inference_index = 0;
+    uint64_t last_inference_index = 0;
+    int policy_id = -1;
+    std::string policy_description;
+    std::vector<int64_t> obs_shape;
+    std::vector<int64_t> encoded_obs_shape;
+    std::vector<int64_t> latent_shape;
+    std::vector<int64_t> actions_shape;
+  };
+
+  mutable std::mutex split_record_mutex_;
+  SplitRecordSession split_record_session_;
 };

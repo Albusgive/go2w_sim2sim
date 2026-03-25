@@ -1,6 +1,6 @@
 {
     "model_name": "student",
-    "total_input_length": 3609,
+    "total_input_length": 729,
     "memory": {
         "type": "lstm_sru",
         "num_layers": 1,
@@ -23,10 +23,10 @@
             "type": "2D",
             "range": [
                 153,
-                3609
+                729
             ],
             "shape": [
-                6,
+                1,
                 18,
                 32
             ]
