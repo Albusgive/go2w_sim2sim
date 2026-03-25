@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <array>
 #include <atomic>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
@@ -84,6 +85,12 @@ public:
   void render();
   int id = 0;
   void close_render();
+  void set_render_capture_enabled(bool enabled);
+  bool render_capture_enabled() const;
+  bool get_latest_render_frame_info(int &width, int &height,
+                                    uint64_t &frame_id) const;
+  bool copy_latest_render_rgb_frame(std::vector<unsigned char> &rgb, int &width,
+                                    int &height, uint64_t &frame_id) const;
 
   std::vector<std::string> get_names(int num, int *adr);
 
@@ -179,6 +186,13 @@ private:
   double max_FPS = 60;
   double min_render_time; // ms
   void updateRender();
+
+  std::atomic_bool render_capture_enabled_{false};
+  mutable std::mutex render_capture_mutex_;
+  std::vector<unsigned char> latest_render_rgb_;
+  int latest_render_width = 0;
+  int latest_render_height = 0;
+  uint64_t latest_render_frame_id = 0;
 
 public:
   std::vector<mjtNum> get_sensor_data(const std::string &sensor_name);

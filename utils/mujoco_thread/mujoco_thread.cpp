@@ -209,6 +209,49 @@ void mujoco_thread::close_render() {
   std::cout << "close render" << std::endl;
 }
 
+void mujoco_thread::set_render_capture_enabled(bool enabled) {
+  render_capture_enabled_.store(enabled);
+  if (!enabled) {
+    std::lock_guard<std::mutex> lock(render_capture_mutex_);
+    latest_render_rgb_.clear();
+    latest_render_width = 0;
+    latest_render_height = 0;
+    latest_render_frame_id = 0;
+  }
+}
+
+bool mujoco_thread::render_capture_enabled() const {
+  return render_capture_enabled_.load();
+}
+
+bool mujoco_thread::get_latest_render_frame_info(int &width, int &height,
+                                                 uint64_t &frame_id) const {
+  std::lock_guard<std::mutex> lock(render_capture_mutex_);
+  if (latest_render_width <= 0 || latest_render_height <= 0 ||
+      latest_render_frame_id == 0) {
+    return false;
+  }
+  width = latest_render_width;
+  height = latest_render_height;
+  frame_id = latest_render_frame_id;
+  return true;
+}
+
+bool mujoco_thread::copy_latest_render_rgb_frame(
+    std::vector<unsigned char> &rgb, int &width, int &height,
+    uint64_t &frame_id) const {
+  std::lock_guard<std::mutex> lock(render_capture_mutex_);
+  if (latest_render_rgb_.empty() || latest_render_width <= 0 ||
+      latest_render_height <= 0 || latest_render_frame_id == 0) {
+    return false;
+  }
+  rgb = latest_render_rgb_;
+  width = latest_render_width;
+  height = latest_render_height;
+  frame_id = latest_render_frame_id;
+  return true;
+}
+
 void mujoco_thread::destroyRender() {
   if (is_render_close.load() && !is_show.load()) {
     std::lock_guard<std::mutex> lock(m_mtx);
@@ -551,6 +594,19 @@ void mujoco_thread::updateRender() {
       }
 
       draw_windows();
+
+      if (render_capture_enabled_.load() && viewport.width > 0 &&
+          viewport.height > 0) {
+        std::vector<unsigned char> rgb(static_cast<size_t>(viewport.width) *
+                                       static_cast<size_t>(viewport.height) *
+                                       3);
+        mjr_readPixels(rgb.data(), nullptr, viewport, &con);
+        std::lock_guard<std::mutex> capture_lock(render_capture_mutex_);
+        latest_render_rgb_ = std::move(rgb);
+        latest_render_width = viewport.width;
+        latest_render_height = viewport.height;
+        latest_render_frame_id += 1;
+      }
 
       // swap OpenGL buffers (blocking call due to v-sync)
       glfwSwapBuffers(window);
