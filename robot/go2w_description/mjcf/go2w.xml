@@ -121,7 +121,7 @@
         </body>
       </body> -->
 
-      <camera name="RayCasterCamera" pos="0.31 0 0.08" quat="-0.612372 -0.353553 0.353553 0.612372"
+      <camera name="RayCasterCamera" pos="0.31 0 0.08" quat="-0.596368 -0.379928 0.379928 0.596368"
         ipd="0.095"
         focal="1 1"
         sensorsize="2.0 1.1547005"

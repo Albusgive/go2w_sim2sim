@@ -103,7 +103,6 @@ public:
 
 struct PolicyStateRuntimeControl {
   bool pending_manual_reset = false;
-  int64_t active_run_steps = 0;
 };
 
 class ManagerBasedEnv {
@@ -118,11 +117,10 @@ public:
   void init_manager();
   SimpleTensor manager_step(int id = 0);
   void reset_policy_states(int id = -1);
+  void reset_policy_states_done(int id, const SimpleTensor &dones);
   void reset_observation_buffers(int id = -1);
 
-  int64_t get_policy_active_run_steps(int id) const;
   void request_policy_state_reset(int id);
-  void reset_policy_runtime_controls(int id = -1);
 
   std::vector<SimpleTensor> policcy_obs;
   std::vector<std::vector<std::shared_ptr<ObservationTerm>>> obs_terms;
@@ -183,9 +181,7 @@ protected:
 private:
   bool is_valid_policy_id(int id) const;
   void apply_policy_runtime_controls(int active_policy_id);
-  void mark_policy_step_complete(int active_policy_id);
 
   mutable std::mutex policy_state_runtime_mutex_;
   std::vector<PolicyStateRuntimeControl> policy_state_runtime_controls_;
-  int last_active_policy_id_ = -1;
 };

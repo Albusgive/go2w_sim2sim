@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <regex>
 #include <string>
 #include <utility>
@@ -26,6 +28,12 @@ enum class PolicyArchitecture {
     SRU
 };
 
+enum class PolicySruDeploymentMode {
+    Auto,
+    Full,
+    Split
+};
+
 struct PolicyMemorySpec {
     std::string type = "";
     int num_layers = 0;
@@ -36,11 +44,74 @@ struct PolicyMemorySpec {
     }
 };
 
+struct PolicyInputSegmentSpec {
+    std::string group;
+    std::string type;
+    std::vector<int64_t> range;
+    std::vector<int64_t> shape;
+};
+
+struct PolicyPipelineStepSpec {
+    std::string module;
+    std::vector<std::string> inputs;
+    std::vector<std::string> outputs;
+    std::vector<std::string> reset_methods;
+};
+
+struct PolicyPipelineSpec {
+    std::string state_management;
+    std::vector<PolicyPipelineStepSpec> steps;
+};
+
+struct StudentTeacherSruDeploySpec {
+    std::string schema;
+    std::string model_name;
+    std::string input_name = "obs";
+    int total_input_length = 0;
+    int encoded_obs_dim = 0;
+    int latent_dim = 0;
+    PolicyMemorySpec memory;
+    std::vector<PolicyInputSegmentSpec> input_segments;
+    std::string full_jit_model;
+    std::string full_onnx_model;
+    PolicyPipelineSpec jit_pipeline;
+    PolicyPipelineSpec onnx_pipeline;
+    std::filesystem::path config_path;
+
+    bool valid() const {
+        return !schema.empty();
+    }
+};
+
+struct SplitTensorStats {
+    std::vector<int64_t> shape;
+    int64_t numel = 0;
+    float min = 0.0f;
+    float max = 0.0f;
+    float mean = 0.0f;
+    float std = 0.0f;
+    float absmax = 0.0f;
+    int64_t nan_count = 0;
+    int64_t inf_count = 0;
+};
+
+struct SplitTensorSnapshot {
+    std::string name;
+    SplitTensorStats stats;
+    SimpleTensor values;
+};
+
+struct SplitDebugSnapshot {
+    uint64_t inference_index = 0;
+    std::vector<SplitTensorSnapshot> tensors;
+};
+
 struct PolicySpec {
     std::string path;
     std::string description;
     PolicyArchitecture architecture = PolicyArchitecture::MLP;
     PolicyMemorySpec memory;
+    PolicySruDeploymentMode sru_deployment = PolicySruDeploymentMode::Auto;
 
     bool is_sru() const {
         return architecture == PolicyArchitecture::SRU;
@@ -48,16 +119,36 @@ struct PolicySpec {
 
     static PolicySpec MLP(std::string path, std::string description) {
         return PolicySpec{std::move(path), std::move(description),
-                          PolicyArchitecture::MLP, {}};
+                          PolicyArchitecture::MLP, {},
+                          PolicySruDeploymentMode::Auto};
     }
 
     static PolicySpec SRU(std::string path, std::string description,
                           int num_layers, int hidden_dim,
-                          std::string memory_type = "lstm_sru") {
+                          std::string memory_type = "lstm_sru",
+                          PolicySruDeploymentMode sru_deployment =
+                              PolicySruDeploymentMode::Auto) {
         return PolicySpec{std::move(path), std::move(description),
                           PolicyArchitecture::SRU,
                           PolicyMemorySpec{std::move(memory_type), num_layers,
-                                           hidden_dim}};
+                                           hidden_dim},
+                          sru_deployment};
+    }
+
+    static PolicySpec SRUFull(std::string path, std::string description,
+                              int num_layers, int hidden_dim,
+                              std::string memory_type = "lstm_sru") {
+        return SRU(std::move(path), std::move(description), num_layers,
+                   hidden_dim, std::move(memory_type),
+                   PolicySruDeploymentMode::Full);
+    }
+
+    static PolicySpec SRUSplit(std::string path, std::string description,
+                               int num_layers, int hidden_dim,
+                               std::string memory_type = "lstm_sru") {
+        return SRU(std::move(path), std::move(description), num_layers,
+                   hidden_dim, std::move(memory_type),
+                   PolicySruDeploymentMode::Split);
     }
 };
 
@@ -79,6 +170,10 @@ namespace fs = std::filesystem;
 class Policy {
 public:
     Policy();
+    Policy(const Policy&) = delete;
+    Policy& operator=(const Policy&) = delete;
+    Policy(Policy&& other) noexcept;
+    Policy& operator=(Policy&& other) noexcept;
     ~Policy();
 
     // ==========================================
@@ -87,9 +182,12 @@ public:
     SimpleTensor get_action(SimpleTensor obs);
     std::vector<float> get_action(std::vector<float> obs);
     void reset_state();
-
-    // 新增：检查并转换 ONNX 的辅助函数声明
-    void check_and_convert_to_onnx(const std::string& model_path);
+    void reset_state_done(const SimpleTensor& dones);
+    bool is_split_runtime_active() const;
+    void set_split_record_capture_enabled(bool enabled);
+    bool split_record_capture_enabled() const;
+    std::optional<SplitDebugSnapshot> get_last_split_debug_snapshot() const;
+    void clear_last_split_debug_snapshot();
 
 #ifdef USE_ONNX
     std::string load(const PolicySpec& spec, InferenceDevice device = InferenceDevice::CPU);
@@ -109,28 +207,55 @@ public:
 
 private:
     PolicySpec spec_;
+    std::optional<StudentTeacherSruDeploySpec> split_deploy_spec_;
+    bool use_split_sru_pipeline_ = false;
+    mutable std::mutex split_debug_mutex_;
+    bool split_record_capture_enabled_ = false;
+    uint64_t split_inference_index_ = 0;
+    std::optional<SplitDebugSnapshot> last_split_debug_snapshot_;
 
     void configure_from_model_metadata(const std::string& model_path);
+    void configure_from_split_deploy_metadata(
+        const StudentTeacherSruDeploySpec& split_spec);
     void validate_recurrent_spec() const;
+    bool uses_split_sru_pipeline() const;
+    void reset_split_debug_state();
 
 #ifdef USE_ONNX
-    void ensure_recurrent_state_for_batch(int64_t batch_size);
+    struct OnnxSplitStepRuntime {
+        PolicyPipelineStepSpec spec;
+        std::string module_path;
+        std::shared_ptr<Ort::Session> session{nullptr};
+        std::vector<const char*> input_node_names;
+        std::vector<std::string> input_node_names_alloc;
+        std::vector<const char*> output_node_names;
+        std::vector<std::string> output_node_names_alloc;
+    };
+
+    void ensure_sru_onnx_state_for_batch(int64_t batch_size);
+    void apply_sru_onnx_reset_done(const SimpleTensor& dones);
     std::shared_ptr<Ort::Env> env_{nullptr};
     std::shared_ptr<Ort::Session> session_{nullptr};
     std::vector<const char*> input_node_names_;
     std::vector<std::string> input_node_names_alloc_;
     std::vector<const char*> output_node_names_;
     std::vector<std::string> output_node_names_alloc_;
-    SimpleTensor hidden_state_;
-    SimpleTensor cell_state_;
+    SimpleTensor onnx_hidden_state_;
+    SimpleTensor onnx_cell_state_;
+    std::vector<OnnxSplitStepRuntime> onnx_split_pipeline_;
 #else
-    void ensure_recurrent_state_for_batch(int64_t batch_size);
+    struct TorchscriptSplitStepRuntime {
+        PolicyPipelineStepSpec spec;
+        std::string module_path;
+        torch::jit::script::Module module;
+        bool has_reset = false;
+        bool has_reset_done = false;
+    };
+
+    void apply_torchscript_reset_done(const SimpleTensor& dones);
     torch::jit::script::Module module;
     torch::Device get_torch_device();
-    torch::Tensor hidden_state_;
-    torch::Tensor cell_state_;
-    bool torchscript_uses_internal_recurrent_state_ = false;
-    bool torchscript_has_reset_method_ = false;
-    bool torchscript_has_reset_done_method_ = false;
+    std::vector<TorchscriptSplitStepRuntime> torchscript_split_pipeline_;
+    bool has_stateful_sru_torchscript_ = false;
 #endif
 };

@@ -103,6 +103,9 @@ public:
   // element_size = C * H * W
   ImageHistoryBuffer(size_t history_length, size_t element_size)
       : history_length_(history_length), element_size_(element_size) {
+    if (history_length_ < 1) {
+      throw std::invalid_argument("ImageHistoryBuffer history_length must be >= 1");
+    }
     
     // 使用 vector 模拟环形缓冲区，避免 SimpleTensor 的频繁 resize
     buffer_.resize(history_length_);

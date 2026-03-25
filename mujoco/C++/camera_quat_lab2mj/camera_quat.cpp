@@ -6,7 +6,7 @@
 int main() {
     // 1. Isaac Lab 中的相机姿态 (w, x, y, z)
     // 根据输入: rot = (cos(12.5), 0, sin(12.5), 0)
-    double q_isaac[4] = {std::cos(15.0 * M_PI / 180.0), 0.0, std::sin(15.0 * M_PI / 180.0), 0.0};
+    double q_isaac[4] = {std::cos(12.5 * M_PI / 180.0), 0.0, std::sin(12.5 * M_PI / 180.0), 0.0};
 
     // 2. 构造 Offset 四元数
     // 针对“竖着向右看”的反转逻辑：

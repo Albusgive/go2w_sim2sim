@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/camera_quat.dir/camera_quat_lab2mj/camera_quat.cpp.o -o camera_quat  -Wl,-rpath,/opt/mujoco/lib /opt/mujoco/lib/libmujoco.so.3.4.1 

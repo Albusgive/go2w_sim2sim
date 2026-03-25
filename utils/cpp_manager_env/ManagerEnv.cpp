@@ -101,10 +101,15 @@ void ObservationTerm::reset() {
 // ============================================================================
 void ImageObservationTerm::init(int batch_size) {
     this->batch_size = batch_size;
-    // 初始化 ImageHistoryBuffer
-    // 注意：Buffer 的大小取决于 func() 返回的 Tensor 大小，
-    // 第一次 compute_obs 时如果不匹配可能会有问题，建议确保 func 返回固定大小
-    img_buffer_ = std::make_shared<ImageHistoryBuffer>(history_length, batch_size);
+    // history_length == 0 表示只使用最新帧，不维护历史缓冲区。
+    if (history_length > 0) {
+        // 初始化 ImageHistoryBuffer
+        // 注意：Buffer 的大小取决于 func() 返回的 Tensor 大小，
+        // 第一次 compute_obs 时如果不匹配可能会有问题，建议确保 func 返回固定大小
+        img_buffer_ = std::make_shared<ImageHistoryBuffer>(history_length, batch_size);
+    } else {
+        img_buffer_.reset();
+    }
     step_counter_ = 0;
     next_capture_step_ = 0;
     ideal_step_count_ = 0;
@@ -119,6 +124,11 @@ void ImageObservationTerm::compute_obs() {
     // 2. 缓存当前帧
     // 必须 clone，因为 func 返回的可能是临时引用，或者下一帧会覆盖这块内存
     current_frame_ = obs.clone(); 
+    // history_length == 0 时，直接使用当前帧，不做历史拼接。
+    if (history_length <= 0 || !img_buffer_) {
+        return;
+    }
+
     // 3. 历史更新逻辑，对齐训练侧：
     // 首次捕获在 step 0，之后按 stride 并带有可选的 +/- stride_range 抖动更新。
     if (step_counter_ >= next_capture_step_) {
@@ -137,7 +147,11 @@ void ImageObservationTerm::compute_obs() {
 }
 
 SimpleTensor ImageObservationTerm::get_obs() {
-    if (!img_buffer_ || !current_frame_.defined()) return SimpleTensor();
+    if (!current_frame_.defined()) return SimpleTensor();
+
+    if (history_length <= 0 || !img_buffer_) {
+        return current_frame_.clone();
+    }
     
     // 获取历史帧堆叠
     SimpleTensor history_stack = img_buffer_->get_history_stack();
@@ -163,7 +177,7 @@ void ImageObservationTerm::reset() {
 }
 
 void ImageObservationTerm::warm_start_history() {
-    if (!img_buffer_ || !current_frame_.defined()) {
+    if (history_length <= 0 || !img_buffer_ || !current_frame_.defined()) {
         return;
     }
     img_buffer_->fill(current_frame_);
@@ -344,9 +358,7 @@ SimpleTensor ManagerBasedEnv::manager_step(int id) {
   apply_policy_runtime_controls(id);
   for (int i = 0; i < obs_terms.size(); i++)
     computeObs(i);
-  SimpleTensor action = computeAction(id);
-  mark_policy_step_complete(id);
-  return action;
+  return computeAction(id);
 }
 
 void ManagerBasedEnv::reset_policy_states(int id) {
@@ -354,22 +366,31 @@ void ManagerBasedEnv::reset_policy_states(int id) {
     for (auto &policy : policys) {
       policy.reset_state();
     }
-    reset_policy_runtime_controls();
+    std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
+    for (auto &control : policy_state_runtime_controls_) {
+      control.pending_manual_reset = false;
+    }
     return;
   }
 
   if (id >= 0 && id < static_cast<int>(policys.size())) {
     policys[id].reset_state();
-    reset_policy_runtime_controls(id);
+    std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
+    policy_state_runtime_controls_[id].pending_manual_reset = false;
   }
 }
 
-int64_t ManagerBasedEnv::get_policy_active_run_steps(int id) const {
-  std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-  if (!is_valid_policy_id(id)) {
-    return 0;
+void ManagerBasedEnv::reset_policy_states_done(int id, const SimpleTensor &dones) {
+  if (id < 0) {
+    for (auto &policy : policys) {
+      policy.reset_state_done(dones);
+    }
+    return;
   }
-  return policy_state_runtime_controls_[id].active_run_steps;
+
+  if (id >= 0 && id < static_cast<int>(policys.size())) {
+    policys[id].reset_state_done(dones);
+  }
 }
 
 void ManagerBasedEnv::request_policy_state_reset(int id) {
@@ -378,26 +399,6 @@ void ManagerBasedEnv::request_policy_state_reset(int id) {
     return;
   }
   policy_state_runtime_controls_[id].pending_manual_reset = true;
-}
-
-void ManagerBasedEnv::reset_policy_runtime_controls(int id) {
-  std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-  if (id < 0) {
-    for (auto &control : policy_state_runtime_controls_) {
-      control.pending_manual_reset = false;
-      control.active_run_steps = 0;
-    }
-    last_active_policy_id_ = -1;
-    return;
-  }
-
-  if (!is_valid_policy_id(id)) {
-    return;
-  }
-
-  auto &control = policy_state_runtime_controls_[id];
-  control.pending_manual_reset = false;
-  control.active_run_steps = 0;
 }
 
 void ManagerBasedEnv::reset_observation_buffers(int id) {
@@ -493,15 +494,9 @@ void ManagerBasedEnv::apply_policy_runtime_controls(int active_policy_id) {
   bool should_reset_state = false;
   {
     std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-    if (last_active_policy_id_ != active_policy_id) {
-      policy_state_runtime_controls_[active_policy_id].active_run_steps = 0;
-      last_active_policy_id_ = active_policy_id;
-    }
-
     auto &control = policy_state_runtime_controls_[active_policy_id];
     if (control.pending_manual_reset) {
       control.pending_manual_reset = false;
-      control.active_run_steps = 0;
       should_reset_state = true;
     }
   }
@@ -510,14 +505,6 @@ void ManagerBasedEnv::apply_policy_runtime_controls(int active_policy_id) {
     policys[active_policy_id].reset_state();
     on_policy_runtime_state_reset(active_policy_id);
   }
-}
-
-void ManagerBasedEnv::mark_policy_step_complete(int active_policy_id) {
-  std::lock_guard<std::mutex> lock(policy_state_runtime_mutex_);
-  if (!is_valid_policy_id(active_policy_id)) {
-    return;
-  }
-  policy_state_runtime_controls_[active_policy_id].active_run_steps += 1;
 }
 
 SimpleTensor ManagerBasedEnv::QuatRotateInverse(SimpleTensor q,
