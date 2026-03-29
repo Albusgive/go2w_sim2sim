@@ -37,6 +37,81 @@ bool matches_exact_names(const std::vector<std::string>& actual,
                                                                 expected.end()));
 }
 
+bool is_gru_sru_type(const std::string& memory_type) {
+    return to_lower(memory_type) == "gru_sru";
+}
+
+bool is_lstm_sru_type(const std::string& memory_type) {
+    return to_lower(memory_type) == "lstm_sru";
+}
+
+bool matches_supported_full_sru_onnx_signature(
+    const std::vector<std::string>& actual_inputs,
+    const std::vector<std::string>& actual_outputs,
+    const std::string& memory_type) {
+    const bool matches_lstm =
+        matches_exact_names(actual_inputs, {"obs", "hidden_state", "cell_state"}) &&
+        matches_exact_names(actual_outputs,
+                            {"actions", "next_hidden_state",
+                             "next_cell_state"});
+    const bool matches_gru =
+        (matches_exact_names(actual_inputs, {"obs", "hidden_state"}) ||
+         matches_exact_names(actual_inputs,
+                             {"obs", "hidden_state", "cell_state"})) &&
+        (matches_exact_names(actual_outputs, {"actions", "next_hidden_state"}) ||
+         matches_exact_names(actual_outputs,
+                             {"actions", "next_hidden_state",
+                              "next_cell_state"}));
+
+    if (is_lstm_sru_type(memory_type)) {
+        return matches_lstm;
+    }
+    if (is_gru_sru_type(memory_type)) {
+        return matches_gru;
+    }
+    return matches_lstm || matches_gru;
+}
+
+bool matches_supported_split_sru_memory_signature(
+    const std::vector<std::string>& actual_inputs,
+    const std::vector<std::string>& actual_outputs,
+    const std::string& memory_type) {
+    const bool matches_lstm =
+        matches_exact_names(actual_inputs,
+                            {"encoded_obs", "hidden_state", "cell_state"}) &&
+        matches_exact_names(actual_outputs,
+                            {"latent", "next_hidden_state",
+                             "next_cell_state"});
+    const bool matches_gru =
+        (matches_exact_names(actual_inputs, {"encoded_obs", "hidden_state"}) ||
+         matches_exact_names(actual_inputs,
+                             {"encoded_obs", "hidden_state", "cell_state"})) &&
+        (matches_exact_names(actual_outputs, {"latent", "next_hidden_state"}) ||
+         matches_exact_names(actual_outputs,
+                             {"latent", "next_hidden_state",
+                              "next_cell_state"}));
+
+    if (is_lstm_sru_type(memory_type)) {
+        return matches_lstm;
+    }
+    if (is_gru_sru_type(memory_type)) {
+        return matches_gru;
+    }
+    return matches_lstm || matches_gru;
+}
+
+bool is_split_memory_step(const PolicyPipelineStepSpec& step_spec) {
+    return matches_exact_names(step_spec.inputs, {"encoded_obs", "hidden_state",
+                                                  "cell_state"}) ||
+           matches_exact_names(step_spec.inputs,
+                               {"encoded_obs", "hidden_state"}) ||
+           matches_exact_names(step_spec.outputs,
+                               {"latent", "next_hidden_state",
+                                "next_cell_state"}) ||
+           matches_exact_names(step_spec.outputs,
+                               {"latent", "next_hidden_state"});
+}
+
 std::vector<std::string> preferred_stems(PolicyArchitecture architecture) {
     if (architecture == PolicyArchitecture::SRU) {
         return {"student", "policy"};
@@ -691,7 +766,8 @@ void Policy::configure_from_model_metadata(const std::string& model_path) {
         return;
     }
 
-    if (to_lower(memory_spec->type) == "lstm_sru") {
+    const std::string memory_type = to_lower(memory_spec->type);
+    if (memory_type == "lstm_sru" || memory_type == "gru_sru") {
         spec_.architecture = PolicyArchitecture::SRU;
     }
     if (spec_.memory.type.empty()) {
@@ -913,11 +989,6 @@ std::string Policy::load(const PolicySpec& spec, InferenceDevice device) {
     onnx_cell_state_ = SimpleTensor();
     reset_split_debug_state();
 
-    if (spec_.architecture == PolicyArchitecture::SRU &&
-        spec_.memory.type.empty()) {
-        spec_.memory.type = "lstm_sru";
-    }
-
     auto split_config_path = find_split_deploy_config_file(spec_);
     if (split_config_path.has_value()) {
         split_deploy_spec_ =
@@ -992,14 +1063,26 @@ std::string Policy::load(const PolicySpec& spec, InferenceDevice device) {
                     runtime_step.output_node_names_alloc,
                     runtime_step.output_node_names);
 
-                if (!matches_exact_names(runtime_step.input_node_names_alloc,
-                                         runtime_step.spec.inputs) ||
-                    !matches_exact_names(runtime_step.output_node_names_alloc,
-                                         runtime_step.spec.outputs)) {
+                const bool exact_signature_match =
+                    matches_exact_names(runtime_step.input_node_names_alloc,
+                                        runtime_step.spec.inputs) &&
+                    matches_exact_names(runtime_step.output_node_names_alloc,
+                                        runtime_step.spec.outputs);
+                const bool supported_gru_memory_signature =
+                    is_split_memory_step(step_spec) &&
+                    matches_supported_split_sru_memory_signature(
+                        runtime_step.input_node_names_alloc,
+                        runtime_step.output_node_names_alloc,
+                        split_deploy_spec_->memory.type);
+
+                if (!exact_signature_match && !supported_gru_memory_signature) {
                     throw std::runtime_error(
                         "Split ONNX module signature mismatch for " +
                         runtime_step.module_path);
                 }
+
+                runtime_step.spec.inputs = runtime_step.input_node_names_alloc;
+                runtime_step.spec.outputs = runtime_step.output_node_names_alloc;
 
                 onnx_split_pipeline_.push_back(std::move(runtime_step));
             }
@@ -1032,16 +1115,18 @@ std::string Policy::load(const PolicySpec& spec, InferenceDevice device) {
                                      output_node_names_);
 
             const bool has_sru_signature =
-                matches_exact_names(input_node_names_alloc_,
-                                    {"obs", "hidden_state", "cell_state"}) &&
-                matches_exact_names(output_node_names_alloc_,
-                                    {"actions", "next_hidden_state",
-                                     "next_cell_state"});
+                matches_supported_full_sru_onnx_signature(
+                    input_node_names_alloc_, output_node_names_alloc_,
+                    spec_.memory.type);
 
             if (has_sru_signature) {
                 spec_.architecture = PolicyArchitecture::SRU;
                 if (spec_.memory.type.empty()) {
-                    spec_.memory.type = "lstm_sru";
+                    spec_.memory.type =
+                        matches_exact_names(input_node_names_alloc_,
+                                            {"obs", "hidden_state"})
+                            ? "gru_sru"
+                            : "lstm_sru";
                 }
                 auto hidden_shape = session_->GetInputTypeInfo(1)
                                         .GetTensorTypeAndShapeInfo()
@@ -1059,9 +1144,10 @@ std::string Policy::load(const PolicySpec& spec, InferenceDevice device) {
             if (spec_.architecture == PolicyArchitecture::SRU &&
                 !has_sru_signature) {
                 throw std::runtime_error(
-                    "SRU ONNX deployment now only supports the explicit-state exporter "
-                    "format: obs + hidden_state + cell_state -> actions + "
-                    "next_hidden_state + next_cell_state.");
+                    "SRU ONNX deployment only supports recognized recurrent "
+                    "exporter signatures. Expected LSTM-style obs + hidden_state + "
+                    "cell_state or GRU-style obs + hidden_state, with recurrent "
+                    "state outputs.");
             }
 
             validate_recurrent_spec();
@@ -1242,36 +1328,65 @@ SimpleTensor Policy::get_action(SimpleTensor obs) {
         if (spec_.architecture == PolicyArchitecture::SRU) {
             ensure_sru_onnx_state_for_batch(batch_size);
 
-            Ort::Value hidden_tensor = Ort::Value::CreateTensor<float>(
-                memory_info, onnx_hidden_state_.data_ptr(),
-                onnx_hidden_state_.numel(), onnx_hidden_state_.shape_.data(),
-                onnx_hidden_state_.shape_.size());
-            Ort::Value cell_tensor = Ort::Value::CreateTensor<float>(
-                memory_info, onnx_cell_state_.data_ptr(),
-                onnx_cell_state_.numel(), onnx_cell_state_.shape_.data(),
-                onnx_cell_state_.shape_.size());
-
-            std::array<const char*, 3> input_names = {"obs", "hidden_state",
-                                                      "cell_state"};
-            std::array<const char*, 3> output_names = {
-                "actions", "next_hidden_state", "next_cell_state"};
-            std::array<Ort::Value, 3> inputs = {
-                std::move(input_tensor), std::move(hidden_tensor),
-                std::move(cell_tensor)};
-
-            output_tensors = session_->Run(
-                Ort::RunOptions{nullptr}, input_names.data(), inputs.data(),
-                inputs.size(), output_names.data(), output_names.size());
-
-            if (output_tensors.size() != 3) {
-                throw std::runtime_error(
-                    "SRU ONNX model must return actions, next_hidden_state, "
-                    "next_cell_state.");
+            std::vector<Ort::Value> recurrent_inputs;
+            recurrent_inputs.reserve(input_node_names_alloc_.size());
+            for (const auto& input_name : input_node_names_alloc_) {
+                if (input_name == "obs") {
+                    recurrent_inputs.push_back(Ort::Value::CreateTensor<float>(
+                        memory_info, obs.data_ptr(), obs.numel(),
+                        input_shape.data(), input_shape.size()));
+                    continue;
+                }
+                if (input_name == "hidden_state") {
+                    recurrent_inputs.push_back(Ort::Value::CreateTensor<float>(
+                        memory_info, onnx_hidden_state_.data_ptr(),
+                        onnx_hidden_state_.numel(), onnx_hidden_state_.shape_.data(),
+                        onnx_hidden_state_.shape_.size()));
+                    continue;
+                }
+                if (input_name == "cell_state") {
+                    recurrent_inputs.push_back(Ort::Value::CreateTensor<float>(
+                        memory_info, onnx_cell_state_.data_ptr(),
+                        onnx_cell_state_.numel(), onnx_cell_state_.shape_.data(),
+                        onnx_cell_state_.shape_.size()));
+                    continue;
+                }
+                throw std::runtime_error("Unsupported SRU ONNX input tensor: " +
+                                         input_name);
             }
 
-            SimpleTensor actions = ort_value_to_tensor(output_tensors[0]);
-            onnx_hidden_state_ = ort_value_to_tensor(output_tensors[1]);
-            onnx_cell_state_ = ort_value_to_tensor(output_tensors[2]);
+            output_tensors = session_->Run(
+                Ort::RunOptions{nullptr}, input_node_names_.data(),
+                recurrent_inputs.data(), recurrent_inputs.size(),
+                output_node_names_.data(), output_node_names_.size());
+
+            if (output_tensors.size() != output_node_names_alloc_.size()) {
+                throw std::runtime_error(
+                    "SRU ONNX model returned an unexpected number of outputs.");
+            }
+
+            std::unordered_map<std::string, SimpleTensor> recurrent_outputs;
+            for (size_t output_idx = 0; output_idx < output_tensors.size();
+                 ++output_idx) {
+                recurrent_outputs.emplace(output_node_names_alloc_[output_idx],
+                                          ort_value_to_tensor(
+                                              output_tensors[output_idx]));
+            }
+
+            auto actions_it = recurrent_outputs.find("actions");
+            auto next_hidden_it = recurrent_outputs.find("next_hidden_state");
+            if (actions_it == recurrent_outputs.end() ||
+                next_hidden_it == recurrent_outputs.end()) {
+                throw std::runtime_error(
+                    "SRU ONNX model must return actions and next_hidden_state.");
+            }
+
+            SimpleTensor actions = actions_it->second;
+            onnx_hidden_state_ = next_hidden_it->second;
+            auto next_cell_it = recurrent_outputs.find("next_cell_state");
+            if (next_cell_it != recurrent_outputs.end()) {
+                onnx_cell_state_ = next_cell_it->second;
+            }
 
             if (actions.sizes().size() == 2 && actions.size(0) == 1) {
                 return actions.view({actions.size(1)});
@@ -1375,11 +1490,6 @@ std::string Policy::load(const PolicySpec& spec, InferenceDevice device,
     torchscript_split_pipeline_.clear();
     has_stateful_sru_torchscript_ = false;
     reset_split_debug_state();
-
-    if (spec_.architecture == PolicyArchitecture::SRU &&
-        spec_.memory.type.empty()) {
-        spec_.memory.type = "lstm_sru";
-    }
 
     auto split_config_path = find_split_deploy_config_file(spec_);
     if (split_config_path.has_value()) {
