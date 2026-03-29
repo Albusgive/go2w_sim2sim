@@ -476,6 +476,30 @@ mj_env.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/mj_env.cpp.s
 .PHONY : mj_env.cpp.s
 
+sim2sim_env.o: sim2sim_env.cpp.o
+.PHONY : sim2sim_env.o
+
+# target to build an object file
+sim2sim_env.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/sim2sim_env.cpp.o
+.PHONY : sim2sim_env.cpp.o
+
+sim2sim_env.i: sim2sim_env.cpp.i
+.PHONY : sim2sim_env.i
+
+# target to preprocess a source file
+sim2sim_env.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/sim2sim_env.cpp.i
+.PHONY : sim2sim_env.cpp.i
+
+sim2sim_env.s: sim2sim_env.cpp.s
+.PHONY : sim2sim_env.s
+
+# target to generate assembly for a file
+sim2sim_env.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/lab2mj.dir/build.make CMakeFiles/lab2mj.dir/sim2sim_env.cpp.s
+.PHONY : sim2sim_env.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -523,6 +547,9 @@ help:
 	@echo "... mj_env.o"
 	@echo "... mj_env.i"
 	@echo "... mj_env.s"
+	@echo "... sim2sim_env.o"
+	@echo "... sim2sim_env.i"
+	@echo "... sim2sim_env.s"
 .PHONY : help
 
 

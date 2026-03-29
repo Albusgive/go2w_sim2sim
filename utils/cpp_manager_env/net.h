@@ -125,7 +125,7 @@ struct PolicySpec {
 
     static PolicySpec SRU(std::string path, std::string description,
                           int num_layers, int hidden_dim,
-                          std::string memory_type = "lstm_sru",
+                          std::string memory_type = "",
                           PolicySruDeploymentMode sru_deployment =
                               PolicySruDeploymentMode::Auto) {
         return PolicySpec{std::move(path), std::move(description),
@@ -137,7 +137,7 @@ struct PolicySpec {
 
     static PolicySpec SRUFull(std::string path, std::string description,
                               int num_layers, int hidden_dim,
-                              std::string memory_type = "lstm_sru") {
+                              std::string memory_type = "") {
         return SRU(std::move(path), std::move(description), num_layers,
                    hidden_dim, std::move(memory_type),
                    PolicySruDeploymentMode::Full);
@@ -145,7 +145,7 @@ struct PolicySpec {
 
     static PolicySpec SRUSplit(std::string path, std::string description,
                                int num_layers, int hidden_dim,
-                               std::string memory_type = "lstm_sru") {
+                               std::string memory_type = "") {
         return SRU(std::move(path), std::move(description), num_layers,
                    hidden_dim, std::move(memory_type),
                    PolicySruDeploymentMode::Split);

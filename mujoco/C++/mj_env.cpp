@@ -27,26 +27,12 @@ bool is_zero_cmd(const std::vector<float> &cmd) {
 MJ_ENV::MJ_ENV(std::string model_file,
                const std::vector<PolicySpec> &policy_specs,
                InferenceDevice device, double max_FPS)
-    : ManagerBasedEnv(policy_specs, device) {
-
-  for (const auto &spec : policy_specs) {
-    policy_description.push_back(spec.description);
-  }
-
-  // 1. 加载 MuJoCo 模型 (调用 mujoco_thread 的方法)
-  load_model(model_file);
-
-  // 2. 窗口设置
-  set_window_size(1920, 1080);
-  set_window_title("VTM Deploy");
-  font_scale = mjtFontScale::mjFONTSCALE_200;
-  set_max_FPS(max_FPS);
-  _sub_step = 4; // 物理子步数
+    : Sim2SimEnv(model_file, policy_specs, device, max_FPS, "VTM Deploy",
+                 1920, 1080, 4) {
 
   // 3. 初始化参数
   gravity = SimpleTensor::wrap({0.0f, 0.0f, -1.0f});
   obs_default_dof_pos = obs_default_dof_pos_vec;
-  policy_id = 0;
   cmd = {kPlayLikeDefaultCmd[0], kPlayLikeDefaultCmd[1], kPlayLikeDefaultCmd[2]};
 
   // Action Scales (硬编码示例)
@@ -73,7 +59,7 @@ MJ_ENV::MJ_ENV(std::string model_file,
   camera_cfg.vertical_aperture = 1.154700538;
   camera_cfg.v_ray_num = 18;
   camera_cfg.h_ray_num = 32;
-  camera_cfg.dis_range = {0.1, 3.0};
+  camera_cfg.dis_range = {0.1, 2.0};
   camera_cfg.is_detect_parentbody = false;
   camera_cfg.baseline = 0.095;
   camera_cfg.loss_angle = 80;
@@ -95,7 +81,6 @@ MJ_ENV::MJ_ENV(std::string model_file,
 }
 
 MJ_ENV::~MJ_ENV() {
-  stop_split_recording("destructor");
   if (ray_caster_camera_img)
     delete[] ray_caster_camera_img;
   if (ray_caster_camera_noise_img)
@@ -267,28 +252,6 @@ void MJ_ENV::vis_cfg() {
   opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
 }
 
-void MJ_ENV::reset_callback(const mjModel *m, mjData *d) {
-  {
-    std::lock_guard<std::mutex> lock(split_record_mutex_);
-    if (split_record_session_.active) {
-      write_split_record_event_locked("env_reset", d ? d->time : 0.0, "");
-    }
-  }
-  last_camera_update_time = 0.0;
-  ray_update_setp = 0;
-  pending_policy_id.store(-1, std::memory_order_relaxed);
-  pending_policy_direct_reset_id.store(-1, std::memory_order_relaxed);
-  pending_sensor_toggle.store(false, std::memory_order_relaxed);
-  last_gamepad_lb = false;
-  last_gamepad_rb = false;
-  last_gamepad_menu = false;
-  ray_caster_camera.enable_sensor(is_enable_sensor);
-  reset_observation_buffers();
-  reset_policy_states();
-  apply_play_like_defaults_for_policy(policy_id);
-  force_refresh_visual_obs(true);
-}
-
 void MJ_ENV::draw() {
   float c1[] = {1.0, 0, 0, 0.5};
   float c2[] = {0, 1.0, 0, 0.3};
@@ -306,465 +269,11 @@ void MJ_ENV::draw_windows() {
   //   drawGrayPixels(ray_caster_camera_img, 1, {w, h}, {w * r, h * r});
 }
 
-std::vector<std::pair<std::string, std::string>> MJ_ENV::draw_left_table() {
-  bool record_active = false;
-  uint64_t record_steps = 0;
-  uint64_t record_marks = 0;
-  {
-    std::lock_guard<std::mutex> lock(split_record_mutex_);
-    record_active = split_record_session_.active;
-    record_steps = split_record_session_.written_steps;
-    record_marks = split_record_session_.marker_count;
-  }
-  return {{"Policy ID", std::to_string(policy_id)},
-          {"Split Record", record_active ? "on" : "off"},
-          {"Record Steps", std::to_string(record_steps)},
-          {"Record Marks", std::to_string(record_marks)},
-          {"Sensor", is_enable_sensor ? "on" : "off"},
-          {"Cmd X", std::to_string(cmd[0])},
-          {"Cmd Y", std::to_string(cmd[1])},
-          {"Cmd Yaw", std::to_string(cmd[2])}};
-}
-
-std::string MJ_ENV::draw_top_text() {
-  return "Policy " + std::to_string(policy_id) + " " +
-         policy_description[policy_id];
-}
-
-bool MJ_ENV::current_policy_is_split_runtime() const {
-  if (policy_id < 0 || policy_id >= static_cast<int>(policys.size())) {
-    return false;
-  }
-  return policys[policy_id].is_split_runtime_active();
-}
-
-std::filesystem::path MJ_ENV::resolve_repo_root() {
-  auto looks_like_repo_root = [](const std::filesystem::path &candidate) {
-    return std::filesystem::is_directory(candidate / "tools") &&
-           std::filesystem::is_directory(candidate / "mujoco") &&
-           std::filesystem::is_directory(candidate / "policy");
-  };
-
-  std::filesystem::path current = std::filesystem::current_path();
-  for (int depth = 0; depth < 8; ++depth) {
-    if (looks_like_repo_root(current)) {
-      return std::filesystem::weakly_canonical(current);
-    }
-    if (!current.has_parent_path()) {
-      break;
-    }
-    current = current.parent_path();
-  }
-
-  std::filesystem::path source_path(__FILE__);
-  if (source_path.is_absolute()) {
-    std::filesystem::path candidate = source_path.parent_path();
-    for (int depth = 0; depth < 8; ++depth) {
-      if (looks_like_repo_root(candidate)) {
-        return std::filesystem::weakly_canonical(candidate);
-      }
-      if (!candidate.has_parent_path()) {
-        break;
-      }
-      candidate = candidate.parent_path();
-    }
-  }
-
-  return std::filesystem::weakly_canonical(std::filesystem::current_path());
-}
-
-std::string MJ_ENV::make_record_timestamp() {
-  const auto now = std::chrono::system_clock::now();
-  const std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-  std::tm tm_now = *std::localtime(&now_time);
-  std::ostringstream oss;
-  oss << std::put_time(&tm_now, "%Y%m%d_%H%M%S");
-  return oss.str();
-}
-
-std::string MJ_ENV::shape_to_string(const std::vector<int64_t> &shape) {
-  std::ostringstream oss;
-  oss << "[";
-  for (size_t i = 0; i < shape.size(); ++i) {
-    if (i > 0) {
-      oss << ", ";
-    }
-    oss << shape[i];
-  }
-  oss << "]";
-  return oss.str();
-}
-
-const SplitTensorSnapshot *
-MJ_ENV::find_split_tensor(const SplitDebugSnapshot &snapshot,
-                          const std::string &name) {
-  for (const auto &tensor : snapshot.tensors) {
-    if (tensor.name == name) {
-      return &tensor;
-    }
-  }
-  return nullptr;
-}
-
-void MJ_ENV::write_tensor_csv_header(std::ofstream &stream, int64_t num_values) {
-  stream << "inference_index,sim_time";
-  for (int64_t i = 0; i < num_values; ++i) {
-    stream << ",v" << std::setw(4) << std::setfill('0') << i;
-  }
-  stream << std::setfill(' ') << "\n";
-}
-
-void MJ_ENV::append_tensor_csv_row(std::ofstream &stream,
-                                   uint64_t inference_index, double sim_time,
-                                   const SimpleTensor &tensor) {
-  stream << inference_index << "," << std::fixed << std::setprecision(6)
-         << sim_time;
-  for (float value : tensor.data_) {
-    stream << "," << value;
-  }
-  stream << "\n";
-}
-
-bool MJ_ENV::save_render_frame_image(const std::filesystem::path &path,
-                                     const std::vector<unsigned char> &rgb,
-                                     int width, int height) {
-  if (width <= 0 || height <= 0 || rgb.empty() ||
-      rgb.size() != static_cast<size_t>(width) * static_cast<size_t>(height) *
-                        static_cast<size_t>(3)) {
-    return false;
-  }
-
-  cv::Mat rgb_bottom_up(height, width, CV_8UC3,
-                        const_cast<unsigned char *>(rgb.data()));
-  cv::Mat rgb_top_down;
-  cv::flip(rgb_bottom_up, rgb_top_down, 0);
-  cv::Mat bgr;
-  cv::cvtColor(rgb_top_down, bgr, cv::COLOR_RGB2BGR);
-
-  std::vector<int> params = {cv::IMWRITE_JPEG_QUALITY, 90};
-  return cv::imwrite(path.string(), bgr, params);
-}
-
-void MJ_ENV::write_split_record_event_locked(const std::string &event,
-                                             double sim_time,
-                                             const std::string &detail) {
-  if (!split_record_session_.events_csv.is_open()) {
-    return;
-  }
-  split_record_session_.events_csv << split_record_session_.last_inference_index
-                                   << "," << std::fixed
-                                   << std::setprecision(6) << sim_time << ","
-                                   << event << "," << detail << "\n";
-}
-
-void MJ_ENV::ensure_split_record_headers_locked(
-    const SplitDebugSnapshot &snapshot) {
-  if (split_record_session_.tensor_headers_written) {
-    return;
-  }
-
-  const auto *obs_tensor = find_split_tensor(snapshot, "obs");
-  const auto *encoded_tensor = find_split_tensor(snapshot, "encoded_obs");
-  const auto *latent_tensor = find_split_tensor(snapshot, "latent");
-  const auto *actions_tensor = find_split_tensor(snapshot, "actions");
-  if (!obs_tensor || !encoded_tensor || !latent_tensor || !actions_tensor) {
-    EnvWarning("Split recording header init skipped because snapshot is incomplete.");
-    return;
-  }
-
-  split_record_session_.obs_shape = obs_tensor->stats.shape;
-  split_record_session_.encoded_obs_shape = encoded_tensor->stats.shape;
-  split_record_session_.latent_shape = latent_tensor->stats.shape;
-  split_record_session_.actions_shape = actions_tensor->stats.shape;
-
-  write_tensor_csv_header(split_record_session_.obs_csv, obs_tensor->stats.numel);
-  write_tensor_csv_header(split_record_session_.encoded_obs_csv,
-                          encoded_tensor->stats.numel);
-  write_tensor_csv_header(split_record_session_.latent_csv,
-                          latent_tensor->stats.numel);
-  write_tensor_csv_header(split_record_session_.actions_csv,
-                          actions_tensor->stats.numel);
-  split_record_session_.tensor_headers_written = true;
-}
-
-void MJ_ENV::write_split_record_meta_locked() const {
-  if (!split_record_session_.active) {
-    return;
-  }
-
-  std::ofstream meta_file(split_record_session_.directory / "meta.json");
-  if (!meta_file.is_open()) {
-    return;
-  }
-
-  meta_file << "{\n";
-  meta_file << "  \"policy_id\": " << split_record_session_.policy_id << ",\n";
-  meta_file << "  \"policy_description\": \""
-            << split_record_session_.policy_description << "\",\n";
-#ifdef USE_ONNX
-  meta_file << "  \"backend\": \"split_onnx\",\n";
-#else
-  meta_file << "  \"backend\": \"split_jit\",\n";
-#endif
-  meta_file << "  \"written_steps\": " << split_record_session_.written_steps
-            << ",\n";
-  meta_file << "  \"marker_count\": " << split_record_session_.marker_count
-            << ",\n";
-  meta_file << "  \"render_rows_written\": "
-            << split_record_session_.render_rows_written << ",\n";
-  meta_file << "  \"render_image_count\": "
-            << split_record_session_.render_image_count << ",\n";
-  meta_file << "  \"render_size\": ["
-            << split_record_session_.render_width << ", "
-            << split_record_session_.render_height << "],\n";
-  meta_file << "  \"first_inference_index\": "
-            << split_record_session_.first_inference_index << ",\n";
-  meta_file << "  \"last_inference_index\": "
-            << split_record_session_.last_inference_index << ",\n";
-  meta_file << "  \"obs_shape\": "
-            << shape_to_string(split_record_session_.obs_shape) << ",\n";
-  meta_file << "  \"encoded_obs_shape\": "
-            << shape_to_string(split_record_session_.encoded_obs_shape) << ",\n";
-  meta_file << "  \"latent_shape\": "
-            << shape_to_string(split_record_session_.latent_shape) << ",\n";
-  meta_file << "  \"actions_shape\": "
-            << shape_to_string(split_record_session_.actions_shape) << "\n";
-  meta_file << "}\n";
-}
-
-void MJ_ENV::record_render_view_locked(uint64_t inference_index,
-                                       double sim_time) {
-  if (!split_record_session_.render_frames_csv.is_open()) {
-    return;
-  }
-
-  int width = 0;
-  int height = 0;
-  uint64_t render_frame_id = 0;
-  std::string file_name;
-
-  if (get_latest_render_frame_info(width, height, render_frame_id) &&
-      width > 0 && height > 0) {
-    if (split_record_session_.has_last_saved_render &&
-        split_record_session_.last_saved_render_frame_id == render_frame_id) {
-      file_name = split_record_session_.last_saved_render_file;
-    } else {
-      std::vector<unsigned char> rgb;
-      if (!copy_latest_render_rgb_frame(rgb, width, height, render_frame_id) ||
-          rgb.empty()) {
-        width = 0;
-        height = 0;
-        render_frame_id = 0;
-      } else {
-        std::ostringstream name_builder;
-        name_builder << "render_" << std::setw(8) << std::setfill('0')
-                     << render_frame_id << ".jpg";
-        file_name = (std::filesystem::path("render_frames") /
-                     name_builder.str())
-                        .generic_string();
-        const auto image_path = split_record_session_.directory / file_name;
-        if (save_render_frame_image(image_path, rgb, width, height)) {
-          split_record_session_.last_saved_render_frame_id = render_frame_id;
-          split_record_session_.last_saved_render_file = file_name;
-          split_record_session_.has_last_saved_render = true;
-          split_record_session_.render_width = width;
-          split_record_session_.render_height = height;
-          split_record_session_.render_image_count += 1;
-        } else {
-          EnvWarning("Failed to save render frame image to " +
-                     image_path.string());
-          file_name.clear();
-          width = 0;
-          height = 0;
-          render_frame_id = 0;
-        }
-      }
-    }
-  }
-
-  split_record_session_.render_frames_csv << inference_index << "," << std::fixed
-                                          << std::setprecision(6) << sim_time
-                                          << "," << render_frame_id << ","
-                                          << width << "," << height << ","
-                                          << file_name << "\n";
-  split_record_session_.render_rows_written += 1;
-}
-
-void MJ_ENV::start_split_recording_for_current_policy() {
-  if (!current_policy_is_split_runtime()) {
-    EnvWarning(
-        "Current policy is not running in SRU split mode. Split recording ignored.");
-    return;
-  }
-
-  std::lock_guard<std::mutex> lock(split_record_mutex_);
-  if (split_record_session_.active) {
-    EnvWarning("Split recording is already active.");
-    return;
-  }
-
-  SplitRecordSession session;
-  session.active = true;
-  session.policy_id = policy_id;
-  session.policy_description = policy_description[policy_id];
-  session.directory = resolve_repo_root() /
-      "split_records" /
-      (session.policy_description + "_" + make_record_timestamp());
-  std::filesystem::create_directories(session.directory);
-  session.render_frames_dir = session.directory / "render_frames";
-  std::filesystem::create_directories(session.render_frames_dir);
-
-  session.steps_csv.open(session.directory / "steps.csv");
-  session.obs_csv.open(session.directory / "obs.csv");
-  session.encoded_obs_csv.open(session.directory / "encoded_obs.csv");
-  session.latent_csv.open(session.directory / "latent.csv");
-  session.actions_csv.open(session.directory / "actions.csv");
-  session.events_csv.open(session.directory / "events.csv");
-  session.render_frames_csv.open(session.directory / "render_frames.csv");
-
-  if (!session.steps_csv.is_open() || !session.obs_csv.is_open() ||
-      !session.encoded_obs_csv.is_open() || !session.latent_csv.is_open() ||
-      !session.actions_csv.is_open() || !session.events_csv.is_open() ||
-      !session.render_frames_csv.is_open()) {
-    EnvWarning("Failed to open split recording files under " +
-               session.directory.string());
-    return;
-  }
-
-  session.steps_csv << "inference_index,sim_time,policy_id,cmd_x,cmd_y,cmd_yaw\n";
-  session.events_csv << "inference_index,sim_time,event,detail\n";
-  session.render_frames_csv
-      << "inference_index,sim_time,render_frame_id,width,height,file\n";
-
-  split_record_session_ = std::move(session);
-  policys[policy_id].set_split_record_capture_enabled(true);
-  set_render_capture_enabled(true);
-  write_split_record_event_locked("start_record", d ? d->time : 0.0, "");
-  Log("Split recording started: " << split_record_session_.directory.string());
-}
-
-void MJ_ENV::mark_split_recording_step() {
-  std::lock_guard<std::mutex> lock(split_record_mutex_);
-  if (!split_record_session_.active) {
-    EnvWarning("Split recording is not active. Mark ignored.");
-    return;
-  }
-
-  split_record_session_.marker_count += 1;
-  std::ostringstream detail;
-  detail << "manual_mark_" << std::setw(4) << std::setfill('0')
-         << split_record_session_.marker_count;
-  write_split_record_event_locked("mark", d ? d->time : 0.0, detail.str());
-  Log("Recorded split mark " << detail.str()
-                             << " at inference_index="
-                             << split_record_session_.last_inference_index);
-}
-
-void MJ_ENV::stop_split_recording(const std::string &reason) {
-  int recorded_policy_id = -1;
-  std::string saved_dir;
-  {
-    std::lock_guard<std::mutex> lock(split_record_mutex_);
-    if (!split_record_session_.active) {
-      if (reason == "manual_stop") {
-        EnvWarning("Split recording is not active.");
-      }
-      return;
-    }
-
-    write_split_record_event_locked("stop_record", d ? d->time : 0.0, reason);
-    write_split_record_meta_locked();
-    recorded_policy_id = split_record_session_.policy_id;
-    saved_dir = split_record_session_.directory.string();
-
-    split_record_session_.steps_csv.close();
-    split_record_session_.obs_csv.close();
-    split_record_session_.encoded_obs_csv.close();
-    split_record_session_.latent_csv.close();
-    split_record_session_.actions_csv.close();
-    split_record_session_.events_csv.close();
-    split_record_session_.render_frames_csv.close();
-    split_record_session_ = SplitRecordSession{};
-  }
-
-  set_render_capture_enabled(false);
-  if (recorded_policy_id >= 0 &&
-      recorded_policy_id < static_cast<int>(policys.size())) {
-    policys[recorded_policy_id].set_split_record_capture_enabled(false);
-    policys[recorded_policy_id].clear_last_split_debug_snapshot();
-  }
-  Log("Split recording saved to: " << saved_dir << " (" << reason << ")");
-}
-
-void MJ_ENV::handle_split_snapshot_after_step(double sim_time) {
-  if (!current_policy_is_split_runtime()) {
-    return;
-  }
-
-  Policy &policy = policys[policy_id];
-  auto snapshot_opt = policy.get_last_split_debug_snapshot();
-  if (!snapshot_opt.has_value()) {
-    return;
-  }
-  const SplitDebugSnapshot &snapshot = *snapshot_opt;
-
-  {
-    std::lock_guard<std::mutex> lock(split_record_mutex_);
-    if (split_record_session_.active &&
-        split_record_session_.policy_id == policy_id) {
-      ensure_split_record_headers_locked(snapshot);
-
-      const auto *obs_tensor = find_split_tensor(snapshot, "obs");
-      const auto *encoded_tensor = find_split_tensor(snapshot, "encoded_obs");
-      const auto *latent_tensor = find_split_tensor(snapshot, "latent");
-      const auto *actions_tensor = find_split_tensor(snapshot, "actions");
-      if (obs_tensor && encoded_tensor && latent_tensor && actions_tensor &&
-          obs_tensor->values.defined() && encoded_tensor->values.defined() &&
-          latent_tensor->values.defined() && actions_tensor->values.defined()) {
-        split_record_session_.steps_csv << snapshot.inference_index << ","
-                                        << std::fixed << std::setprecision(6)
-                                        << sim_time << "," << policy_id << ","
-                                        << cmd[0] << "," << cmd[1] << ","
-                                        << cmd[2] << "\n";
-        append_tensor_csv_row(split_record_session_.obs_csv,
-                              snapshot.inference_index, sim_time,
-                              obs_tensor->values);
-        append_tensor_csv_row(split_record_session_.encoded_obs_csv,
-                              snapshot.inference_index, sim_time,
-                              encoded_tensor->values);
-        append_tensor_csv_row(split_record_session_.latent_csv,
-                              snapshot.inference_index, sim_time,
-                              latent_tensor->values);
-        append_tensor_csv_row(split_record_session_.actions_csv,
-                              snapshot.inference_index, sim_time,
-                              actions_tensor->values);
-        record_render_view_locked(snapshot.inference_index, sim_time);
-
-        if (split_record_session_.written_steps == 0) {
-          split_record_session_.first_inference_index = snapshot.inference_index;
-        }
-        split_record_session_.last_inference_index = snapshot.inference_index;
-        split_record_session_.written_steps += 1;
-      }
-    }
-  }
-
-  policy.clear_last_split_debug_snapshot();
-}
-
-void MJ_ENV::set_policy_id(int new_policy_id) {
-  if (new_policy_id < 0 ||
-      new_policy_id >= static_cast<int>(policy_description.size())) {
-    return;
-  }
-  pending_policy_id.store(new_policy_id, std::memory_order_relaxed);
-}
-
 bool MJ_ENV::uses_visual_policy(int policy_idx) const {
   return policy_idx == 2 || policy_idx == 3;
 }
 
-void MJ_ENV::apply_play_like_defaults_for_policy(int policy_idx) {
+void MJ_ENV::apply_policy_defaults_for_policy(int policy_idx) {
   if (!uses_visual_policy(policy_idx)) {
     return;
   }
@@ -775,7 +284,7 @@ void MJ_ENV::apply_play_like_defaults_for_policy(int policy_idx) {
   }
 }
 
-void MJ_ENV::force_refresh_visual_obs(bool warm_start_history) {
+void MJ_ENV::refresh_visual_observations(bool warm_start_history) {
   if (is_enable_sensor) {
     ray_caster_camera.compute_distance();
   }
@@ -791,136 +300,104 @@ void MJ_ENV::force_refresh_visual_obs(bool warm_start_history) {
   last_camera_update_time = d->time;
 }
 
-void MJ_ENV::on_policy_runtime_state_reset(int id) {
-  {
-    std::lock_guard<std::mutex> lock(split_record_mutex_);
-    if (split_record_session_.active && split_record_session_.policy_id == id) {
-      write_split_record_event_locked("policy_reset", d ? d->time : 0.0, "");
-    }
-  }
-  reset_observation_buffers(id);
-  if (uses_visual_policy(id)) {
-    force_refresh_visual_obs(true);
-  }
+void MJ_ENV::on_sensor_enabled_changed(bool enabled) {
+  ray_caster_camera.enable_sensor(enabled);
 }
 
-void MJ_ENV::apply_pending_runtime_changes() {
-  bool need_refresh_visual_obs = false;
-  bool warm_start_visual_history = false;
-
-  if (pending_sensor_toggle.exchange(false, std::memory_order_relaxed)) {
-    is_enable_sensor = !is_enable_sensor;
-    ray_caster_camera.enable_sensor(is_enable_sensor);
-    need_refresh_visual_obs = true;
-    warm_start_visual_history = is_enable_sensor && uses_visual_policy(policy_id);
-  }
-
-  int direct_reset_policy_id =
-      pending_policy_direct_reset_id.exchange(-1, std::memory_order_relaxed);
-  if (direct_reset_policy_id >= 0 &&
-      direct_reset_policy_id < static_cast<int>(policy_description.size())) {
-    policys[direct_reset_policy_id].reset_state();
-  }
-
-  int requested_policy_id =
-      pending_policy_id.exchange(-1, std::memory_order_relaxed);
-  if (requested_policy_id >= 0 &&
-      requested_policy_id < static_cast<int>(policy_description.size()) &&
-      requested_policy_id != policy_id) {
-    bool should_stop_recording = false;
-    {
-      std::lock_guard<std::mutex> lock(split_record_mutex_);
-      should_stop_recording =
-          split_record_session_.active &&
-          split_record_session_.policy_id == policy_id;
-    }
-    if (should_stop_recording) {
-      stop_split_recording("policy_switch");
-    }
-    // reset_observation_buffers(requested_policy_id);
-    reset_policy_states(requested_policy_id);
-    policy_id = requested_policy_id;
-    apply_play_like_defaults_for_policy(policy_id);
-    if (uses_visual_policy(policy_id)) {
-      need_refresh_visual_obs = true;
-      warm_start_visual_history = true;
-    }
-  }
-
-  if (need_refresh_visual_obs) {
-    force_refresh_visual_obs(warm_start_visual_history);
-  }
+void MJ_ENV::on_env_reset() {
+  last_camera_update_time = 0.0f;
+  ray_update_setp = 0;
 }
 
-void MJ_ENV::keyboard_press(std::string key) {
-  if (key == "w")
-    cmd[0] += 0.1f;
-  else if (key == "s")
-    cmd[0] -= 0.1f;
-  else if (key == "a")
-    cmd[1] += 0.1f;
-  else if (key == "d")
-    cmd[1] -= 0.1f;
-  else if (key == "q")
-    cmd[2] += 0.1f;
-  else if (key == "e")
-    cmd[2] -= 0.1f;
-  else if (key == "space") {
-    cmd[0] = 0;
-    cmd[1] = 0;
-    cmd[2] = 0;
-  } else if (key == "1")
-    set_policy_id(0);
-  else if (key == "2")
-    set_policy_id(1);
-  else if (key == "3")
-    set_policy_id(2);
-  else if (key == "4")
-    set_policy_id(3);
-  else if (key == "r")
-    request_policy_state_reset(policy_id);
-  else if (key == "x")
-    start_split_recording_for_current_policy();
-  else if (key == "v")
-    mark_split_recording_step();
-  else if (key == "c")
-    stop_split_recording("manual_stop");
+SimpleTensor MJ_ENV::build_normalized_ray_caster_image(float min_dist,
+                                                       float max_dist) {
+  auto raw_vec = ray_caster_camera.get_distance_to_image_plane_vec(true, true);
+
+  std::vector<float> processed_data;
+  processed_data.reserve(raw_vec.size());
+  float range = max_dist - min_dist;
+  if (range <= 1.0e-6f) {
+    range = 1.0f;
+  }
+
+  for (auto val_in : raw_vec) {
+    float val = static_cast<float>(val_in);
+    if (std::isinf(val)) {
+      val = max_dist;
+    }
+    if (val > max_dist) {
+      val = max_dist;
+    }
+    if (val < min_dist) {
+      val = min_dist;
+    }
+    val = (val - min_dist) / range;
+    processed_data.push_back(val);
+  }
+
+  return SimpleTensor::wrap(processed_data);
 }
 
-void MJ_ENV::init_gamepad() {
-  pad = std::make_shared<GamePad>();
-  pad->showGamePads();
-  if (!pad->GamePadpads.empty()) {
-    pad->openGamePad(pad->GamePadpads.begin()->first);
-    pad->bindGamePadValues([this](GamePadValues m) {
-      cmd[0] = -(m.ly / 32767.0f) * cmd_pad_scale[0];
-      cmd[1] = -(m.lx / 32767.0f) * cmd_pad_scale[1];
-      cmd[2] = -(m.rx / 32767.0f) * cmd_pad_scale[2];
+std::shared_ptr<ObservationTerm> MJ_ENV::make_base_ang_vel_term(int history) {
+  auto term = std::make_shared<ObservationTerm>("base_angvel", history);
+  term->func = [this]() { return get_base_ang_vel(); };
+  term->scale = 0.25;
+  return term;
+}
 
-      if (m.a)
-        set_policy_id(0);
-      if (m.b)
-        set_policy_id(1);
-      if (m.y)
-        set_policy_id(2);
-      if (m.x)
-        set_policy_id(3);
-      if (m.lb && !last_gamepad_lb) {
-        pending_policy_direct_reset_id.store(policy_id,
-                                             std::memory_order_relaxed);
-      }
-      if (m.rb && !last_gamepad_rb) {
-        pending_sensor_toggle.store(true, std::memory_order_relaxed);
-      }
-      if (m.menu && !last_gamepad_menu) {
-        request_policy_state_reset(policy_id);
-      }
-      last_gamepad_lb = static_cast<bool>(m.lb);
-      last_gamepad_rb = static_cast<bool>(m.rb);
-      last_gamepad_menu = static_cast<bool>(m.menu);
-    });
-    pad->readGamePad();
-  }
+std::shared_ptr<ObservationTerm>
+MJ_ENV::make_projected_gravity_term(int history) {
+  auto term = std::make_shared<ObservationTerm>("projected_gravity", history);
+  term->func = [this]() { return get_projected_gravity(); };
+  return term;
+}
+
+std::shared_ptr<ObservationTerm>
+MJ_ENV::make_command_term(int history, const std::string &name) {
+  auto term = std::make_shared<ObservationTerm>(name, history);
+  term->func = [this]() { return get_command(); };
+  return term;
+}
+
+std::shared_ptr<ObservationTerm> MJ_ENV::make_dof_pos_term(int history) {
+  auto term = std::make_shared<ObservationTerm>("dof_pos", history);
+  term->func = [this]() { return get_dof_pos(); };
+  term->scale = 1.0;
+  return term;
+}
+
+std::shared_ptr<ObservationTerm> MJ_ENV::make_dof_vel_term(int history) {
+  auto term = std::make_shared<ObservationTerm>("dof_vel", history);
+  term->func = [this]() { return get_dof_vel(); };
+  term->scale = 0.05;
+  return term;
+}
+
+std::shared_ptr<ActionObsTerm> MJ_ENV::make_last_action_term(int history) {
+  auto term = std::make_shared<ActionObsTerm>("last_action", history);
+  term->init(16);
+  return term;
+}
+
+std::shared_ptr<ImageObservationTerm>
+MJ_ENV::make_ray_image_term(int history, int stride, int stride_range,
+                            float min_dist, float max_dist, bool manual_mode) {
+  auto term =
+      std::make_shared<ImageObservationTerm>("ray_caster", history, stride,
+                                             stride_range);
+  term->func = [this, min_dist, max_dist]() {
+    return build_normalized_ray_caster_image(min_dist, max_dist);
+  };
+  term->setManualMode(manual_mode);
+  return term;
+}
+
+std::shared_ptr<ActionTerm> MJ_ENV::make_action_term(bool use_action2_scale) {
+  auto action = std::make_shared<ActionTerm>();
+  action->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
+  action->scale_ = SimpleTensor::wrap(use_action2_scale ? action2_scale_vec
+                                                        : action_scale_vec);
+  return action;
 }
 
 void MJ_ENV::deep_mul_gradient(std::vector<double> data) {
@@ -938,46 +415,8 @@ void MJ_ENV::deep_mul_gradient(std::vector<double> data) {
   cv::waitKey(1);
 }
 
+
 void MJ_ENV::registerManager1() {
-  // Policy 0: base_mlp
-  std::vector<std::shared_ptr<ObservationTerm>> obs;
-
-  auto ang = std::make_shared<ObservationTerm>("base_angvel", 5);
-  ang->func = [this]() { return get_base_ang_vel(); };
-  ang->scale = 0.25;
-
-  auto grav = std::make_shared<ObservationTerm>("projected_gravity", 5);
-  grav->func = [this]() { return get_projected_gravity(); };
-
-  auto cmd = std::make_shared<ObservationTerm>("command", 1);
-  cmd->func = [this]() { return get_command(); };
-
-  auto pos = std::make_shared<ObservationTerm>("dof_pos", 5);
-  pos->func = [this]() { return get_dof_pos(); };
-  pos->scale = 1.0;
-
-  auto vel = std::make_shared<ObservationTerm>("dof_vel", 5);
-  vel->func = [this]() { return get_dof_vel(); };
-  vel->scale = 0.05;
-
-  auto act = std::make_shared<ActionObsTerm>("last_action", 5);
-  act->init(16);
-
-  obs.push_back(ang);
-  obs.push_back(grav);
-  obs.push_back(cmd);
-  obs.push_back(pos);
-  obs.push_back(vel);
-  obs.push_back(act);
-
-  auto action = std::make_shared<ActionTerm>();
-  action->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-  action->scale_ = SimpleTensor::wrap(action_scale_vec);
-
-  registerTerms(obs, action);
-}
-
-void MJ_ENV::registerManager2() {
   // Policy 1: motion_mlp
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
@@ -995,182 +434,70 @@ void MJ_ENV::registerManager2() {
       std::make_shared<ObservationTerm>("motion_anchor_ori_b", 1);
   motion_anchor_ori_b->func = [this]() { return get_motion_anchor_ori_b(); };
 
-  auto base_ang_vel = std::make_shared<ObservationTerm>("base_ang_vel", 3);
-  base_ang_vel->func = [this]() { return get_base_ang_vel(); };
-  base_ang_vel->scale = 0.25;
-
-  auto grav = std::make_shared<ObservationTerm>("projected_gravity", 3);
-  grav->func = [this]() { return get_projected_gravity(); };
-
-  auto velocity_command =
-      std::make_shared<ObservationTerm>("velocity_command", 1);
-  velocity_command->func = [this]() { return get_command(); };
-
-  auto pos = std::make_shared<ObservationTerm>("dof_pos", 3);
-  pos->func = [this]() { return get_dof_pos(); };
-  pos->scale = 1.0;
-
-  auto vel = std::make_shared<ObservationTerm>("dof_vel", 3);
-  vel->func = [this]() { return get_dof_vel(); };
-  vel->scale = 0.05;
-
-  auto act = std::make_shared<ActionObsTerm>("last_action", 3);
-  act->init(16);
-
   obs.push_back(motion);
   obs.push_back(motion_task);
   obs.push_back(motion_anchor_pos_b);
   obs.push_back(motion_anchor_ori_b);
-  obs.push_back(base_ang_vel);
-  obs.push_back(grav);
-  obs.push_back(velocity_command);
-  obs.push_back(pos);
-  obs.push_back(vel);
-  obs.push_back(act);
+  obs.push_back(make_base_ang_vel_term(3));
+  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_command_term(1, "velocity_command"));
+  obs.push_back(make_dof_pos_term(3));
+  obs.push_back(make_dof_vel_term(3));
+  obs.push_back(make_last_action_term(3));
 
-  auto action = std::make_shared<ActionTerm>();
-  action->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-  action->scale_ = SimpleTensor::wrap(action_scale_vec);
-
-  registerTerms(obs, action);
+  registerTerms(obs, make_action_term());
 }
 
-void MJ_ENV::registerManager3() {
+void MJ_ENV::registerManager2() {
   // Policy 2: vtm (cnn)
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto ang = std::make_shared<ObservationTerm>("base_angvel", 3);
-  ang->func = [this]() { return get_base_ang_vel(); };
-  ang->scale = 0.25;
-
-  auto grav = std::make_shared<ObservationTerm>("projected_gravity", 3);
-  grav->func = [this]() { return get_projected_gravity(); };
-
-  auto cmd = std::make_shared<ObservationTerm>("command", 1);
-  cmd->func = [this]() { return get_command(); };
-
-  auto pos = std::make_shared<ObservationTerm>("dof_pos", 3);
-  pos->func = [this]() { return get_dof_pos(); };
-  pos->scale = 1.0;
-
-  auto vel = std::make_shared<ObservationTerm>("dof_vel", 3);
-  vel->func = [this]() { return get_dof_vel(); };
-  vel->scale = 0.05;
-
-  auto act = std::make_shared<ActionObsTerm>("last_action", 3);
-  act->init(16);
-
-  auto image = std::make_shared<ImageObservationTerm>("ray_caster", 5, 5, 1);
-  image->func = [this]() {
-    auto raw_vec = ray_caster_camera.get_distance_to_image_plane_vec(true, true);
-
-    const float max_dist = 3.0f;
-    const float min_dist = 0.1f;
-    const bool normalize = true;
-    std::vector<float> processed_data;
-    processed_data.reserve(raw_vec.size());
-    float range = max_dist - min_dist;
-    if (range <= 1e-6f)
-      range = 1.0f;
-    for (auto val_in : raw_vec) {
-      float val = static_cast<float>(val_in);
-      if (std::isinf(val))
-        val = max_dist;
-      if (val > max_dist)
-        val = max_dist;
-      if (val < min_dist)
-        val = min_dist;
-      if (normalize) {
-        val = (val - min_dist) / range;
-      }
-      processed_data.push_back(val);
-    }
-    return SimpleTensor::wrap(processed_data);
-  };
-  image->setManualMode(true);
+  auto image = make_ray_image_term(5, 5, 1, 0.1f, 3.0f);
   obs_rays.push_back(image);
 
-  obs.push_back(ang);
-  obs.push_back(grav);
-  obs.push_back(cmd);
-  obs.push_back(pos);
-  obs.push_back(vel);
-  obs.push_back(act);
+  obs.push_back(make_base_ang_vel_term(3));
+  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_command_term(1));
+  obs.push_back(make_dof_pos_term(3));
+  obs.push_back(make_dof_vel_term(3));
+  obs.push_back(make_last_action_term(3));
   obs.push_back(image);
 
-  auto action = std::make_shared<ActionTerm>();
-  action->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-  action->scale_ = SimpleTensor::wrap(action2_scale_vec);
+  registerTerms(obs, make_action_term(true));
+}
 
-  registerTerms(obs, action);
+void MJ_ENV::registerManager3() {
+  // Policy 3: vtm_sru
+  std::vector<std::shared_ptr<ObservationTerm>> obs;
+
+  auto image = make_ray_image_term(0, 5, 1, 0.1f, 2.0f);
+  obs_rays.push_back(image);
+
+  obs.push_back(make_base_ang_vel_term(3));
+  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_command_term(1));
+  obs.push_back(make_dof_pos_term(3));
+  obs.push_back(make_dof_vel_term(3));
+  obs.push_back(make_last_action_term(3));
+  obs.push_back(image);
+
+  registerTerms(obs, make_action_term(true));
 }
 
 void MJ_ENV::registerManager4() {
   // Policy 3: vtm_sru
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto ang = std::make_shared<ObservationTerm>("base_angvel", 3);
-  ang->func = [this]() { return get_base_ang_vel(); };
-  ang->scale = 0.25;
-
-  auto grav = std::make_shared<ObservationTerm>("projected_gravity", 3);
-  grav->func = [this]() { return get_projected_gravity(); };
-
-  auto cmd = std::make_shared<ObservationTerm>("command", 1);
-  cmd->func = [this]() { return get_command(); };
-
-  auto pos = std::make_shared<ObservationTerm>("dof_pos", 3);
-  pos->func = [this]() { return get_dof_pos(); };
-  pos->scale = 1.0;
-
-  auto vel = std::make_shared<ObservationTerm>("dof_vel", 3);
-  vel->func = [this]() { return get_dof_vel(); };
-  vel->scale = 0.05;
-
-  auto act = std::make_shared<ActionObsTerm>("last_action", 3);
-  act->init(16);
-
-  auto image = std::make_shared<ImageObservationTerm>("ray_caster", 0, 5, 1);
-  image->func = [this]() {
-    auto raw_vec = ray_caster_camera.get_distance_to_image_plane_vec(true, true);
-
-    const float max_dist = 2.0f;
-    const float min_dist = 0.1f;
-    const bool normalize = true;
-    std::vector<float> processed_data;
-    processed_data.reserve(raw_vec.size());
-    float range = max_dist - min_dist;
-    if (range <= 1e-6f)
-      range = 1.0f;
-    for (auto val_in : raw_vec) {
-      float val = static_cast<float>(val_in);
-      if (std::isinf(val))
-        val = max_dist;
-      if (val > max_dist)
-        val = max_dist;
-      if (val < min_dist)
-        val = min_dist;
-      if (normalize) {
-        val = (val - min_dist) / range;
-      }
-      processed_data.push_back(val);
-    }
-    return SimpleTensor::wrap(processed_data);
-  };
-  image->setManualMode(true);
+  auto image = make_ray_image_term(0, 5, 1, 0.1f, 2.0f);
   obs_rays.push_back(image);
 
-  obs.push_back(ang);
-  obs.push_back(grav);
-  obs.push_back(cmd);
-  obs.push_back(pos);
-  obs.push_back(vel);
-  obs.push_back(act);
+  obs.push_back(make_base_ang_vel_term(3));
+  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_command_term(1));
+  obs.push_back(make_dof_pos_term(3));
+  obs.push_back(make_dof_vel_term(3));
+  obs.push_back(make_last_action_term(3));
   obs.push_back(image);
 
-  auto action = std::make_shared<ActionTerm>();
-  action->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-  action->scale_ = SimpleTensor::wrap(action2_scale_vec);
-
-  registerTerms(obs, action);
+  registerTerms(obs, make_action_term(true));
 }

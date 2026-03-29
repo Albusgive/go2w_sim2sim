@@ -17,6 +17,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/lab2mj.dir/lab2mj.cpp.o.d"
   "CMakeFiles/lab2mj.dir/mj_env.cpp.o"
   "CMakeFiles/lab2mj.dir/mj_env.cpp.o.d"
+  "CMakeFiles/lab2mj.dir/sim2sim_env.cpp.o"
+  "CMakeFiles/lab2mj.dir/sim2sim_env.cpp.o.d"
   "lab2mj"
   "lab2mj.pdb"
 )
