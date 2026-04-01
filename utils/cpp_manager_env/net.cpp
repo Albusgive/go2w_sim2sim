@@ -1007,6 +1007,10 @@ std::string Policy::load(const PolicySpec& spec, InferenceDevice device) {
         should_try_split_fallback(spec_, split_deploy_spec_.has_value());
 
     try {
+        std::cout << "[Policy] Loading \"" << spec_.description << "\" from "
+                  << spec_.path << " with device "
+                  << (device_ == InferenceDevice::CUDA ? "CUDA" : "CPU")
+                  << std::endl;
         env_ = std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "PolicyEnv");
         Ort::SessionOptions session_options;
         session_options.SetIntraOpNumThreads(1);
@@ -1108,8 +1112,13 @@ std::string Policy::load(const PolicySpec& spec, InferenceDevice device) {
                     : find_model_file(spec_, ".onnx");
             configure_from_model_metadata(model_path);
 
+            std::cout << "[Policy] Creating ONNX session for model: "
+                      << model_path << std::endl;
+
             session_ = std::make_shared<Ort::Session>(*env_, model_path.c_str(),
                                                       session_options);
+            std::cout << "[Policy] ONNX session created for model: "
+                      << model_path << std::endl;
             populate_onnx_node_names(session_, input_node_names_alloc_,
                                      input_node_names_, output_node_names_alloc_,
                                      output_node_names_);

@@ -6,6 +6,7 @@
 
 #include <array>
 #include <atomic>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <opencv2/opencv.hpp>
@@ -30,6 +31,7 @@ public:
 
   void start();
   void init_gamepad(bool enable_local_gamepad = true);
+  void configure_policy_perf_monitor(bool enable, double interval_sec);
   void initObsManager() override;
 
 protected:
@@ -49,6 +51,9 @@ private:
       const unitree_go::msg::WirelessController::SharedPtr msg);
 
   void set_policy_id(int new_policy_id);
+  void reset_policy_perf_stats_locked();
+  void record_policy_inference_stats(int active_policy_id,
+                                     double inference_ms);
   void apply_pending_runtime_changes();
   bool uses_visual_policy(int policy_idx) const;
   void apply_policy_defaults_for_policy(int policy_idx);
@@ -112,6 +117,13 @@ private:
   int stop_posture_step_ = 0;
   int stop_posture_steps_to_stand_ = 50;
   int stop_posture_steps_to_down_ = 90;
+  bool policy_perf_monitor_enabled_ = false;
+  double policy_perf_log_interval_sec_ = 5.0;
+  int perf_window_policy_id_ = -1;
+  size_t perf_window_inference_count_ = 0;
+  double perf_window_total_inference_ms_ = 0.0;
+  double perf_window_max_inference_ms_ = 0.0;
+  std::chrono::steady_clock::time_point perf_window_start_time_{};
 
   std::atomic<int> pending_policy_id_{-1};
   std::atomic<int> pending_policy_direct_reset_id_{-1};
@@ -153,6 +165,7 @@ private:
   mutable std::mutex low_state_mutex_;
   mutable std::mutex image_mutex_;
   mutable std::mutex stop_posture_mutex_;
+  mutable std::mutex perf_stats_mutex_;
   cv::Mat latest_depth_image_m_;
   cv::Mat latest_rgb_image_;
 

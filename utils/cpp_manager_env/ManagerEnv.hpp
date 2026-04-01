@@ -116,6 +116,9 @@ public:
 
   void init_manager();
   SimpleTensor manager_step(int id = 0);
+  void set_update_all_policy_obs_in_manager_step(bool enable);
+  bool update_all_policy_obs_in_manager_step() const;
+  bool should_reset_observation_buffers_on_policy_switch() const;
   void reset_policy_states(int id = -1);
   void reset_policy_states_done(int id, const SimpleTensor &dones);
   void reset_observation_buffers(int id = -1);
@@ -184,4 +187,5 @@ private:
 
   mutable std::mutex policy_state_runtime_mutex_;
   std::vector<PolicyStateRuntimeControl> policy_state_runtime_controls_;
+  bool update_all_policy_obs_in_manager_step_ = true;
 };

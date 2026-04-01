@@ -321,7 +321,9 @@ void ManagerBasedEnv::init_manager() {
     try {
       SimpleTensor dummy_input =
           SimpleTensor::zeros({static_cast<int64_t>(total_obs_dim)});
+      std::cout << "       [TEST] Dummy input prepared." << std::endl;
       SimpleTensor dummy_output = policys[obs_term_id].get_action(dummy_input);
+      std::cout << "       [TEST] Dummy inference finished." << std::endl;
 
       policy_act_dim = dummy_output.numel();
       policys[obs_term_id].reset_state();
@@ -356,9 +358,26 @@ void ManagerBasedEnv::init_manager() {
 
 SimpleTensor ManagerBasedEnv::manager_step(int id) {
   apply_policy_runtime_controls(id);
-  for (int i = 0; i < obs_terms.size(); i++)
-    computeObs(i);
+  if (update_all_policy_obs_in_manager_step_) {
+    for (int i = 0; i < obs_terms.size(); i++) {
+      computeObs(i);
+    }
+  } else {
+    computeObs(id);
+  }
   return computeAction(id);
+}
+
+void ManagerBasedEnv::set_update_all_policy_obs_in_manager_step(bool enable) {
+  update_all_policy_obs_in_manager_step_ = enable;
+}
+
+bool ManagerBasedEnv::update_all_policy_obs_in_manager_step() const {
+  return update_all_policy_obs_in_manager_step_;
+}
+
+bool ManagerBasedEnv::should_reset_observation_buffers_on_policy_switch() const {
+  return !update_all_policy_obs_in_manager_step_;
 }
 
 void ManagerBasedEnv::reset_policy_states(int id) {
