@@ -10,6 +10,7 @@ namespace {
 constexpr int kControlPeriodMs = 20;
 constexpr int kDepthObsWidth = 32;
 constexpr int kDepthObsHeight = 18;
+constexpr int kDepthStaleFrameBudget = 15;
 constexpr uint16_t kWirelessKeyR1 = 1u << 0;
 constexpr uint16_t kWirelessKeyL1 = 1u << 1;
 constexpr uint16_t kWirelessKeyStart = 1u << 2;
@@ -569,12 +570,13 @@ void Go2wRealDeployNode::on_policy_runtime_state_reset(int id) {
 }
 
 void Go2wRealDeployNode::init_image_topic() {
+  auto qos = rclcpp::SensorDataQoS().keep_last(1);
   depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "/camera/depth/image_rect_raw", 1,
+      "/camera/depth/image_raw", qos,
       std::bind(&Go2wRealDeployNode::depth_callback, this,
                 std::placeholders::_1));
   rgb_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "/camera/color/image_raw", 1,
+      "/camera/color/image_raw", qos,
       std::bind(&Go2wRealDeployNode::rgb_callback, this,
                 std::placeholders::_1));
 }
@@ -600,8 +602,19 @@ void Go2wRealDeployNode::depth_callback(
     if (processed.empty()) {
       return;
     }
-    std::lock_guard<std::mutex> lock(image_mutex_);
-    latest_depth_image_m_ = processed;
+    bool depth_stream_recovered = false;
+    {
+      std::lock_guard<std::mutex> lock(image_mutex_);
+      depth_stream_recovered = depth_stream_stale_reported_;
+      latest_depth_image_m_ = processed;
+      last_depth_image_update_time_ = std::chrono::steady_clock::now();
+      has_received_depth_image_ = true;
+      depth_stream_stale_reported_ = false;
+    }
+    if (depth_stream_recovered) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Depth image stream recovered on /camera/depth/image_raw");
+    }
   } catch (const std::exception &e) {
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
                          "Failed to convert depth image: %s", e.what());
@@ -626,10 +639,40 @@ cv::Mat Go2wRealDeployNode::process_depth_image(
     depth_image.convertTo(float_image, CV_32F);
   }
 
+  const int src_width = float_image.cols;
+  const int src_height = float_image.rows;
+  if (src_width <= 0 || src_height <= 0) {
+    return cv::Mat();
+  }
+
+  const float target_aspect =
+      static_cast<float>(kDepthObsWidth) / static_cast<float>(kDepthObsHeight);
+  const float src_aspect =
+      static_cast<float>(src_width) / static_cast<float>(src_height);
+
+  int resized_width = kDepthObsWidth;
+  int resized_height = kDepthObsHeight;
+  if (src_aspect > target_aspect) {
+    resized_height = kDepthObsHeight;
+    resized_width = std::max(
+        kDepthObsWidth,
+        static_cast<int>(std::lround(src_aspect * resized_height)));
+  } else {
+    resized_width = kDepthObsWidth;
+    resized_height = std::max(
+        kDepthObsHeight,
+        static_cast<int>(std::lround(resized_width / src_aspect)));
+  }
+
   cv::Mat resized_image;
-  cv::resize(float_image, resized_image, cv::Size(kDepthObsWidth, kDepthObsHeight),
-             0.0, 0.0, cv::INTER_AREA);
-  return resized_image;
+  cv::resize(float_image, resized_image,
+             cv::Size(resized_width, resized_height), 0.0, 0.0,
+             cv::INTER_AREA);
+
+  const int crop_x = std::max(0, (resized_width - kDepthObsWidth) / 2);
+  const int crop_y = std::max(0, (resized_height - kDepthObsHeight) / 2);
+  const cv::Rect crop_roi(crop_x, crop_y, kDepthObsWidth, kDepthObsHeight);
+  return resized_image(crop_roi).clone();
 }
 
 SimpleTensor Go2wRealDeployNode::get_base_ang_vel() {
@@ -702,21 +745,41 @@ SimpleTensor Go2wRealDeployNode::build_normalized_depth_image(
     float min_dist, float max_dist) const {
   const size_t obs_size = static_cast<size_t>(kDepthObsWidth * kDepthObsHeight);
   std::vector<float> processed_data(obs_size, 1.0f);
+  const std::vector<float> zero_image(obs_size, 0.0f);
 
   if (!is_enable_sensor_) {
     return SimpleTensor::wrap(processed_data);
   }
 
   cv::Mat depth_image_copy;
+  bool depth_stream_stale = true;
+  bool should_report_depth_loss = false;
+  const auto now = std::chrono::steady_clock::now();
+  const auto stale_timeout =
+      std::chrono::milliseconds(kControlPeriodMs * kDepthStaleFrameBudget);
   {
     std::lock_guard<std::mutex> lock(image_mutex_);
-    if (!latest_depth_image_m_.empty()) {
+    if (has_received_depth_image_ &&
+        last_depth_image_update_time_ != std::chrono::steady_clock::time_point{} &&
+        now - last_depth_image_update_time_ <= stale_timeout &&
+        !latest_depth_image_m_.empty()) {
+      depth_stream_stale = false;
       depth_image_copy = latest_depth_image_m_.clone();
+    }
+    if (depth_stream_stale && has_received_depth_image_ &&
+        !depth_stream_stale_reported_) {
+      depth_stream_stale_reported_ = true;
+      should_report_depth_loss = true;
     }
   }
 
-  if (depth_image_copy.empty()) {
-    return SimpleTensor::wrap(processed_data);
+  if (should_report_depth_loss) {
+    RCLCPP_WARN(this->get_logger(),
+                "Depth image stream stale on /camera/depth/image_raw, using zero image observation");
+  }
+
+  if (depth_stream_stale || depth_image_copy.empty()) {
+    return SimpleTensor::wrap(zero_image);
   }
 
   if (depth_image_copy.type() != CV_32FC1) {

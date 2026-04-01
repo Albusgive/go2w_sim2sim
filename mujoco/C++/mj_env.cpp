@@ -270,7 +270,13 @@ void MJ_ENV::draw_windows() {
 }
 
 bool MJ_ENV::uses_visual_policy(int policy_idx) const {
-  return policy_idx == 2 || policy_idx == 3;
+  if (policy_idx < 0 ||
+      policy_idx >= static_cast<int>(policy_description.size())) {
+    return false;
+  }
+  const std::string &description = policy_description[policy_idx];
+  return description == "vtm" || description == "vtm_lstm_sru" ||
+         description == "vtm_gru_sru";
 }
 
 void MJ_ENV::apply_policy_defaults_for_policy(int policy_idx) {

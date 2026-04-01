@@ -1,469 +1,510 @@
 #include "real2sim_env.h"
+
+#include "SimpleTensor.hpp"
+
 #include <algorithm>
+#include <array>
 #include <cmath>
-#include <iostream>
 
-// 注意：这里假设 SimpleTensor.hpp 中包含了 QuatRotateInverse 等辅助函数
-// 如果没有，需要自己实现或从 lab2mj 项目中复制
+#include <cv_bridge/cv_bridge.h>
 
-MJ_ENV::MJ_ENV(std::string model_file,
-               std::vector<std::pair<std::string, std::string>>
-                   &policy_paths_and_description,
-               InferenceDevice device, double max_FPS)
-    : ManagerBasedEnv(policy_paths_and_description, device),
-      Node("depth_image_processor") {
+namespace {
 
-  // 1. Load Model
-  load_model(model_file);
+constexpr int kDepthObsWidth = 32;
+constexpr int kDepthObsHeight = 18;
+constexpr int kDepthStaleTimeoutMs = 300;
+constexpr float kMinDepthMeters = 0.1f;
+constexpr float kMaxDepthMeters = 2.0f;
+constexpr float kPlayLikeDefaultCmd[3] = {0.7f, 0.0f, 0.0f};
 
-  // 2. Window Setup
-  set_window_size(1920, 1080); // 稍微调小一点默认值，按需修改
-  set_window_title("MUJOCO - Real2Sim");
-  font_scale = mjtFontScale::mjFONTSCALE_200;
-  set_max_FPS(max_FPS);
-  sub_step = 4;
-
-  // 3. Init Tensors/Vectors
-  gravity = SimpleTensor::wrap({0.0f, 0.0f, -1.0f});
-  obs_default_dof_pos = obs_default_dof_pos_vec;
-
-  // 4. Init Sensors
-  std::vector<std::string> n;
-  std::tie(base_ang_vel_pd, n) = get_sensor_data_point("imu_gyro");
-  std::tie(projected_gravity_pd, n) = get_sensor_data_point("imu_quat");
-  std::tie(dof_pos_pd, n) = get_sensor_data_point("*joint_pos");
-  std::tie(dof_vel_pd, n) = get_sensor_data_point("*joint_vel");
-
-  // Debug Prints
-  // print_vec(n); ...
-
-  // 5. Init RayCaster
-  // 参数: m, d, name, fovy, aspect, h_res, v_res, clip_range
-  RayCasterCameraCfg camera_cfg;
-  camera_cfg.m = m;
-  camera_cfg.d = d;
-  camera_cfg.cam_name = "RayCasterCamera";
-  camera_cfg.focal_length = 1;
-  camera_cfg.horizontal_aperture = 2;
-  camera_cfg.vertical_aperture = 1.154700538;
-  camera_cfg.v_ray_num = 18;
-  camera_cfg.h_ray_num = 32;
-  camera_cfg.dis_range = {0.1, 3.0};
-  camera_cfg.baseline = 0.095;
-  ray_caster_camera = RayCasterCamera(camera_cfg);
-  auto noise = ray_noise::RayNoise1(-0.1, 0.1, 0.05);
-  ray_caster_camera.setNoise(noise);
-
-  // Allocate Buffers
-  int size = ray_caster_camera.h_ray_num * ray_caster_camera.v_ray_num;
-  ray_caster_camera_img = new unsigned char[size];
-  ray_caster_camera_noise_img = new unsigned char[size];
-  ray_caster_camera_inv_img = new unsigned char[size];
-  ray_caster_camera_noise_inv_img = new unsigned char[size];
-
-  // Tracker
-  body_track("base_link", 0.05, {0.0, 1.0, 1.0, 0.5}, 50, 30);
-
-  // 6. Init ROS
-  init_real_topic();
+bool is_zero_cmd(const std::vector<float> &cmd) {
+  if (cmd.size() < 3) {
+    return true;
+  }
+  return std::abs(cmd[0]) < 1.0e-4f && std::abs(cmd[1]) < 1.0e-4f &&
+         std::abs(cmd[2]) < 1.0e-4f;
 }
 
-MJ_ENV::~MJ_ENV() {
-  if (ray_caster_camera_img)
-    delete[] ray_caster_camera_img;
-  if (ray_caster_camera_noise_img)
-    delete[] ray_caster_camera_noise_img;
-  if (ray_caster_camera_inv_img)
-    delete[] ray_caster_camera_inv_img;
-  if (ray_caster_camera_noise_inv_img)
-    delete[] ray_caster_camera_noise_inv_img;
+} // namespace
+
+Real2SimEnv::Real2SimEnv(std::string model_file,
+                         const std::vector<PolicySpec> &policy_specs,
+                         InferenceDevice device, double max_FPS)
+    : Sim2SimEnv(model_file, policy_specs, device, max_FPS, "Real2Sim Deploy",
+                 1920, 1080, 4),
+      rclcpp::Node("real2sim_depth_bridge") {
+  gravity_ = SimpleTensor::wrap({0.0f, 0.0f, -1.0f});
+  obs_default_dof_pos_ = obs_default_dof_pos_vec_;
+  cmd = {kPlayLikeDefaultCmd[0], kPlayLikeDefaultCmd[1], kPlayLikeDefaultCmd[2]};
+
+  std::vector<std::string> sensor_names;
+  std::tie(base_ang_vel_pd_, sensor_names) = get_sensor_data_point("imu_gyro");
+  std::tie(projected_gravity_pd_, sensor_names) =
+      get_sensor_data_point("imu_quat");
+  std::tie(dof_pos_pd_, sensor_names) = get_sensor_data_point("*joint_pos");
+  std::tie(dof_vel_pd_, sensor_names) = get_sensor_data_point("*joint_vel");
+
+  latest_depth_image_m_ =
+      cv::Mat::zeros(kDepthObsHeight, kDepthObsWidth, CV_32FC1);
+
+  body_track("base_link", 0.05, {0.0f, 1.0f, 1.0f, 0.5f}, 50, 30);
+  init_image_topic();
 }
 
-void MJ_ENV::vis_cfg() {
+void Real2SimEnv::vis_cfg() {
   opt.flags[mjtVisFlag::mjVIS_CONTACTPOINT] = true;
   opt.flags[mjtVisFlag::mjVIS_CONTACTFORCE] = true;
+  opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
 }
 
-void MJ_ENV::step() {
-  // SimpleTensor 推理
-  auto action = manager_step(policy_id);
-  auto act = toVector<mjtNum>(action); // SimpleTensor helper
+void Real2SimEnv::step() {
+  apply_pending_runtime_changes();
+  refresh_visual_observations(false);
 
-  for (int i = 0; i < 16; i++) {
+  auto action = manager_step(policy_id);
+  handle_split_snapshot_after_step(d->time);
+  auto act = toVector<mjtNum>(action);
+  for (int i = 0; i < 16 && i < static_cast<int>(act.size()); ++i) {
     d->ctrl[i] = act[i];
   }
 }
 
-void MJ_ENV::step_unlock() {
-  // Update Sim Camera
-  ray_caster_camera.compute_distance();
-  ray_caster_camera.get_inv_image_data(ray_caster_camera_inv_img);
-  ray_caster_camera.get_inv_image_data(ray_caster_camera_noise_inv_img, true);
-  ray_caster_camera.get_image_data(ray_caster_camera_img);
-  ray_caster_camera.get_image_data(ray_caster_camera_noise_img, true);
-}
+void Real2SimEnv::draw() {}
 
-void MJ_ENV::draw() {
-  float color1[4] = {1.0, 0.0, 0.0, 0.5};
-  float color2[4] = {0.0, 1.0, 0.0, 0.3};
-
-  ray_caster_camera.draw_hip_point(&scn, 1, 0.02, color1);
-  ray_caster_camera.draw_deep_ray(&scn, 1, 5, true, color2);
-}
-
-std::vector<std::pair<std::string, std::string>> MJ_ENV::draw_left_table() {
-  return {{"Cmd X", std::to_string(cmd[0])},
-          {"Cmd Y", std::to_string(cmd[1])},
-          {"Cmd Yaw", std::to_string(cmd[2])},
-          {"Policy ID", std::to_string(policy_id)}};
-}
-
-std::string MJ_ENV::draw_top_text() {
-  return "Policy: " + policy_description[policy_id];
-}
-
-void MJ_ENV::draw_windows() {
-  int w = ray_caster_camera.h_ray_num;
-  int h = ray_caster_camera.v_ray_num;
-
-  drawGrayPixels(ray_caster_camera_inv_img, 0, {w, h}, {400, 400});
-  drawGrayPixels(ray_caster_camera_noise_inv_img, 1, {w, h}, {400, 400});
-
-  // Real Images from ROS
-  if (!real_rgb.empty()) {
-    cv::Mat tmp_rgb;
-    cv::resize(real_rgb, tmp_rgb, cv::Size(800, 400));
-    drawRGBPixels(tmp_rgb.data, 2, {tmp_rgb.cols, tmp_rgb.rows},
-                  {tmp_rgb.cols, tmp_rgb.rows});
+void Real2SimEnv::draw_windows() {
+  const SimpleTensor normalized_image =
+      build_normalized_depth_image(kMinDepthMeters, kMaxDepthMeters);
+  if (!normalized_image.defined() ||
+      normalized_image.numel() != kDepthObsWidth * kDepthObsHeight) {
+    return;
   }
 
-  if (!real_depth.empty()) {
-    cv::Mat tmp_depth;
-    cv::resize(real_depth, tmp_depth, cv::Size(800, 400));
-    drawGrayPixels(tmp_depth.data, 3, {tmp_depth.cols, tmp_depth.rows},
-                   {tmp_depth.cols, tmp_depth.rows});
+  cv::Mat depth_u8(kDepthObsHeight, kDepthObsWidth, CV_8UC1, cv::Scalar(0));
+  for (int row = 0; row < kDepthObsHeight; ++row) {
+    unsigned char *dst_row = depth_u8.ptr<unsigned char>(row);
+    for (int col = 0; col < kDepthObsWidth; ++col) {
+      const size_t index =
+          static_cast<size_t>(row) * static_cast<size_t>(kDepthObsWidth) +
+          static_cast<size_t>(col);
+      const float normalized =
+          std::clamp(normalized_image.data_[index], 0.0f, 1.0f);
+      dst_row[col] = static_cast<unsigned char>(normalized * 255.0f);
+    }
   }
+
+  constexpr int kRenderScale = 12;
+  drawGrayPixels(depth_u8.data, 0, {depth_u8.cols, depth_u8.rows},
+                 {depth_u8.cols * kRenderScale, depth_u8.rows * kRenderScale});
 }
 
-// --------------------------------------------------------------------------
-// Observation Manager Setup (Lab2MJ Style)
-// --------------------------------------------------------------------------
-void MJ_ENV::initObsManager() {
+void Real2SimEnv::initObsManager() {
+  obs_terms.clear();
+  action_terms.clear();
+  action_obs_terms.clear();
+  obs_rays_.clear();
 
-  // === Policy 0: End2End Loc (Simulation Camera) ===
-  {
-    std::vector<std::shared_ptr<ObservationTerm>> obs;
+  registerManager1();
+  registerManager2();
+  registerManager3();
+  registerManager4();
+}
 
-    auto t_ang = std::make_shared<ObservationTerm>("base_angvel", 15);
-    t_ang->func = [this]() { return get_base_ang_vel(); };
-    t_ang->scale = 0.25;
+void Real2SimEnv::registerManager1() {
+  std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-    auto t_grav = std::make_shared<ObservationTerm>("projected_gravity", 15);
-    t_grav->func = [this]() { return get_projected_gravity(); };
+  auto motion = std::make_shared<ObservationTerm>("motion", 1);
+  motion->func = [this]() { return get_motion(); };
 
-    auto t_cmd = std::make_shared<ObservationTerm>("command", 1);
-    t_cmd->func = [this]() { return get_command(); };
+  auto motion_task = std::make_shared<ObservationTerm>("motion_task", 1);
+  motion_task->func = [this]() { return get_motion_task(); };
 
-    auto t_pos = std::make_shared<ObservationTerm>("dof_pos", 15);
-    t_pos->func = [this]() { return get_dof_pos(); };
+  auto motion_anchor_pos_b =
+      std::make_shared<ObservationTerm>("motion_anchor_pos_b", 1);
+  motion_anchor_pos_b->func = [this]() { return get_motion_anchor_pos_b(); };
 
-    auto t_vel = std::make_shared<ObservationTerm>("dof_vel", 15);
-    t_vel->func = [this]() { return get_dof_vel(); };
-    t_vel->scale = 0.05;
+  auto motion_anchor_ori_b =
+      std::make_shared<ObservationTerm>("motion_anchor_ori_b", 1);
+  motion_anchor_ori_b->func = [this]() { return get_motion_anchor_ori_b(); };
 
-    auto t_act = std::make_shared<ActionObsTerm>("action_obs_term", 15);
-    t_act->init(16);
+  obs.push_back(motion);
+  obs.push_back(motion_task);
+  obs.push_back(motion_anchor_pos_b);
+  obs.push_back(motion_anchor_ori_b);
+  obs.push_back(make_base_ang_vel_term(3));
+  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_command_term(1, "velocity_command"));
+  obs.push_back(make_dof_pos_term(3));
+  obs.push_back(make_dof_vel_term(3));
+  obs.push_back(make_last_action_term(3));
 
-    auto t_ray = std::make_shared<ObservationTerm>("ray_caster", 1);
-    t_ray->func = [this]() { return get_ray_caster_image(); };
+  registerTerms(obs, make_action_term());
+}
 
-    obs.push_back(t_ang);
-    obs.push_back(t_grav);
-    obs.push_back(t_cmd);
-    obs.push_back(t_pos);
-    obs.push_back(t_vel);
-    obs.push_back(t_act);
-    obs.push_back(t_ray);
+void Real2SimEnv::registerManager2() {
+  std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-    auto act = std::make_shared<ActionTerm>();
-    act->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-    act->scale_ = SimpleTensor::wrap(action_scale_vec);
+  auto image =
+      make_depth_image_term(8, 5, 1, kMinDepthMeters, kMaxDepthMeters);
+  obs_rays_.push_back(image);
 
-    registerTerms(obs, act);
+  obs.push_back(make_base_ang_vel_term(3));
+  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_command_term(1));
+  obs.push_back(make_dof_pos_term(3));
+  obs.push_back(make_dof_vel_term(3));
+  obs.push_back(make_last_action_term(3));
+  obs.push_back(image);
+
+  registerTerms(obs, make_action_term(true));
+}
+
+void Real2SimEnv::registerManager3() {
+  std::vector<std::shared_ptr<ObservationTerm>> obs;
+
+  auto image =
+      make_depth_image_term(0, 5, 1, kMinDepthMeters, kMaxDepthMeters);
+  obs_rays_.push_back(image);
+
+  obs.push_back(make_base_ang_vel_term(3));
+  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_command_term(1));
+  obs.push_back(make_dof_pos_term(3));
+  obs.push_back(make_dof_vel_term(3));
+  obs.push_back(make_last_action_term(3));
+  obs.push_back(image);
+
+  registerTerms(obs, make_action_term(true));
+}
+
+void Real2SimEnv::registerManager4() {
+  std::vector<std::shared_ptr<ObservationTerm>> obs;
+
+  auto image =
+      make_depth_image_term(0, 5, 1, kMinDepthMeters, kMaxDepthMeters);
+  obs_rays_.push_back(image);
+
+  obs.push_back(make_base_ang_vel_term(3));
+  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_command_term(1));
+  obs.push_back(make_dof_pos_term(3));
+  obs.push_back(make_dof_vel_term(3));
+  obs.push_back(make_last_action_term(3));
+  obs.push_back(image);
+
+  registerTerms(obs, make_action_term(true));
+}
+
+bool Real2SimEnv::uses_visual_policy(int policy_idx) const {
+  if (policy_idx < 0 ||
+      policy_idx >= static_cast<int>(policy_description.size())) {
+    return false;
   }
 
-  // === Policy 1: Base Loc (Blind) ===
-  {
-    std::vector<std::shared_ptr<ObservationTerm>> obs;
+  const std::string &description = policy_description[policy_idx];
+  return description == "vtm" || description == "vtm_lstm_sru" ||
+         description == "vtm_gru_sru";
+}
 
-    auto t_ang = std::make_shared<ObservationTerm>("base_angvel", 1);
-    t_ang->func = [this]() { return get_base_ang_vel(); };
-    t_ang->scale = 0.25;
-
-    auto t_grav = std::make_shared<ObservationTerm>("projected_gravity", 1);
-    t_grav->func = [this]() { return get_projected_gravity(); };
-
-    auto t_cmd = std::make_shared<ObservationTerm>("command", 1);
-    t_cmd->func = [this]() { return get_command(); };
-
-    auto t_pos = std::make_shared<ObservationTerm>("dof_pos", 1);
-    t_pos->func = [this]() { return get_dof_pos(); };
-
-    auto t_vel = std::make_shared<ObservationTerm>("dof_vel", 1);
-    t_vel->func = [this]() { return get_dof_vel(); };
-    t_vel->scale = 0.05;
-
-    auto t_act = std::make_shared<ActionObsTerm>("action_obs_term", 1);
-    t_act->init(16);
-
-    obs.push_back(t_ang);
-    obs.push_back(t_grav);
-    obs.push_back(t_cmd);
-    obs.push_back(t_pos);
-    obs.push_back(t_vel);
-    obs.push_back(t_act);
-
-    auto act = std::make_shared<ActionTerm>();
-    act->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-    act->scale_ = SimpleTensor::wrap(action_scale_vec);
-
-    registerTerms(obs, act);
+void Real2SimEnv::apply_policy_defaults_for_policy(int policy_idx) {
+  if (!uses_visual_policy(policy_idx) || !is_zero_cmd(cmd)) {
+    return;
   }
 
-  // === Policy 2: Real2Sim End2End (ROS Camera) ===
-  // 如果你需要第三个策略，需要取消 main 函数中的注释并在这里添加
-  {
-    std::vector<std::shared_ptr<ObservationTerm>> obs;
+  cmd[0] = kPlayLikeDefaultCmd[0];
+  cmd[1] = kPlayLikeDefaultCmd[1];
+  cmd[2] = kPlayLikeDefaultCmd[2];
+}
 
-    auto t_ang = std::make_shared<ObservationTerm>("base_angvel", 15);
-    t_ang->func = [this]() { return get_base_ang_vel(); };
-    t_ang->scale = 0.25;
-
-    auto t_grav = std::make_shared<ObservationTerm>("projected_gravity", 15);
-    t_grav->func = [this]() { return get_projected_gravity(); };
-
-    auto t_cmd = std::make_shared<ObservationTerm>("command", 1);
-    t_cmd->func = [this]() { return get_command(); };
-
-    auto t_pos = std::make_shared<ObservationTerm>("dof_pos", 15);
-    t_pos->func = [this]() { return get_dof_pos(); };
-
-    auto t_vel = std::make_shared<ObservationTerm>("dof_vel", 15);
-    t_vel->func = [this]() { return get_dof_vel(); };
-    t_vel->scale = 0.05;
-
-    auto t_act = std::make_shared<ActionObsTerm>("action_obs_term", 15);
-    t_act->init(16);
-
-    // 重点：这里使用 get_ray_caster_image2 (Real Camera)
-    auto t_ray = std::make_shared<ObservationTerm>("ray_caster_real", 1);
-    t_ray->func = [this]() { return get_ray_caster_image2(); };
-
-    obs.push_back(t_ang);
-    obs.push_back(t_grav);
-    obs.push_back(t_cmd);
-    obs.push_back(t_pos);
-    obs.push_back(t_vel);
-    obs.push_back(t_act);
-    obs.push_back(t_ray);
-
-    auto act = std::make_shared<ActionTerm>();
-    act->default_action = SimpleTensor::wrap(act_default_dof_pos_vec);
-    act->scale_ = SimpleTensor::wrap(action_scale_vec);
-
-    registerTerms(obs, act);
+void Real2SimEnv::refresh_visual_observations(bool warm_start_history) {
+  for (const auto &obs_ray : obs_rays_) {
+    if (!obs_ray) {
+      continue;
+    }
+    obs_ray->compute_obs();
+    if (warm_start_history) {
+      obs_ray->warm_start_history();
+    }
   }
 }
 
-// --------------------------------------------------------------------------
-// Data Getters (Returning SimpleTensor)
-// --------------------------------------------------------------------------
+void Real2SimEnv::on_sensor_enabled_changed(bool enabled) {
+  RCLCPP_INFO(this->get_logger(), "Depth image sensor %s",
+              enabled ? "enabled" : "disabled");
+}
 
-SimpleTensor MJ_ENV::get_base_ang_vel() {
+void Real2SimEnv::on_env_reset() {}
+
+void Real2SimEnv::init_image_topic() {
+  auto qos = rclcpp::SensorDataQoS().keep_last(1);
+  depth_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
+      "/camera/depth/image_raw", qos,
+      std::bind(&Real2SimEnv::depth_callback, this, std::placeholders::_1));
+}
+
+void Real2SimEnv::depth_callback(
+    const sensor_msgs::msg::Image::SharedPtr msg) {
+  try {
+    const auto cv_ptr = cv_bridge::toCvCopy(msg, msg->encoding);
+    cv::Mat processed = process_depth_image(cv_ptr->image, msg->encoding);
+    if (processed.empty()) {
+      return;
+    }
+
+    bool first_frame = false;
+    bool depth_stream_recovered = false;
+    {
+      std::lock_guard<std::mutex> lock(image_mutex_);
+      first_frame = !has_received_depth_image_;
+      depth_stream_recovered = depth_stream_stale_reported_;
+      latest_depth_image_m_ = processed;
+      last_depth_image_update_time_ = std::chrono::steady_clock::now();
+      has_received_depth_image_ = true;
+      depth_stream_stale_reported_ = false;
+    }
+    if (first_frame) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Received first depth frame on /camera/depth/image_raw "
+                  "(encoding=%s, size=%dx%d)",
+                  msg->encoding.c_str(), msg->width, msg->height);
+    } else if (depth_stream_recovered) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Depth image stream recovered on /camera/depth/image_raw");
+    }
+  } catch (const std::exception &e) {
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                         "Failed to convert depth image: %s", e.what());
+  }
+}
+
+cv::Mat Real2SimEnv::process_depth_image(const cv::Mat &depth_image,
+                                         const std::string &encoding) {
+  if (depth_image.empty()) {
+    return cv::Mat();
+  }
+
+  cv::Mat float_image;
+  if (encoding == sensor_msgs::image_encodings::TYPE_16UC1 ||
+      encoding == "16UC1") {
+    depth_image.convertTo(float_image, CV_32F, 1.0 / 1000.0);
+  } else if (encoding == sensor_msgs::image_encodings::TYPE_32FC1 ||
+             encoding == "32FC1") {
+    depth_image.convertTo(float_image, CV_32F);
+  } else {
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                         "Unhandled depth encoding: %s. Treating as float depth",
+                         encoding.c_str());
+    depth_image.convertTo(float_image, CV_32F);
+  }
+
+  const int src_width = float_image.cols;
+  const int src_height = float_image.rows;
+  if (src_width <= 0 || src_height <= 0) {
+    return cv::Mat();
+  }
+
+  const float target_aspect =
+      static_cast<float>(kDepthObsWidth) / static_cast<float>(kDepthObsHeight);
+  const float src_aspect =
+      static_cast<float>(src_width) / static_cast<float>(src_height);
+
+  int resized_width = kDepthObsWidth;
+  int resized_height = kDepthObsHeight;
+  if (src_aspect > target_aspect) {
+    resized_height = kDepthObsHeight;
+    resized_width = std::max(
+        kDepthObsWidth,
+        static_cast<int>(std::lround(src_aspect * resized_height)));
+  } else {
+    resized_width = kDepthObsWidth;
+    resized_height = std::max(
+        kDepthObsHeight,
+        static_cast<int>(std::lround(resized_width / src_aspect)));
+  }
+
+  cv::Mat resized_image;
+  cv::resize(float_image, resized_image, cv::Size(resized_width, resized_height),
+             0.0, 0.0, cv::INTER_AREA);
+
+  const int crop_x = std::max(0, (resized_width - kDepthObsWidth) / 2);
+  const int crop_y = std::max(0, (resized_height - kDepthObsHeight) / 2);
+  const cv::Rect crop_roi(crop_x, crop_y, kDepthObsWidth, kDepthObsHeight);
+  return resized_image(crop_roi).clone();
+}
+
+SimpleTensor Real2SimEnv::get_base_ang_vel() {
   auto data_d =
-      get_sensor_data(base_ang_vel_pd[0].first, base_ang_vel_pd[0].second);
+      get_sensor_data(base_ang_vel_pd_[0].first, base_ang_vel_pd_[0].second);
   std::vector<float> data_f(data_d.begin(), data_d.end());
   return SimpleTensor::wrap(data_f);
 }
 
-SimpleTensor MJ_ENV::get_projected_gravity() {
-  auto q_d = get_sensor_data(projected_gravity_pd[0].first,
-                             projected_gravity_pd[0].second);
+SimpleTensor Real2SimEnv::get_projected_gravity() {
+  auto q_d = get_sensor_data(projected_gravity_pd_[0].first,
+                             projected_gravity_pd_[0].second);
   std::vector<float> data_f(q_d.begin(), q_d.end());
   auto quat = SimpleTensor::wrap(data_f);
-  return QuatRotateInverse(quat, gravity);
+  return QuatRotateInverse(quat, gravity_);
 }
 
-SimpleTensor MJ_ENV::get_command() { return SimpleTensor::wrap(cmd); }
+SimpleTensor Real2SimEnv::get_command() { return SimpleTensor::wrap(cmd); }
 
-SimpleTensor MJ_ENV::get_dof_pos() {
+SimpleTensor Real2SimEnv::get_dof_pos() {
   std::vector<float> pos_error;
-  pos_error.reserve(dof_pos_pd.size());
+  pos_error.reserve(dof_pos_pd_.size());
 
-  for (size_t i = 0; i < dof_pos_pd.size(); ++i) {
-    double current = get_sensor_data_dim1(dof_pos_pd[i].first);
-    double default_v =
-        (i < obs_default_dof_pos.size()) ? obs_default_dof_pos[i] : 0.0;
-    pos_error.push_back((float)(current - default_v));
+  for (size_t i = 0; i < dof_pos_pd_.size(); ++i) {
+    const double current_pos = get_sensor_data_dim1(dof_pos_pd_[i].first);
+    const double default_pos =
+        (i < obs_default_dof_pos_.size()) ? obs_default_dof_pos_[i] : 0.0;
+    pos_error.push_back(static_cast<float>(current_pos - default_pos));
   }
   return SimpleTensor::wrap(pos_error);
 }
 
-SimpleTensor MJ_ENV::get_dof_vel() {
+SimpleTensor Real2SimEnv::get_dof_vel() {
   std::vector<float> vels;
-  vels.reserve(dof_vel_pd.size());
-  for (auto &p : dof_vel_pd) {
-    vels.push_back((float)get_sensor_data_dim1(p.first));
+  vels.reserve(dof_vel_pd_.size());
+  for (const auto &sensor : dof_vel_pd_) {
+    vels.push_back(static_cast<float>(get_sensor_data_dim1(sensor.first)));
   }
   return SimpleTensor::wrap(vels);
 }
 
-SimpleTensor MJ_ENV::get_ray_caster_image() {
-  // Sim camera
-  std::vector<double> image =
-      ray_caster_camera.get_data_normalized_vec(false, false, false);
-  std::vector<float> image_f(image.begin(), image.end());
-  return SimpleTensor::wrap(image_f);
+SimpleTensor Real2SimEnv::get_motion() { return SimpleTensor::zeros({24}); }
+
+SimpleTensor Real2SimEnv::get_motion_task() { return SimpleTensor::zeros({1}); }
+
+SimpleTensor Real2SimEnv::get_motion_anchor_pos_b() {
+  return SimpleTensor::zeros({3});
 }
 
-SimpleTensor MJ_ENV::get_ray_caster_image2() {
-  // Real camera from ROS (_obs_image is cv::Mat CV_32FC1 or similar)
-  std::vector<float> result;
+SimpleTensor Real2SimEnv::get_motion_anchor_ori_b() {
+  return SimpleTensor::zeros({6});
+}
 
-  // 确保 _obs_image 已经初始化
-  if (_obs_image.empty()) {
-    // 如果没有数据，返回全零
-    result.resize(20 * 20, 0.0f);
-  } else {
-    if (_obs_image.isContinuous()) {
-      result.assign((float *)_obs_image.datastart, (float *)_obs_image.dataend);
-    } else {
-      for (int i = 0; i < _obs_image.rows; ++i) {
-        result.insert(result.end(), _obs_image.ptr<float>(i),
-                      _obs_image.ptr<float>(i) + _obs_image.cols);
-      }
+SimpleTensor Real2SimEnv::build_normalized_depth_image(float min_dist,
+                                                       float max_dist) const {
+  const size_t obs_size = static_cast<size_t>(kDepthObsWidth * kDepthObsHeight);
+  std::vector<float> processed_data(obs_size, 1.0f);
+  const std::vector<float> zero_image(obs_size, 0.0f);
+
+  if (!is_enable_sensor) {
+    return SimpleTensor::wrap(zero_image);
+  }
+
+  cv::Mat depth_copy;
+  bool depth_stream_stale = true;
+  bool should_report_depth_loss = false;
+  const auto now = std::chrono::steady_clock::now();
+  const auto stale_timeout =
+      std::chrono::milliseconds(kDepthStaleTimeoutMs);
+  {
+    std::lock_guard<std::mutex> lock(image_mutex_);
+    if (has_received_depth_image_ &&
+        last_depth_image_update_time_ != std::chrono::steady_clock::time_point{} &&
+        now - last_depth_image_update_time_ <= stale_timeout &&
+        !latest_depth_image_m_.empty()) {
+      depth_stream_stale = false;
+      depth_copy = latest_depth_image_m_.clone();
+    }
+    if (depth_stream_stale && has_received_depth_image_ &&
+        !depth_stream_stale_reported_) {
+      depth_stream_stale_reported_ = true;
+      should_report_depth_loss = true;
     }
   }
-  return SimpleTensor::wrap(result);
-}
 
-// --------------------------------------------------------------------------
-// Interactions
-// --------------------------------------------------------------------------
-
-void MJ_ENV::keyboard_press(std::string key) {
-  if (key == "w")
-    cmd[0] += 0.1f;
-  else if (key == "s")
-    cmd[0] -= 0.1f;
-  else if (key == "a")
-    cmd[1] += 0.1f;
-  else if (key == "d")
-    cmd[1] -= 0.1f;
-  else if (key == "q")
-    cmd[2] += 0.1f;
-  else if (key == "e")
-    cmd[2] -= 0.1f;
-  else if (key == "x") {
-    cmd[0] = 0;
-    cmd[1] = 0;
-    cmd[2] = 0;
-  } else if (key == "h") {
-    policy_id++;
-    if (policy_id >= policy_description.size())
-      policy_id = 0;
+  if (should_report_depth_loss) {
+    RCLCPP_WARN(this->get_logger(),
+                "Depth image stream stale on /camera/depth/image_raw, using zero image observation");
   }
-}
 
-void MJ_ENV::init_gamepad() {
-  pad = std::make_shared<GamePad>();
-  pad->showGamePads();
-  if (!pad->GamePadpads.empty()) {
-    pad->openGamePad(pad->GamePadpads.begin()->first);
-    pad->bindGamePadValues([this](GamePadValues m) {
-      cmd[0] = -(m.ly / 32767.0f) * cmd_pad_scale[0];
-      cmd[1] = -(m.lx / 32767.0f) * cmd_pad_scale[1];
-      cmd[2] = -(m.rx / 32767.0f) * cmd_pad_scale[2];
+  if (depth_stream_stale || depth_copy.empty()) {
+    return SimpleTensor::wrap(zero_image);
+  }
 
-      if (m.x) {
-        policy_id++;
-        if (policy_id >= policy_description.size())
-          policy_id = 0;
+  if (depth_copy.type() != CV_32FC1) {
+    depth_copy.convertTo(depth_copy, CV_32F);
+  }
+
+  const float range = std::max(max_dist - min_dist, 1.0e-6f);
+  size_t index = 0;
+  for (int row = 0; row < depth_copy.rows; ++row) {
+    const float *row_ptr = depth_copy.ptr<float>(row);
+    for (int col = 0; col < depth_copy.cols; ++col) {
+      float value = row_ptr[col];
+      if (!std::isfinite(value) || value <= 0.0f) {
+        value = max_dist;
       }
-    });
-    pad->readGamePad();
-  }
-}
-
-// --------------------------------------------------------------------------
-// ROS Callbacks
-// --------------------------------------------------------------------------
-
-void MJ_ENV::init_real_topic() {
-  min_depth_ = 0.25;
-  max_depth_ = 2.0;
-
-  // Use "this" node context
-  deep_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "/camera/depth/image_rect_raw", 1,
-      std::bind(&MJ_ENV::depth_callback, this, std::placeholders::_1));
-
-  rgb_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "/camera/color/image_raw", 1,
-      std::bind(&MJ_ENV::rgb_callback, this, std::placeholders::_1));
-
-  _obs_image = cv::Mat::zeros(cv::Size(20, 20), CV_32FC1);
-  real_rgb = cv::Mat::zeros(cv::Size(40, 20), CV_8UC3);
-  real_depth = cv::Mat::zeros(cv::Size(20, 20), CV_8UC1);
-}
-
-void MJ_ENV::rgb_callback(const sensor_msgs::msg::Image::SharedPtr msg) {
-  try {
-    cv_bridge::CvImagePtr cv_ptr =
-        cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-    cv::cvtColor(cv_ptr->image, real_rgb, CV_BGR2RGB);
-  } catch (cv_bridge::Exception &e) {
-    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
-  }
-}
-
-void MJ_ENV::depth_callback(const sensor_msgs::msg::Image::SharedPtr msg) {
-  try {
-    cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(msg, msg->encoding);
-    cv::Mat processed = process_depth_image(cv_ptr->image, msg->encoding);
-    real_depth = processed.clone();
-  } catch (cv_bridge::Exception &e) {
-    RCLCPP_ERROR(this->get_logger(), "cv_bridge exception: %s", e.what());
-  }
-}
-
-cv::Mat MJ_ENV::process_depth_image(cv::Mat &depth_image,
-                                    const std::string &encoding) {
-  cv::Mat float_image, normalized_image, display_image;
-
-  if (encoding == "16UC1") {
-    depth_image.convertTo(float_image, CV_32F, 1.0 / 1000.0); // mm to meters
-  } else if (encoding == "32FC1") {
-    depth_image.convertTo(float_image, CV_32F);
-  } else {
-    depth_image.convertTo(float_image, CV_32F);
+      value = std::clamp(value, min_dist, max_dist);
+      processed_data[index++] = (value - min_dist) / range;
+    }
   }
 
-  // Clip
-  cv::Mat mask;
-  cv::inRange(float_image, min_depth_, max_depth_, mask);
+  return SimpleTensor::wrap(processed_data);
+}
 
-  cv::Mat clamped_image = float_image.clone();
-  clamped_image.setTo(min_depth_, float_image < min_depth_);
-  clamped_image.setTo(max_depth_, float_image > max_depth_);
+std::shared_ptr<ObservationTerm>
+Real2SimEnv::make_base_ang_vel_term(int history) {
+  auto term = std::make_shared<ObservationTerm>("base_angvel", history);
+  term->func = [this]() { return get_base_ang_vel(); };
+  term->scale = 0.25;
+  return term;
+}
 
-  // Normalize 0-1
-  normalized_image = (clamped_image - min_depth_) / (max_depth_ - min_depth_);
+std::shared_ptr<ObservationTerm>
+Real2SimEnv::make_projected_gravity_term(int history) {
+  auto term = std::make_shared<ObservationTerm>("projected_gravity", history);
+  term->func = [this]() { return get_projected_gravity(); };
+  return term;
+}
 
-  // Update Observation Buffer
-  cv::resize(normalized_image, _obs_image, cv::Size(20, 20));
+std::shared_ptr<ObservationTerm>
+Real2SimEnv::make_command_term(int history, const std::string &name) {
+  auto term = std::make_shared<ObservationTerm>(name, history);
+  term->func = [this]() { return get_command(); };
+  return term;
+}
 
-  // Visual buffer
-  normalized_image.convertTo(display_image, CV_8UC1, 255.0);
-  return display_image;
+std::shared_ptr<ObservationTerm> Real2SimEnv::make_dof_pos_term(int history) {
+  auto term = std::make_shared<ObservationTerm>("dof_pos", history);
+  term->func = [this]() { return get_dof_pos(); };
+  term->scale = 1.0;
+  return term;
+}
+
+std::shared_ptr<ObservationTerm> Real2SimEnv::make_dof_vel_term(int history) {
+  auto term = std::make_shared<ObservationTerm>("dof_vel", history);
+  term->func = [this]() { return get_dof_vel(); };
+  term->scale = 0.05;
+  return term;
+}
+
+std::shared_ptr<ActionObsTerm>
+Real2SimEnv::make_last_action_term(int history) {
+  auto term = std::make_shared<ActionObsTerm>("last_action", history);
+  term->init(16);
+  return term;
+}
+
+std::shared_ptr<ImageObservationTerm>
+Real2SimEnv::make_depth_image_term(int history, int stride, int stride_range,
+                                   float min_dist, float max_dist,
+                                   bool manual_mode) {
+  auto term = std::make_shared<ImageObservationTerm>("ray_caster", history,
+                                                     stride, stride_range);
+  term->func = [this, min_dist, max_dist]() {
+    return build_normalized_depth_image(min_dist, max_dist);
+  };
+  term->setManualMode(manual_mode);
+  return term;
+}
+
+std::shared_ptr<ActionTerm>
+Real2SimEnv::make_action_term(bool use_action2_scale) {
+  auto action = std::make_shared<ActionTerm>();
+  action->default_action = SimpleTensor::wrap(act_default_dof_pos_vec_);
+  action->scale_ = SimpleTensor::wrap(use_action2_scale ? action2_scale_vec_
+                                                        : action_scale_vec_);
+  return action;
 }
