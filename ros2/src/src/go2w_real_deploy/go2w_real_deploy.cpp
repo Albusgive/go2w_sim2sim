@@ -10,6 +10,8 @@ namespace {
 struct RuntimeOptions {
   bool use_local_gamepad = true;
   InferenceDevice device = InferenceDevice::CPU;
+  bool enable_policy_perf_monitor = false;
+  double policy_perf_log_interval_sec = 5.0;
 };
 
 std::vector<PolicySpec> build_policy_list() {
@@ -86,6 +88,16 @@ bool parse_inference_device_value(const std::string &value,
   return false;
 }
 
+bool parse_double_value(const std::string &value, double &parsed_value) {
+  try {
+    size_t consumed = 0;
+    parsed_value = std::stod(value, &consumed);
+    return consumed == value.size();
+  } catch (const std::exception &) {
+    return false;
+  }
+}
+
 const char *inference_device_name(InferenceDevice device) {
   return device == InferenceDevice::CUDA ? "CUDA" : "CPU";
 }
@@ -131,6 +143,45 @@ RuntimeOptions parse_runtime_options(int argc, char **argv) {
       std::cout << "[Info] Inference device set to "
                 << inference_device_name(options.device) << " by argument: "
                 << input_key << "=" << input_value << std::endl;
+      continue;
+    }
+
+    if (input_key == "policy_perf_monitor" ||
+        input_key == "monitor_policy_fps" ||
+        input_key == "log_policy_perf") {
+      bool parsed_value = false;
+      if (!parse_bool_value(input_value, parsed_value)) {
+        std::cerr << "[Warn] Invalid value for " << input_key << ": "
+                  << input_value
+                  << ". Expected true/false, on/off, yes/no, or 1/0."
+                  << std::endl;
+        continue;
+      }
+
+      options.enable_policy_perf_monitor = parsed_value;
+      std::cout << "[Info] Policy performance monitor "
+                << (options.enable_policy_perf_monitor ? "enabled" : "disabled")
+                << " by argument: " << input_key << "=" << input_value
+                << std::endl;
+      continue;
+    }
+
+    if (input_key == "policy_perf_interval" ||
+        input_key == "policy_perf_interval_sec") {
+      double parsed_value = 0.0;
+      if (!parse_double_value(input_value, parsed_value) ||
+          parsed_value <= 0.0) {
+        std::cerr << "[Warn] Invalid value for " << input_key << ": "
+                  << input_value << ". Expected a positive number."
+                  << std::endl;
+        continue;
+      }
+
+      options.policy_perf_log_interval_sec = parsed_value;
+      std::cout << "[Info] Policy performance log interval set to "
+                << options.policy_perf_log_interval_sec
+                << " s by argument: " << input_key << "=" << input_value
+                << std::endl;
     }
   }
   return options;
@@ -146,6 +197,9 @@ int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<Go2wRealDeployNode>(
       policy_list, "go2w_real_deploy", runtime_options.device);
+  node->configure_policy_perf_monitor(
+      runtime_options.enable_policy_perf_monitor,
+      runtime_options.policy_perf_log_interval_sec);
   node->init_manager();
   node->init_gamepad(runtime_options.use_local_gamepad);
   node->start();

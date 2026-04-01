@@ -53,6 +53,22 @@ Go2wRealDeployNode::~Go2wRealDeployNode() {
   }
 }
 
+void Go2wRealDeployNode::configure_policy_perf_monitor(bool enable,
+                                                       double interval_sec) {
+  std::lock_guard<std::mutex> lock(perf_stats_mutex_);
+  policy_perf_monitor_enabled_ = enable;
+  policy_perf_log_interval_sec_ = std::max(0.1, interval_sec);
+  reset_policy_perf_stats_locked();
+
+  if (policy_perf_monitor_enabled_) {
+    RCLCPP_INFO(this->get_logger(),
+                "Policy performance monitor enabled, log interval %.2f s",
+                policy_perf_log_interval_sec_);
+  } else {
+    RCLCPP_INFO(this->get_logger(), "Policy performance monitor disabled");
+  }
+}
+
 void Go2wRealDeployNode::init_interfaces() {
   init_low_cmd();
   low_cmd_pub_ =
@@ -112,6 +128,65 @@ void Go2wRealDeployNode::zero_low_cmd() {
     low_cmd_.motor_cmd[i].kd = 0.0f;
     low_cmd_.motor_cmd[i].tau = 0.0f;
   }
+}
+
+void Go2wRealDeployNode::reset_policy_perf_stats_locked() {
+  perf_window_policy_id_ = -1;
+  perf_window_inference_count_ = 0;
+  perf_window_total_inference_ms_ = 0.0;
+  perf_window_max_inference_ms_ = 0.0;
+  perf_window_start_time_ = std::chrono::steady_clock::time_point{};
+}
+
+void Go2wRealDeployNode::record_policy_inference_stats(int active_policy_id,
+                                                       double inference_ms) {
+  std::lock_guard<std::mutex> lock(perf_stats_mutex_);
+  if (!policy_perf_monitor_enabled_) {
+    return;
+  }
+
+  const auto now = std::chrono::steady_clock::now();
+  if (perf_window_policy_id_ != active_policy_id ||
+      perf_window_start_time_ == std::chrono::steady_clock::time_point{}) {
+    perf_window_policy_id_ = active_policy_id;
+    perf_window_start_time_ = now;
+    perf_window_inference_count_ = 0;
+    perf_window_total_inference_ms_ = 0.0;
+    perf_window_max_inference_ms_ = 0.0;
+  }
+
+  ++perf_window_inference_count_;
+  perf_window_total_inference_ms_ += inference_ms;
+  perf_window_max_inference_ms_ =
+      std::max(perf_window_max_inference_ms_, inference_ms);
+
+  const double elapsed_sec =
+      std::chrono::duration<double>(now - perf_window_start_time_).count();
+  if (elapsed_sec < policy_perf_log_interval_sec_) {
+    return;
+  }
+
+  const double policy_hz =
+      static_cast<double>(perf_window_inference_count_) / elapsed_sec;
+  const double avg_inference_ms =
+      perf_window_total_inference_ms_ /
+      static_cast<double>(perf_window_inference_count_);
+  const std::string policy_name =
+      (active_policy_id >= 0 &&
+       active_policy_id < static_cast<int>(policy_description.size()))
+          ? policy_description[active_policy_id]
+          : "unknown";
+
+  RCLCPP_INFO(this->get_logger(),
+              "Policy perf over %.2f s | id=%d (%s) | freq=%.2f Hz | avg=%.2f ms | max=%.2f ms | samples=%zu",
+              elapsed_sec, active_policy_id, policy_name.c_str(), policy_hz,
+              avg_inference_ms, perf_window_max_inference_ms_,
+              perf_window_inference_count_);
+
+  perf_window_start_time_ = now;
+  perf_window_inference_count_ = 0;
+  perf_window_total_inference_ms_ = 0.0;
+  perf_window_max_inference_ms_ = 0.0;
 }
 
 void Go2wRealDeployNode::low_state_message_handler(
@@ -352,7 +427,14 @@ void Go2wRealDeployNode::low_cmd_write() {
     return;
   }
 
+  const auto inference_start = std::chrono::steady_clock::now();
   SimpleTensor action = manager_step(policy_id_);
+  const auto inference_end = std::chrono::steady_clock::now();
+  const double inference_ms =
+      std::chrono::duration<double, std::milli>(inference_end -
+                                                inference_start)
+          .count();
+  record_policy_inference_stats(policy_id_, inference_ms);
   const auto act = toVector<float>(action);
   if (act.size() < 16) {
     RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
@@ -388,6 +470,10 @@ void Go2wRealDeployNode::set_policy_id(int new_policy_id) {
       new_policy_id >= static_cast<int>(policy_description.size())) {
     return;
   }
+  {
+    std::lock_guard<std::mutex> lock(perf_stats_mutex_);
+    reset_policy_perf_stats_locked();
+  }
   pending_policy_id_.store(new_policy_id, std::memory_order_relaxed);
 }
 
@@ -419,6 +505,9 @@ void Go2wRealDeployNode::apply_pending_runtime_changes() {
       requested_policy_id < static_cast<int>(policy_description.size()) &&
       requested_policy_id != policy_id_) {
     reset_policy_states(requested_policy_id);
+    if (should_reset_observation_buffers_on_policy_switch()) {
+      reset_observation_buffers(requested_policy_id);
+    }
     policy_id_ = requested_policy_id;
     apply_policy_defaults_for_policy(policy_id_);
     need_refresh_visual_obs = uses_visual_policy(policy_id_);

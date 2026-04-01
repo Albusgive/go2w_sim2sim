@@ -558,6 +558,9 @@ void Sim2SimEnv::apply_pending_runtime_changes() {
       stop_split_recording("policy_switch");
     }
     reset_policy_states(requested_policy_id);
+    if (should_reset_observation_buffers_on_policy_switch()) {
+      reset_observation_buffers(requested_policy_id);
+    }
     policy_id = requested_policy_id;
     apply_policy_defaults_for_policy(policy_id);
     if (uses_visual_policy(policy_id)) {
