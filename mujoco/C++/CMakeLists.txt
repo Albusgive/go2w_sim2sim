@@ -5,6 +5,7 @@ project(MUJOCO_T)
 # 1. 添加配置选项 (默认为 OFF，即使用 LibTorch)
 # =============================================================================
 option(USE_ONNX "Build with ONNX Runtime instead of LibTorch" ON)
+set(ONNXRUNTIME_ROOT "" CACHE PATH "Root directory of ONNX Runtime")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/simulate)
 
@@ -58,21 +59,36 @@ set(BASE_LIBS
 if(USE_ONNX)
     message(STATUS ">>>> Building with ONNX Runtime Backend <<<<")
     add_definitions(-DUSE_ONNX)
-    # 1. 自动查找头文件 (寻找 onnxruntime_cxx_api.h 所在的目录)
-    # CMake 会自动在你设置的 CMAKE_PREFIX_PATH 下的 include 目录中搜索
-    find_path(ONNX_INCLUDE_DIR NAMES onnxruntime_cxx_api.h)
-    # 2. 自动查找库文件 (寻找 libonnxruntime.so)
-    find_library(ONNX_LIB NAMES onnxruntime)
+    set(ONNX_SEARCH_HINTS)
+    if(ONNXRUNTIME_ROOT)
+        list(APPEND ONNX_SEARCH_HINTS "${ONNXRUNTIME_ROOT}")
+    endif()
+    if(DEFINED ENV{ONNXRUNTIME_ROOT} AND NOT "$ENV{ONNXRUNTIME_ROOT}" STREQUAL "")
+        list(APPEND ONNX_SEARCH_HINTS "$ENV{ONNXRUNTIME_ROOT}")
+    endif()
+
+    find_path(ONNX_INCLUDE_DIR
+        NAMES onnxruntime_cxx_api.h
+        HINTS ${ONNX_SEARCH_HINTS}
+        PATH_SUFFIXES include
+    )
+    find_library(ONNX_LIB
+        NAMES onnxruntime
+        HINTS ${ONNX_SEARCH_HINTS}
+        PATH_SUFFIXES lib lib64
+    )
     # 3. 检查是否找到并配置
     if(ONNX_INCLUDE_DIR AND ONNX_LIB)
-        message(STATUS "Found ONNX Header: ${ONNX_INCLUDE_DIR}")
-        message(STATUS "Found ONNX Lib: ${ONNX_LIB}")
+        message(STATUS "Found ONNX Runtime include: ${ONNX_INCLUDE_DIR}")
+        message(STATUS "Found ONNX Runtime library: ${ONNX_LIB}")
         # 包含头文件路径
         include_directories(${ONNX_INCLUDE_DIR})
         # 设置链接库
         set(INFERENCE_LIBS ${ONNX_LIB})
     else()
-        message(FATAL_ERROR "Could not find ONNX Runtime. Make sure CMAKE_PREFIX_PATH includes your onnxruntime folder.")
+        message(FATAL_ERROR
+            "Could not find ONNX Runtime. Set ONNXRUNTIME_ROOT, export "
+            "ONNXRUNTIME_ROOT, or pass ONNX_INCLUDE_DIR/ONNX_LIB explicitly.")
     endif()
 
 else()
