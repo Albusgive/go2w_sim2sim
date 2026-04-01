@@ -8,6 +8,7 @@ option(USE_ONNX "Build with ONNX Runtime instead of LibTorch" ON)
 set(ONNXRUNTIME_ROOT "" CACHE PATH "Root directory of ONNX Runtime")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/simulate)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -22,6 +23,7 @@ if (mujoco_FOUND)
 endif()
 
 find_package(Eigen3 REQUIRED)
+find_package(ament_cmake REQUIRED)
 # real2sim
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -127,6 +129,7 @@ file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/real2sim)
 file(GLOB REAL2SIM_SRC ${CMAKE_CURRENT_SOURCE_DIR}/real2sim/*.cpp)
+set(REAL2SIM_CORE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/sim2sim_env.cpp)
  
 
 # =============================================================================
@@ -142,9 +145,10 @@ target_link_libraries(camera_test ${LIB_LIST})
 add_executable(camera_quat ${CMAKE_CURRENT_SOURCE_DIR}/camera_quat_lab2mj/camera_quat.cpp)
 target_link_libraries(camera_quat mujoco::mujoco)
 
-# add_executable(real2sim ${REAL2SIM_SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
-# target_link_libraries(real2sim ${LIB_LIST})
-# ament_target_dependencies(real2sim ${DEPENDENCY_LIST})
+add_executable(real2sim ${REAL2SIM_SRC} ${REAL2SIM_CORE_SRC}
+  ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
+target_link_libraries(real2sim ${LIB_LIST})
+ament_target_dependencies(real2sim ${DEPENDENCY_LIST})
 
 
 # =============================================================================

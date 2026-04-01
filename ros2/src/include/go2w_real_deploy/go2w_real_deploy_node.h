@@ -168,6 +168,9 @@ private:
   mutable std::mutex perf_stats_mutex_;
   cv::Mat latest_depth_image_m_;
   cv::Mat latest_rgb_image_;
+  std::chrono::steady_clock::time_point last_depth_image_update_time_{};
+  bool has_received_depth_image_ = false;
+  mutable bool depth_stream_stale_reported_ = false;
 
   std::vector<float> obs_default_dof_pos_;
   SimpleTensor gravity_;

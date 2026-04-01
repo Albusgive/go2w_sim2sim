@@ -1,111 +1,101 @@
 #pragma once
 
-#include "ManagerEnv.hpp"
-#include "RayCasterCamera.h"
-#include "RayCasterLidar.h"
-#include "gamepad.h"
-#include "mujoco_thread.h"
-#include "SimpleTensor.hpp" // 替换 torch
+#include "sim2sim_env.h"
 
+#include <chrono>
 #include <memory>
-#include <mujoco/mjmodel.h>
-#include <mujoco/mjtnum.h>
+#include <mutex>
+#include <opencv2/opencv.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/image.hpp>
 #include <string>
 #include <vector>
 
-// OpenCV & ROS headers
-#include <opencv2/opencv.hpp>
-#include <cv_bridge/cv_bridge.h>
-#include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/image.hpp>
-
-class MJ_ENV : public ManagerBasedEnv,
-               public mujoco_thread,
-               public rclcpp::Node {
-
+class Real2SimEnv : public Sim2SimEnv, public rclcpp::Node {
 public:
-  MJ_ENV(std::string model_file,
-         std::vector<std::pair<std::string, std::string>>
-             &policy_paths_and_description,
-         InferenceDevice device = InferenceDevice::CPU, // 对齐 lab2mj
-         double max_FPS = 60);
-  ~MJ_ENV();
+  Real2SimEnv(std::string model_file,
+              const std::vector<PolicySpec> &policy_specs,
+              InferenceDevice device = InferenceDevice::CPU,
+              double max_FPS = 60);
+  ~Real2SimEnv() override = default;
 
-  // Mujoco Thread overrides
   void vis_cfg() override;
   void step() override;
-  void step_unlock() override;
   void draw() override;
-  std::vector<std::pair<std::string, std::string>> draw_left_table() override;
-  std::string draw_top_text() override;
   void draw_windows() override;
-  void keyboard_press(std::string key) override;
-
-  // Manager overrides
   void initObsManager() override;
 
-  // Input
-  std::shared_ptr<GamePad> pad;
-  float cmd_pad_scale[3] = {2.0f, 1.0f, 2.0f}; // float for simple tensor compatibility
-  void init_gamepad();
+  void registerManager1();
+  void registerManager2();
+  void registerManager3();
+  void registerManager4();
 
-  // Robot State
-  std::vector<float> obs_default_dof_pos; // 改为 vector
-  std::vector<float> obs_default_dof_pos_vec = {
-      0.00f, 0.00f, 0.00f, 0.00f, 0.8f, 0.8f, 0.8f, 0.8f, -1.5f, -1.5f, -1.5f, -1.5f};
-  
-  std::vector<float> act_default_dof_pos_vec = {
-      0.00f, 0.80f, -1.50f, 0.00f, 0.80f, -1.50f, 0.00f, 0.80f,
-      -1.50f, 0.00f, 0.80f, -1.50f, 0.0f, 0.0f, 0.0f, 0.0f};
-      
-  std::vector<float> action_scale_vec = {0.125, 0.25, 0.25, 0.125, 0.25, 0.25,
-                                          0.125, 0.25, 0.25, 0.125, 0.25, 0.25,
-                                          2.0, 2.0, 2.0, 2.0};
-                                          
-  std::vector<float> cmd = {0.0f, 0.0f, 0.0f};
-  SimpleTensor gravity; // 替换 torch::Tensor
-
-  // RayCaster
-  RayCasterCamera ray_caster_camera;
-  RayCaster ray_caster;
-  RayCasterLidar ray_caster_lidar;
-
-  unsigned char *ray_caster_camera_img = nullptr;
-  unsigned char *ray_caster_camera_noise_img = nullptr;
-  unsigned char *ray_caster_camera_inv_img = nullptr;
-  unsigned char *ray_caster_camera_noise_inv_img = nullptr;
-
-  /* Real Camera Data */
-  cv::Mat real_rgb, real_depth;
+protected:
+  bool uses_visual_policy(int policy_idx) const override;
+  void apply_policy_defaults_for_policy(int policy_idx) override;
+  void refresh_visual_observations(bool warm_start_history) override;
+  void on_sensor_enabled_changed(bool enabled) override;
+  void on_env_reset() override;
 
 private:
-  // Data Getters - Must return SimpleTensor now
+  void init_image_topic();
+  void depth_callback(const sensor_msgs::msg::Image::SharedPtr msg);
+  cv::Mat process_depth_image(const cv::Mat &depth_image,
+                              const std::string &encoding);
+
   SimpleTensor get_base_ang_vel();
   SimpleTensor get_projected_gravity();
   SimpleTensor get_command();
   SimpleTensor get_dof_pos();
   SimpleTensor get_dof_vel();
-  SimpleTensor get_ray_caster_image();
-  SimpleTensor get_ray_caster_image2(); // From ROS
+  SimpleTensor get_motion();
+  SimpleTensor get_motion_task();
+  SimpleTensor get_motion_anchor_pos_b();
+  SimpleTensor get_motion_anchor_ori_b();
+  SimpleTensor build_normalized_depth_image(float min_dist,
+                                            float max_dist) const;
 
-  // Sensors handles
-  std::vector<std::pair<int, int>> base_ang_vel_pd;
-  std::vector<std::pair<int, int>> projected_gravity_pd;
-  std::vector<std::pair<int, int>> dof_pos_pd;
-  std::vector<std::pair<int, int>> dof_vel_pd;
+  std::shared_ptr<ObservationTerm> make_base_ang_vel_term(int history);
+  std::shared_ptr<ObservationTerm> make_projected_gravity_term(int history);
+  std::shared_ptr<ObservationTerm>
+  make_command_term(int history, const std::string &name = "command");
+  std::shared_ptr<ObservationTerm> make_dof_pos_term(int history);
+  std::shared_ptr<ObservationTerm> make_dof_vel_term(int history);
+  std::shared_ptr<ActionObsTerm> make_last_action_term(int history);
+  std::shared_ptr<ImageObservationTerm>
+  make_depth_image_term(int history, int stride, int stride_range,
+                        float min_dist, float max_dist,
+                        bool manual_mode = true);
+  std::shared_ptr<ActionTerm> make_action_term(bool use_action2_scale = false);
 
-  int policy_id = 0;
+  std::vector<float> obs_default_dof_pos_;
+  SimpleTensor gravity_;
 
-public:
-  /* ROS2 Real 2 Sim integration */
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr deep_sub_;
-  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr rgb_sub_;
-  double min_depth_;
-  double max_depth_;
-  
-  void init_real_topic();
-  void rgb_callback(const sensor_msgs::msg::Image::SharedPtr msg);
-  void depth_callback(const sensor_msgs::msg::Image::SharedPtr msg);
-  cv::Mat process_depth_image(cv::Mat &depth_image, const std::string &encoding);
-  cv::Mat _obs_image;
+  std::vector<std::pair<int, int>> base_ang_vel_pd_;
+  std::vector<std::pair<int, int>> projected_gravity_pd_;
+  std::vector<std::pair<int, int>> dof_pos_pd_;
+  std::vector<std::pair<int, int>> dof_vel_pd_;
+
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depth_sub_;
+
+  mutable std::mutex image_mutex_;
+  cv::Mat latest_depth_image_m_;
+  std::chrono::steady_clock::time_point last_depth_image_update_time_{};
+  bool has_received_depth_image_ = false;
+  mutable bool depth_stream_stale_reported_ = false;
+  std::vector<std::shared_ptr<ImageObservationTerm>> obs_rays_;
+
+  const std::vector<float> obs_default_dof_pos_vec_ = {
+      0.00f, 0.00f, 0.00f, 0.00f, 0.8f, 0.8f,
+      0.8f,  0.8f,  -1.5f, -1.5f, -1.5f, -1.5f};
+  const std::vector<float> act_default_dof_pos_vec_ = {
+      0.00f,  0.80f, -1.50f, 0.00f,  0.80f, -1.50f, 0.00f, 0.80f,
+      -1.50f, 0.00f, 0.80f,  -1.50f, 0.0f,  0.0f,   0.0f,  0.0f};
+  const std::vector<float> action_scale_vec_ = {
+      0.125f, 0.25f, 0.25f, 0.125f, 0.25f, 0.25f, 0.125f, 0.25f,
+      0.25f,  0.125f, 0.25f, 0.25f, 2.0f,   2.0f,  2.0f,   2.0f};
+  const std::vector<float> action2_scale_vec_ = {
+      0.125f, 0.25f, 0.25f, 0.125f, 0.25f, 0.25f, 0.125f, 0.25f,
+      0.25f,  0.125f, 0.25f, 0.25f, 5.0f,   5.0f,  5.0f,   5.0f};
 };
