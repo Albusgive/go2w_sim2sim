@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="" schematypens=""?>
 <package format="3">
-  <name>unitree_ros2_example</name>
+  <name>go2w_vtm</name>
   <version>0.0.0</version>
-  <description>Uniree ros2 example</description>
+  <description>GO2W VTM deployment package</description>
   <maintainer email="unitree@unitree.com">Unitree</maintainer>
   <license>BSD 3-Clause License</license>
 

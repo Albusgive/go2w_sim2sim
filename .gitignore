@@ -4,3 +4,8 @@
 .cache/
 utils/mujoco_ray_caster/
 /split_records/
+/ros2/build
+/ros2/install
+/ros2/log
+/ros2/.vscode
+/ros2/.cache/

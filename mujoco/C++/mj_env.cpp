@@ -452,7 +452,7 @@ void MJ_ENV::registerManager2() {
   // Policy 2: vtm (cnn)
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto image = make_ray_image_term(5, 5, 1, 0.1f, 3.0f);
+  auto image = make_ray_image_term(8, 5, 1, 0.1f, 2.0f);
   obs_rays.push_back(image);
 
   obs.push_back(make_base_ang_vel_term(3));

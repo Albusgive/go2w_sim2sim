@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
-project(unitree_ros2_example)
+project(go2w_vtm)
+
+option(USE_ONNX "Build with ONNX Runtime instead of LibTorch" ON)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -40,9 +42,30 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(rosbag2_cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(Torch REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_path(JSONCPP_INCLUDE_DIR NAMES json/json.h PATH_SUFFIXES jsoncpp)
+find_library(JSONCPP_LIB NAMES jsoncpp)
+if(NOT JSONCPP_INCLUDE_DIR OR NOT JSONCPP_LIB)
+  message(FATAL_ERROR "Could not find jsoncpp. Install libjsoncpp-dev or provide its include/library path.")
+endif()
+include_directories(${JSONCPP_INCLUDE_DIR})
+
+if(USE_ONNX)
+  add_definitions(-DUSE_ONNX)
+  find_path(ONNX_INCLUDE_DIR NAMES onnxruntime_cxx_api.h)
+  find_library(ONNX_LIB NAMES onnxruntime)
+  if(ONNX_INCLUDE_DIR AND ONNX_LIB)
+    include_directories(${ONNX_INCLUDE_DIR})
+    set(INFERENCE_LIBS ${ONNX_LIB})
+  else()
+    message(FATAL_ERROR "Could not find ONNX Runtime. Make sure CMAKE_PREFIX_PATH includes your onnxruntime folder.")
+  endif()
+else()
+  find_package(Torch REQUIRED)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+  set(INFERENCE_LIBS ${TORCH_LIBRARIES})
+endif()
 
 
 set(cpp_gamepad_path ${CMAKE_CURRENT_SOURCE_DIR}/../../utils/cpp_gamepad)
@@ -54,7 +77,11 @@ include_directories(${cpp_manager_env_path})
 file(GLOB cpp_manager_env ${cpp_manager_env_path}/*.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/common)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/go2w_real_deploy)
 file(GLOB motor_crc_src ${CMAKE_CURRENT_SOURCE_DIR}/src/common/*.cpp)
+set(go2w_real_deploy_node_src
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/go2w_real_deploy/go2w_real_deploy_node.cpp
+)
 
 
 file(GLOB go2w_stand_src ${CMAKE_CURRENT_SOURCE_DIR}/src/go2w_stand/*.cpp)
@@ -62,40 +89,40 @@ add_executable(go2w_stand_example ${go2w_stand_src} ${motor_crc_src})
 target_compile_features(go2w_stand_example PRIVATE cxx_std_20)
 ament_target_dependencies(go2w_stand_example ${DEPENDENCY_LIST})
 
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/go2w_base_loc)
-file(GLOB go2w_base_loc_src ${CMAKE_CURRENT_SOURCE_DIR}/src/go2w_base_loc/*.cpp)
-add_executable(go2w_base_loc ${go2w_base_loc_src} ${motor_crc_src} ${gamepad} ${cpp_manager_env})
-target_link_libraries(go2w_base_loc udev ${TORCH_LIBRARIES})
-target_compile_features(go2w_base_loc PRIVATE cxx_std_20)
-ament_target_dependencies(go2w_base_loc ${DEPENDENCY_LIST})
-
-
 file(GLOB deep_camera_src ${CMAKE_CURRENT_SOURCE_DIR}/src/deep_camera/*.cpp)
 add_executable(deep_camera ${deep_camera_src})
 target_compile_features(deep_camera PRIVATE cxx_std_20)
 ament_target_dependencies(deep_camera ${DEPENDENCY_LIST} OpenCV cv_bridge)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/go2w_end2end)
-file(GLOB go2w_end2end_src ${CMAKE_CURRENT_SOURCE_DIR}/src/go2w_end2end/*.cpp)
-add_executable(go2w_end2end ${go2w_end2end_src} ${motor_crc_src} ${gamepad} ${cpp_manager_env})
-target_link_libraries(go2w_end2end udev ${TORCH_LIBRARIES})
-target_compile_features(go2w_end2end PRIVATE cxx_std_20)
-ament_target_dependencies(go2w_end2end ${DEPENDENCY_LIST} OpenCV cv_bridge)
+set(go2w_real_deploy_main_src
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/go2w_real_deploy/go2w_real_deploy.cpp
+)
+add_executable(go2w_real_deploy
+  ${go2w_real_deploy_main_src}
+  ${go2w_real_deploy_node_src}
+  ${motor_crc_src}
+  ${gamepad}
+  ${cpp_manager_env}
+)
+target_link_libraries(go2w_real_deploy udev ${JSONCPP_LIB} ${OpenCV_LIBS} ${INFERENCE_LIBS})
+target_compile_features(go2w_real_deploy PRIVATE cxx_std_20)
+ament_target_dependencies(go2w_real_deploy ${DEPENDENCY_LIST} OpenCV cv_bridge)
 
 
-set(demo_policy_path "${CMAKE_SOURCE_DIR}/../../policy/history_1/")
-add_definitions(-DDEMO_POLICY_PATH="${demo_policy_path}")
-
-set(policy_path "${CMAKE_SOURCE_DIR}/../../policy/raycam/")
-add_definitions(-DPOLICY_PATH="${policy_path}")
+set(motion_policy_path "${CMAKE_CURRENT_SOURCE_DIR}/../../policy/motion_tracking/")
+add_definitions(-DMOTION_POLICY_PATH="${motion_policy_path}")
+set(vtm_policy_path "${CMAKE_CURRENT_SOURCE_DIR}/../../policy/vtm/")
+add_definitions(-DVTM_POLICY_PATH="${vtm_policy_path}")
+set(vtm_lstm_sru_policy_path "${CMAKE_CURRENT_SOURCE_DIR}/../../policy/vtm_lstm_sru/")
+add_definitions(-DVTM_LSTM_SRU_POLICY_PATH="${vtm_lstm_sru_policy_path}")
+set(vtm_gru_sru_policy_path "${CMAKE_CURRENT_SOURCE_DIR}/../../policy/vtm_gru_sru/")
+add_definitions(-DVTM_GRU_SRU_POLICY_PATH="${vtm_gru_sru_policy_path}")
 
 install(TARGETS 
         go2w_stand_example
-        go2w_base_loc
         deep_camera
-        go2w_end2end
-        DESTINATION)
+        go2w_real_deploy
+        DESTINATION lib/${PROJECT_NAME})
 
 
 if(BUILD_TESTING)
