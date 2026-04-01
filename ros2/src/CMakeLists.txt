@@ -1,7 +1,11 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
+if(POLICY CMP0148)
+  cmake_policy(SET CMP0148 OLD)
+endif()
 project(go2w_vtm)
 
 option(USE_ONNX "Build with ONNX Runtime instead of LibTorch" ON)
+set(ONNXRUNTIME_ROOT "" CACHE PATH "Root directory of ONNX Runtime")
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -53,13 +57,33 @@ include_directories(${JSONCPP_INCLUDE_DIR})
 
 if(USE_ONNX)
   add_definitions(-DUSE_ONNX)
-  find_path(ONNX_INCLUDE_DIR NAMES onnxruntime_cxx_api.h)
-  find_library(ONNX_LIB NAMES onnxruntime)
+  set(ONNX_SEARCH_HINTS)
+  if(ONNXRUNTIME_ROOT)
+    list(APPEND ONNX_SEARCH_HINTS "${ONNXRUNTIME_ROOT}")
+  endif()
+  if(DEFINED ENV{ONNXRUNTIME_ROOT} AND NOT "$ENV{ONNXRUNTIME_ROOT}" STREQUAL "")
+    list(APPEND ONNX_SEARCH_HINTS "$ENV{ONNXRUNTIME_ROOT}")
+  endif()
+
+  find_path(ONNX_INCLUDE_DIR
+    NAMES onnxruntime_cxx_api.h
+    HINTS ${ONNX_SEARCH_HINTS}
+    PATH_SUFFIXES include
+  )
+  find_library(ONNX_LIB
+    NAMES onnxruntime
+    HINTS ${ONNX_SEARCH_HINTS}
+    PATH_SUFFIXES lib lib64
+  )
   if(ONNX_INCLUDE_DIR AND ONNX_LIB)
+    message(STATUS "Found ONNX Runtime include: ${ONNX_INCLUDE_DIR}")
+    message(STATUS "Found ONNX Runtime library: ${ONNX_LIB}")
     include_directories(${ONNX_INCLUDE_DIR})
     set(INFERENCE_LIBS ${ONNX_LIB})
   else()
-    message(FATAL_ERROR "Could not find ONNX Runtime. Make sure CMAKE_PREFIX_PATH includes your onnxruntime folder.")
+    message(FATAL_ERROR
+      "Could not find ONNX Runtime. Set ONNXRUNTIME_ROOT, export "
+      "ONNXRUNTIME_ROOT, or pass ONNX_INCLUDE_DIR/ONNX_LIB explicitly.")
   endif()
 else()
   find_package(Torch REQUIRED)
