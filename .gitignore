@@ -6,8 +6,8 @@ utils/mujoco_ray_caster/
 /split_records/
 split_records/vtm_sru_20260325_202429/
 split_records/vtm_sru_20260325_202554/
-/ros2/build
-/ros2/install
-/ros2/log
+/ros2/build/
+/ros2/install/
+/ros2/log/
 /ros2/.vscode
 /ros2/.cache/
