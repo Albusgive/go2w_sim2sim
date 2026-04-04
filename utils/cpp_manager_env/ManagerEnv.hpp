@@ -187,5 +187,5 @@ private:
 
   mutable std::mutex policy_state_runtime_mutex_;
   std::vector<PolicyStateRuntimeControl> policy_state_runtime_controls_;
-  bool update_all_policy_obs_in_manager_step_ = true;
+  bool update_all_policy_obs_in_manager_step_ = false;
 };
