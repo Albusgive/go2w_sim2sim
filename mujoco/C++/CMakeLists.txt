@@ -156,7 +156,7 @@ ament_target_dependencies(real2sim ${DEPENDENCY_LIST})
 # =============================================================================
 set(policy_path "${CMAKE_SOURCE_DIR}/../../policy/raycam/")
 add_definitions(-DPOLICY_PATH="${policy_path}")
-set(mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_parkour.xml")
+set(mjcf_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_parkour_real_ref.xml")
 add_definitions(-DMJCF_PATH="${mjcf_path}")
 set(mjcf_camera_test_path "${CMAKE_SOURCE_DIR}/../../robot/go2w_description/mjcf/scene_camera_test.xml")
 add_definitions(-DMJCF_CAMERA_TEST_PATH="${mjcf_camera_test_path}")
