@@ -1,10 +1,10 @@
 {
     "model_name": "student",
-    "total_input_length": 729,
+    "total_input_length": 629,
     "memory": {
         "type": "gru_sru",
         "num_layers": 1,
-        "hidden_dim": 128
+        "hidden_dim": 256
     },
     "input_segments": [
         {
@@ -12,18 +12,18 @@
             "type": "1D",
             "range": [
                 0,
-                153
+                53
             ],
             "shape": [
-                153
+                53
             ]
         },
         {
             "group": "policy_image",
             "type": "2D",
             "range": [
-                153,
-                729
+                53,
+                629
             ],
             "shape": [
                 1,

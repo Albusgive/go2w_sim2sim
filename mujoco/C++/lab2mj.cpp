@@ -8,10 +8,10 @@ int main(int argc, const char **argv) {
   policy_list.push_back(PolicySpec::MLP(MOTION_POLICY_PATH, "motion_mlp"));
   policy_list.push_back(PolicySpec::MLP(VTM_POLICY_PATH, "vtm"));
   policy_list.push_back(
-      PolicySpec::SRUSplit(VTM_LSTM_SRU_POLICY_PATH, "vtm_lstm_sru", 1, 128,
+      PolicySpec::SRUSplit(VTM_LSTM_SRU_POLICY_PATH, "vtm_lstm_sru", 1, 256,
                            "lstm_sru"));
   policy_list.push_back(
-      PolicySpec::SRUSplit(VTM_GRU_SRU_POLICY_PATH, "vtm_gru_sru", 1, 128,
+      PolicySpec::SRUSplit(VTM_GRU_SRU_POLICY_PATH, "vtm_gru_sru", 1, 256,
                            "gru_sru"));
 
   for (int i = 1; i < argc; ++i) {
