@@ -458,51 +458,51 @@ void MJ_ENV::registerManager2() {
   // Policy 2: vtm (cnn)
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto image = make_ray_image_term(8, 5, 1, 0.1f, 2.0f);
+  auto image = make_ray_image_term(8, 5, 1, 0.15f, 1.5f);
   obs_rays.push_back(image);
 
-  obs.push_back(make_base_ang_vel_term(3));
-  obs.push_back(make_projected_gravity_term(3));
-  obs.push_back(make_command_term(1));
-  obs.push_back(make_dof_pos_term(3));
-  obs.push_back(make_dof_vel_term(3));
-  obs.push_back(make_last_action_term(3));
+  obs.push_back(make_base_ang_vel_term(5));
+  obs.push_back(make_projected_gravity_term(5));
+  obs.push_back(make_command_term(5));
+  obs.push_back(make_dof_pos_term(5));
+  obs.push_back(make_dof_vel_term(5));
+  obs.push_back(make_last_action_term(5));
   obs.push_back(image);
 
   registerTerms(obs, make_action_term(true));
 }
 
 void MJ_ENV::registerManager3() {
-  // Policy 3: vtm_sru
+  // Policy 3: vtm_lstm_sru
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto image = make_ray_image_term(0, 5, 1, 0.1f, 2.0f);
+  auto image = make_ray_image_term(0, 5, 1, 0.15f, 1.5f);
   obs_rays.push_back(image);
 
-  obs.push_back(make_base_ang_vel_term(3));
-  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_base_ang_vel_term(1));
+  obs.push_back(make_projected_gravity_term(1));
   obs.push_back(make_command_term(1));
-  obs.push_back(make_dof_pos_term(3));
-  obs.push_back(make_dof_vel_term(3));
-  obs.push_back(make_last_action_term(3));
+  obs.push_back(make_dof_pos_term(1));
+  obs.push_back(make_dof_vel_term(1));
+  obs.push_back(make_last_action_term(1));
   obs.push_back(image);
 
   registerTerms(obs, make_action_term(true));
 }
 
 void MJ_ENV::registerManager4() {
-  // Policy 3: vtm_sru
+  // Policy 4: vtm_gru_sru
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto image = make_ray_image_term(0, 5, 1, 0.1f, 2.0f);
+  auto image = make_ray_image_term(0, 5, 1, 0.15f, 1.5f);
   obs_rays.push_back(image);
 
-  obs.push_back(make_base_ang_vel_term(3));
-  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_base_ang_vel_term(1));
+  obs.push_back(make_projected_gravity_term(1));
   obs.push_back(make_command_term(1));
-  obs.push_back(make_dof_pos_term(3));
-  obs.push_back(make_dof_vel_term(3));
-  obs.push_back(make_last_action_term(3));
+  obs.push_back(make_dof_pos_term(1));
+  obs.push_back(make_dof_vel_term(1));
+  obs.push_back(make_last_action_term(1));
   obs.push_back(image);
 
   registerTerms(obs, make_action_term(true));

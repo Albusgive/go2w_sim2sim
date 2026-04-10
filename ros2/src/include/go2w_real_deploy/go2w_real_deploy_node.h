@@ -67,10 +67,15 @@ private:
   void start_stop_posture_sequence();
   void cancel_stop_posture_sequence();
   void write_stop_posture_cmd();
+  void request_fixed_policy_selection(int target_policy_id,
+                                      const char *source_name,
+                                      const char *direction_name);
   void handle_controller_buttons(
       bool a, bool b, bool x, bool y, bool lb, bool rb, bool menu, bool start,
+      bool dpad_up, bool dpad_right, bool dpad_down, bool dpad_left,
       bool &last_a, bool &last_b, bool &last_x, bool &last_y, bool &last_lb,
-      bool &last_rb, bool &last_menu, bool &last_start,
+      bool &last_rb, bool &last_menu, bool &last_start, bool &last_dpad_up,
+      bool &last_dpad_right, bool &last_dpad_down, bool &last_dpad_left,
       const char *source_name);
 
   void rgb_callback(const sensor_msgs::msg::Image::SharedPtr msg);
@@ -137,6 +142,10 @@ private:
   bool last_gamepad_rb_ = false;
   bool last_gamepad_menu_ = false;
   bool last_gamepad_start_ = false;
+  bool last_gamepad_dpad_up_ = false;
+  bool last_gamepad_dpad_right_ = false;
+  bool last_gamepad_dpad_down_ = false;
+  bool last_gamepad_dpad_left_ = false;
   bool last_wireless_a_ = false;
   bool last_wireless_b_ = false;
   bool last_wireless_x_ = false;
@@ -145,6 +154,10 @@ private:
   bool last_wireless_rb_ = false;
   bool last_wireless_menu_ = false;
   bool last_wireless_start_ = false;
+  bool last_wireless_dpad_up_ = false;
+  bool last_wireless_dpad_right_ = false;
+  bool last_wireless_dpad_down_ = false;
+  bool last_wireless_dpad_left_ = false;
 
   std::shared_ptr<GamePad> pad_;
   std::atomic_bool is_stop_{true};

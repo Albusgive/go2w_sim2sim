@@ -54,15 +54,18 @@
     <light pos="0 0 1.5" dir="0 0 -1" directional="true" />
     <geom name="plane" size="0 0 0.5" type="plane" material="groundplane" />
 
-    <body pos="2 0 0">
-      <body pos="0 0 0.25">
-        <geom type="box" size="0.25 0.25 0.25" pos="0.25 -0.25 0" class="collision_"
+    <geom type="box" size="0.25 0.5 0.2" pos="1.5 0 0" class="collision_"
           rgba="0.8 0.6 0.4 1" />
-        <geom type="box" size="0.25 0.25 0.25" pos="0.25 0.25 0" class="collision_"
+
+    <body pos="4 0 0">
+      <body pos="0 0 0.15">
+        <geom type="box" size="0.25 0.25 0.15" pos="0.25 -0.25 0" class="collision_"
+          rgba="0.8 0.6 0.4 1" />
+        <geom type="box" size="0.25 0.25 0.15" pos="0.25 0.25 0" class="collision_"
           rgba="0.6 0.6 0.4 1" />
-        <geom type="box" size="0.25 0.25 0.25" pos="0.75 -0.25 0" class="collision_"
+        <geom type="box" size="0.25 0.25 0.15" pos="0.75 -0.25 0" class="collision_"
           rgba="0.6 0.6 0.4 1" />
-        <geom type="box" size="0.25 0.25 0.25" pos="0.75 0.25 0" class="collision_"
+        <geom type="box" size="0.25 0.25 0.15" pos="0.75 0.25 0" class="collision_"
           rgba="0.8 0.6 0.4 1" />
       </body>
 
@@ -75,10 +78,6 @@
           rgba="0.6 0.6 0.4 1" />
         <geom type="box" size="0.25 0.25 0.25" pos="0.75 0.25 0" class="collision_"
           rgba="0.8 0.6 0.4 1" />
-        <!-- <geom type="box" size="0.25 0.25 0.25" pos="1.25 -0.25 0" class="collision_"
-          rgba="0.8 0.6 0.4 1" />
-        <geom type="box" size="0.25 0.25 0.25" pos="1.25 0.25 0" class="collision_"
-          rgba="0.6 0.6 0.4 1" /> -->
       </body>
     </body>
 
@@ -101,14 +100,14 @@
       <geom type="mesh" mesh="slope2" class="collision_" />
     </body> -->
 
-    <!-- <body pos="5 0 0">
+    <body pos="8 0 0">
         <body pos="0 0 0.35">
           <geom type="box" size="0.15 0.75 0.1" pos="0 0 0.1" class="collision_" />
         </body>
 
         <geom type="box" size="0.1" fromto="0 -0.75 0 0 -0.75 0.35" class="collision_" />
         <geom type="box" size="0.1" fromto="0 0.75 0 0 0.75 0.35" class="collision_" />
-      </body> -->
+      </body>
 
   </worldbody>
 

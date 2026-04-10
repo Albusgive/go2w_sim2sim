@@ -7,10 +7,12 @@
 
 namespace {
 
+constexpr float kPlayLikeDefaultCmd[3] = {0.7f, 0.0f, 0.0f};
 constexpr int kControlPeriodMs = 20;
 constexpr int kDepthObsWidth = 32;
 constexpr int kDepthObsHeight = 18;
 constexpr int kDepthStaleFrameBudget = 15;
+constexpr int kGamepadDpadAxisThreshold = 16000;
 constexpr uint16_t kWirelessKeyR1 = 1u << 0;
 constexpr uint16_t kWirelessKeyL1 = 1u << 1;
 constexpr uint16_t kWirelessKeyStart = 1u << 2;
@@ -19,6 +21,10 @@ constexpr uint16_t kWirelessKeyA = 1u << 8;
 constexpr uint16_t kWirelessKeyB = 1u << 9;
 constexpr uint16_t kWirelessKeyX = 1u << 10;
 constexpr uint16_t kWirelessKeyY = 1u << 11;
+constexpr uint16_t kWirelessKeyUp = 1u << 12;
+constexpr uint16_t kWirelessKeyRight = 1u << 13;
+constexpr uint16_t kWirelessKeyDown = 1u << 14;
+constexpr uint16_t kWirelessKeyLeft = 1u << 15;
 
 bool is_zero_cmd(const std::vector<float> &cmd) {
   if (cmd.size() < 3) {
@@ -210,9 +216,16 @@ void Go2wRealDeployNode::wireless_controller_message_handler(
       has_wireless_key(keys, kWirelessKeyL1),
       has_wireless_key(keys, kWirelessKeyR1),
       has_wireless_key(keys, kWirelessKeySelect),
-      has_wireless_key(keys, kWirelessKeyStart), last_wireless_a_,
-      last_wireless_b_, last_wireless_x_, last_wireless_y_, last_wireless_lb_,
-      last_wireless_rb_, last_wireless_menu_, last_wireless_start_,
+      has_wireless_key(keys, kWirelessKeyStart),
+      has_wireless_key(keys, kWirelessKeyUp),
+      has_wireless_key(keys, kWirelessKeyRight),
+      has_wireless_key(keys, kWirelessKeyDown),
+      has_wireless_key(keys, kWirelessKeyLeft), last_wireless_a_,
+      last_wireless_b_, last_wireless_x_, last_wireless_y_,
+      last_wireless_lb_, last_wireless_rb_, last_wireless_menu_,
+      last_wireless_start_, last_wireless_dpad_up_,
+      last_wireless_dpad_right_, last_wireless_dpad_down_,
+      last_wireless_dpad_left_,
       "wirelesscontroller");
 }
 
@@ -347,10 +360,35 @@ void Go2wRealDeployNode::write_stop_posture_cmd() {
   }
 }
 
+void Go2wRealDeployNode::request_fixed_policy_selection(int target_policy_id,
+                                                        const char *source_name,
+                                                        const char *direction_name) {
+  if (target_policy_id < 0 ||
+      target_policy_id >= static_cast<int>(policy_description.size())) {
+    return;
+  }
+  if (target_policy_id == policy_id_) {
+    RCLCPP_INFO(this->get_logger(),
+                "Policy %d (%s) already active, %s on %s ignored",
+                target_policy_id,
+                policy_description[target_policy_id].c_str(), direction_name,
+                source_name);
+    return;
+  }
+
+  RCLCPP_INFO(this->get_logger(),
+              "Fixed policy switch requested by %s %s -> policy %d (%s)",
+              source_name, direction_name, target_policy_id,
+              policy_description[target_policy_id].c_str());
+  set_policy_id(target_policy_id);
+}
+
 void Go2wRealDeployNode::handle_controller_buttons(
     bool a, bool b, bool x, bool y, bool lb, bool rb, bool menu, bool start,
+    bool dpad_up, bool dpad_right, bool dpad_down, bool dpad_left,
     bool &last_a, bool &last_b, bool &last_x, bool &last_y, bool &last_lb,
-    bool &last_rb, bool &last_menu, bool &last_start,
+    bool &last_rb, bool &last_menu, bool &last_start, bool &last_dpad_up,
+    bool &last_dpad_right, bool &last_dpad_down, bool &last_dpad_left,
     const char *source_name) {
   if (a && !last_a) {
     cancel_stop_posture_sequence();
@@ -389,6 +427,18 @@ void Go2wRealDeployNode::handle_controller_buttons(
     RCLCPP_INFO(this->get_logger(), "Velocity command cleared by %s",
                 source_name);
   }
+  if (dpad_up && !last_dpad_up) {
+    request_fixed_policy_selection(0, source_name, "dpad_up");
+  }
+  if (dpad_right && !last_dpad_right) {
+    request_fixed_policy_selection(1, source_name, "dpad_right");
+  }
+  if (dpad_down && !last_dpad_down) {
+    request_fixed_policy_selection(2, source_name, "dpad_down");
+  }
+  if (dpad_left && !last_dpad_left) {
+    request_fixed_policy_selection(3, source_name, "dpad_left");
+  }
 
   last_a = a;
   last_b = b;
@@ -398,6 +448,10 @@ void Go2wRealDeployNode::handle_controller_buttons(
   last_rb = rb;
   last_menu = menu;
   last_start = start;
+  last_dpad_up = dpad_up;
+  last_dpad_right = dpad_right;
+  last_dpad_down = dpad_down;
+  last_dpad_left = dpad_left;
 }
 
 void Go2wRealDeployNode::low_cmd_write() {
@@ -537,9 +591,16 @@ void Go2wRealDeployNode::apply_policy_defaults_for_policy(int policy_idx) {
     return;
   }
   if (is_zero_cmd(get_command_vector())) {
+    {
+      std::lock_guard<std::mutex> lock(cmd_mutex_);
+      cmd_[0] = kPlayLikeDefaultCmd[0];
+      cmd_[1] = kPlayLikeDefaultCmd[1];
+      cmd_[2] = kPlayLikeDefaultCmd[2];
+    }
     RCLCPP_INFO(this->get_logger(),
-                "Keeping zero command for visual policy %d on real robot",
-                policy_idx);
+                "Applied lab2mj visual-policy default command for policy %d: [%.2f, %.2f, %.2f]",
+                policy_idx, kPlayLikeDefaultCmd[0], kPlayLikeDefaultCmd[1],
+                kPlayLikeDefaultCmd[2]);
   }
 }
 
@@ -904,15 +965,15 @@ void Go2wRealDeployNode::registerManager1() {
 void Go2wRealDeployNode::registerManager2() {
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto image = make_ray_image_term(8, 5, 1, 0.1f, 2.0f);
+  auto image = make_ray_image_term(8, 5, 1, 0.15f, 1.5f);
   obs_rays_.push_back(image);
 
-  obs.push_back(make_base_ang_vel_term(3));
-  obs.push_back(make_projected_gravity_term(3));
-  obs.push_back(make_command_term(1));
-  obs.push_back(make_dof_pos_term(3));
-  obs.push_back(make_dof_vel_term(3));
-  obs.push_back(make_last_action_term(3));
+  obs.push_back(make_base_ang_vel_term(5));
+  obs.push_back(make_projected_gravity_term(5));
+  obs.push_back(make_command_term(5));
+  obs.push_back(make_dof_pos_term(5));
+  obs.push_back(make_dof_vel_term(5));
+  obs.push_back(make_last_action_term(5));
   obs.push_back(image);
 
   registerTerms(obs, make_action_term(true));
@@ -921,15 +982,15 @@ void Go2wRealDeployNode::registerManager2() {
 void Go2wRealDeployNode::registerManager3() {
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto image = make_ray_image_term(0, 5, 1, 0.1f, 2.0f);
+  auto image = make_ray_image_term(0, 5, 1, 0.15f, 1.5f);
   obs_rays_.push_back(image);
 
-  obs.push_back(make_base_ang_vel_term(3));
-  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_base_ang_vel_term(1));
+  obs.push_back(make_projected_gravity_term(1));
   obs.push_back(make_command_term(1));
-  obs.push_back(make_dof_pos_term(3));
-  obs.push_back(make_dof_vel_term(3));
-  obs.push_back(make_last_action_term(3));
+  obs.push_back(make_dof_pos_term(1));
+  obs.push_back(make_dof_vel_term(1));
+  obs.push_back(make_last_action_term(1));
   obs.push_back(image);
 
   registerTerms(obs, make_action_term(true));
@@ -938,15 +999,15 @@ void Go2wRealDeployNode::registerManager3() {
 void Go2wRealDeployNode::registerManager4() {
   std::vector<std::shared_ptr<ObservationTerm>> obs;
 
-  auto image = make_ray_image_term(0, 5, 1, 0.1f, 2.0f);
+  auto image = make_ray_image_term(0, 5, 1, 0.15f, 1.5f);
   obs_rays_.push_back(image);
 
-  obs.push_back(make_base_ang_vel_term(3));
-  obs.push_back(make_projected_gravity_term(3));
+  obs.push_back(make_base_ang_vel_term(1));
+  obs.push_back(make_projected_gravity_term(1));
   obs.push_back(make_command_term(1));
-  obs.push_back(make_dof_pos_term(3));
-  obs.push_back(make_dof_vel_term(3));
-  obs.push_back(make_last_action_term(3));
+  obs.push_back(make_dof_pos_term(1));
+  obs.push_back(make_dof_vel_term(1));
+  obs.push_back(make_last_action_term(1));
   obs.push_back(image);
 
   registerTerms(obs, make_action_term(true));
@@ -999,14 +1060,22 @@ void Go2wRealDeployNode::init_gamepad(bool enable_local_gamepad) {
                                    static_cast<float>(map.ly) / 32767.0f,
                                    static_cast<float>(map.rx) / 32767.0f);
 
+    const bool dpad_up = map.yy < -kGamepadDpadAxisThreshold;
+    const bool dpad_right = map.xx > kGamepadDpadAxisThreshold;
+    const bool dpad_down = map.yy > kGamepadDpadAxisThreshold;
+    const bool dpad_left = map.xx < -kGamepadDpadAxisThreshold;
+
     handle_controller_buttons(
         static_cast<bool>(map.a), static_cast<bool>(map.b),
         static_cast<bool>(map.x), static_cast<bool>(map.y),
         static_cast<bool>(map.lb), static_cast<bool>(map.rb),
-        static_cast<bool>(map.menu), static_cast<bool>(map.start),
+        static_cast<bool>(map.menu), static_cast<bool>(map.start), dpad_up,
+        dpad_right, dpad_down, dpad_left,
         last_gamepad_a_, last_gamepad_b_, last_gamepad_x_, last_gamepad_y_,
         last_gamepad_lb_, last_gamepad_rb_, last_gamepad_menu_,
-        last_gamepad_start_, "local gamepad");
+        last_gamepad_start_, last_gamepad_dpad_up_,
+        last_gamepad_dpad_right_, last_gamepad_dpad_down_,
+        last_gamepad_dpad_left_, "local gamepad");
   });
 
   pad_->readGamePad();

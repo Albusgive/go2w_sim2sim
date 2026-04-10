@@ -79,7 +79,7 @@
       <freejoint />
 
       <body pos="0.312 0 0.1082">
-        <camera name="RayCasterCamera" pos="0.0245 -0.0045 -0.02"
+        <camera name="RayCasterCamera" pos="0.027 -0.0045 -0.02"
           quat="-0.596368 -0.379928 0.379928 0.596368"
           ipd="0.095"
           focal="1 1"
