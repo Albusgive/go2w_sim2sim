@@ -27,13 +27,14 @@ bool is_zero_cmd(const std::vector<float> &cmd) {
 MJ_ENV::MJ_ENV(std::string model_file,
                const std::vector<PolicySpec> &policy_specs,
                InferenceDevice device, double max_FPS)
-    : Sim2SimEnv(model_file, policy_specs, device, max_FPS, "VTM Deploy",
-                 1920, 1080, 4) {
+    : Sim2SimEnv(model_file, policy_specs, device, max_FPS, "VTM Deploy", 1920,
+                 1080, 4) {
 
   // 3. 初始化参数
   gravity = SimpleTensor::wrap({0.0f, 0.0f, -1.0f});
   obs_default_dof_pos = obs_default_dof_pos_vec;
-  cmd = {kPlayLikeDefaultCmd[0], kPlayLikeDefaultCmd[1], kPlayLikeDefaultCmd[2]};
+  cmd = {kPlayLikeDefaultCmd[0], kPlayLikeDefaultCmd[1],
+         kPlayLikeDefaultCmd[2]};
 
   // Action Scales (硬编码示例)
   action_scale_vec = {0.125, 0.25,  0.25, 0.125, 0.25, 0.25, 0.125, 0.25,
@@ -62,8 +63,8 @@ MJ_ENV::MJ_ENV(std::string model_file,
   camera_cfg.dis_range = {0.1, 2.0};
   camera_cfg.is_detect_parentbody = false;
   camera_cfg.baseline = 0.095;
-  camera_cfg.loss_angle = 80;
-  camera_cfg.min_energy = 0.2;
+  camera_cfg.loss_angle = 70;
+  camera_cfg.min_energy = 0.05;
   ray_caster_camera = RayCasterCamera(camera_cfg);
   ray_noise::StereoNoise noise_model(6);
   ray_caster_camera.setNoise(noise_model);
@@ -121,6 +122,8 @@ void MJ_ENV::step() {
 
 void MJ_ENV::sub_step() {
   if (d->time - last_camera_update_time >= camera_update_time_s) {
+    // 图像观测使用 manual mode，由相机更新频率手动刷新，
+    // 避免每次 policy 拼接 observation 时都重新计算深度图。
     for (auto &obs_ray : obs_rays) {
       obs_ray->compute_obs();
     }
@@ -131,10 +134,10 @@ void MJ_ENV::sub_step() {
 void MJ_ENV::step_unlock() {
   // 渲染频率通常低于物理频率
   ray_update_setp++;
+  ray_caster_camera.get_distance_to_image_plane_image(ray_caster_camera_img,
+                                                      false, false);
   ray_caster_camera.get_distance_to_image_plane_image(
-      ray_caster_camera_img);
-  ray_caster_camera.get_distance_to_image_plane_image(
-      ray_caster_camera_noise_img,true);
+      ray_caster_camera_noise_img, true, false);
   // cv::Mat img(ray_caster_camera.v_ray_num, ray_caster_camera.h_ray_num,
   // CV_8UC1,
   //             ray_caster_camera_inv_img);
@@ -206,20 +209,8 @@ SimpleTensor MJ_ENV::get_dof_vel() {
 }
 
 SimpleTensor MJ_ENV::get_ray_caster_image() {
-  // 获取深度数据 (std::vector<double>)
-  auto data_d = ray_caster_camera.get_distance_to_image_plane_normalized_vec(
-      true, false, false, 1.0);
-
-  // 转 float
-  std::vector<float> data_f(data_d.begin(), data_d.end());
-
-  // 如果需要 Clip，这里可以手动做，或者交给 ObservationTerm
-  for (auto &v : data_f) {
-    if (v > 10.0f)
-      v = 10.0f; // 简单 clip 示例
-  }
-
-  return SimpleTensor::wrap(data_f);
+  auto raw_vec = ray_caster_camera.get_distance_to_image_plane_vec(true, false);
+  return SimpleTensor::wrap(std::vector<float>(raw_vec.begin(), raw_vec.end()));
 }
 
 SimpleTensor MJ_ENV::get_motion() {
@@ -295,6 +286,7 @@ void MJ_ENV::refresh_visual_observations(bool warm_start_history) {
     ray_caster_camera.compute_distance();
   }
   for (auto &obs_ray : obs_rays) {
+    // policy 切换/重置时主动刷新一帧，manual mode 下 Manager 不会自动更新图像。
     obs_ray->compute_obs();
     if (warm_start_history) {
       auto image_obs = std::dynamic_pointer_cast<ImageObservationTerm>(obs_ray);
@@ -313,35 +305,6 @@ void MJ_ENV::on_sensor_enabled_changed(bool enabled) {
 void MJ_ENV::on_env_reset() {
   last_camera_update_time = 0.0f;
   ray_update_setp = 0;
-}
-
-SimpleTensor MJ_ENV::build_normalized_ray_caster_image(float min_dist,
-                                                       float max_dist) {
-  auto raw_vec = ray_caster_camera.get_distance_to_image_plane_vec(true, true);
-
-  std::vector<float> processed_data;
-  processed_data.reserve(raw_vec.size());
-  float range = max_dist - min_dist;
-  if (range <= 1.0e-6f) {
-    range = 1.0f;
-  }
-
-  for (auto val_in : raw_vec) {
-    float val = static_cast<float>(val_in);
-    if (std::isinf(val)) {
-      val = max_dist;
-    }
-    if (val > max_dist) {
-      val = max_dist;
-    }
-    if (val < min_dist) {
-      val = min_dist;
-    }
-    val = (val - min_dist) / range;
-    processed_data.push_back(val);
-  }
-
-  return SimpleTensor::wrap(processed_data);
 }
 
 std::shared_ptr<ObservationTerm> MJ_ENV::make_base_ang_vel_term(int history) {
@@ -388,13 +351,17 @@ std::shared_ptr<ActionObsTerm> MJ_ENV::make_last_action_term(int history) {
 std::shared_ptr<ImageObservationTerm>
 MJ_ENV::make_ray_image_term(int history, int stride, int stride_range,
                             float min_dist, float max_dist, bool manual_mode) {
-  auto term =
-      std::make_shared<ImageObservationTerm>("ray_caster", history, stride,
-                                             stride_range);
-  term->func = [this, min_dist, max_dist]() {
-    return build_normalized_ray_caster_image(min_dist, max_dist);
+  auto term = std::make_shared<ImageObservationTerm>("ray_caster", history,
+                                                     stride, stride_range);
+  term->func = [this]() {
+    return get_ray_caster_image();
   };
+  // manual mode: Manager 只取已有图像观测，实际刷新由 sub_step()/refresh_visual_observations 控制。
   term->setManualMode(manual_mode);
+  term->clip[0] = min_dist;
+  term->clip[1] = max_dist;
+  term->setZeroOutsideClipRange(true);
+  term->setNormalizeAfterClip(true);
   return term;
 }
 
@@ -420,7 +387,6 @@ void MJ_ENV::deep_mul_gradient(std::vector<double> data) {
   cv::imshow("Depth Debug", view);
   cv::waitKey(1);
 }
-
 
 void MJ_ENV::registerManager1() {
   // Policy 1: motion_mlp

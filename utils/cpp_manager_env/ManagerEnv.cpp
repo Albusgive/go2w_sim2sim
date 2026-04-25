@@ -101,6 +101,23 @@ void ObservationTerm::reset() {
 // ============================================================================
 void ImageObservationTerm::init(int batch_size) {
     this->batch_size = batch_size;
+    bool need_init_scale = !scale_.defined();
+    bool need_init_clip0 = !clip_[0].defined();
+    bool need_init_clip1 = !clip_[1].defined();
+
+    if (need_init_scale) {
+        scale_ = SimpleTensor::full({static_cast<int64_t>(batch_size)},
+                                    static_cast<float>(scale));
+    }
+    if (need_init_clip0) {
+        clip_[0] = SimpleTensor::full({static_cast<int64_t>(batch_size)},
+                                      static_cast<float>(clip[0]));
+    }
+    if (need_init_clip1) {
+        clip_[1] = SimpleTensor::full({static_cast<int64_t>(batch_size)},
+                                      static_cast<float>(clip[1]));
+    }
+
     // history_length == 0 表示只使用最新帧，不维护历史缓冲区。
     if (history_length > 0) {
         // 初始化 ImageHistoryBuffer
@@ -116,11 +133,25 @@ void ImageObservationTerm::init(int batch_size) {
     current_frame_ = SimpleTensor::zeros({static_cast<int64_t>(batch_size)});
 }
 void ImageObservationTerm::compute_obs() {
-    // 1. 获取处理后的单帧数据
-    // 注意：这里的 obs 已经是用户在 func 中处理好(归一化、Permute等)的数据了
+    // 1. 获取单帧数据。可由 ImageObservationTerm 统一做 clip/mask/normalize。
     auto obs = func(); 
     
     if (!obs.defined()) return;
+    if (noise) {
+        noise->produce_noise(obs);
+    }
+    if (clip_[0].defined() && clip_[1].defined()) {
+        if (normalize_after_clip) {
+            obs.clip_normalize_(clip_[0], clip_[1], zero_outside_clip_range);
+        } else if (zero_outside_clip_range) {
+            obs.zero_outside_(clip_[0], clip_[1]);
+        } else {
+            obs.clip_(clip_[0], clip_[1]);
+        }
+    }
+    if (scale_.defined()) {
+        obs.mul_(scale_);
+    }
     // 2. 缓存当前帧
     // 必须 clone，因为 func 返回的可能是临时引用，或者下一帧会覆盖这块内存
     current_frame_ = obs.clone(); 

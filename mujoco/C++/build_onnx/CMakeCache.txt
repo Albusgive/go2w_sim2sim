@@ -253,6 +253,9 @@ MUJOCO_T_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 MUJOCO_T_SOURCE_DIR:STATIC=/home/albusgive2/go2w_sim2sim/mujoco/C++
 
+//Root directory of ONNX Runtime
+ONNXRUNTIME_ROOT:PATH=
+
 //Path to a file.
 ONNX_INCLUDE_DIR:PATH=/home/albusgive2/software/onnxruntime-linux-x64-gpu-1.23.2/include
 
