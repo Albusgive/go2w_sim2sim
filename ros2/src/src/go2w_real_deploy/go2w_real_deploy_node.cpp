@@ -802,14 +802,13 @@ SimpleTensor Go2wRealDeployNode::get_motion_anchor_ori_b() {
   return SimpleTensor::zeros({6});
 }
 
-SimpleTensor Go2wRealDeployNode::build_normalized_depth_image(
-    float min_dist, float max_dist) const {
+SimpleTensor Go2wRealDeployNode::get_real_depth_image() const {
   const size_t obs_size = static_cast<size_t>(kDepthObsWidth * kDepthObsHeight);
-  std::vector<float> processed_data(obs_size, 1.0f);
+  std::vector<float> processed_data(obs_size, 0.0f);
   const std::vector<float> zero_image(obs_size, 0.0f);
 
   if (!is_enable_sensor_) {
-    return SimpleTensor::wrap(processed_data);
+    return SimpleTensor::wrap(zero_image);
   }
 
   cv::Mat depth_image_copy;
@@ -847,17 +846,16 @@ SimpleTensor Go2wRealDeployNode::build_normalized_depth_image(
     depth_image_copy.convertTo(depth_image_copy, CV_32F);
   }
 
-  const float range = std::max(max_dist - min_dist, 1.0e-6f);
   size_t index = 0;
   for (int row = 0; row < depth_image_copy.rows; ++row) {
     const float *row_ptr = depth_image_copy.ptr<float>(row);
     for (int col = 0; col < depth_image_copy.cols; ++col) {
       float value = row_ptr[col];
       if (!std::isfinite(value) || value <= 0.0f) {
-        value = max_dist;
+        processed_data[index++] = 0.0f;
+        continue;
       }
-      value = std::clamp(value, min_dist, max_dist);
-      processed_data[index++] = (value - min_dist) / range;
+      processed_data[index++] = value;
     }
   }
 
@@ -915,10 +913,14 @@ Go2wRealDeployNode::make_ray_image_term(int history, int stride,
                                         float max_dist, bool manual_mode) {
   auto term = std::make_shared<ImageObservationTerm>("ray_caster", history, stride,
                                                      stride_range);
-  term->func = [this, min_dist, max_dist]() {
-    return build_normalized_depth_image(min_dist, max_dist);
+  term->func = [this]() {
+    return get_real_depth_image();
   };
   term->setManualMode(manual_mode);
+  term->clip[0] = min_dist;
+  term->clip[1] = max_dist;
+  term->setZeroOutsideClipRange(true);
+  term->setNormalizeAfterClip(true);
   return term;
 }
 

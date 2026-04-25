@@ -98,8 +98,6 @@ private:
 
   // 辅助函数
   void deep_mul_gradient(std::vector<double> data);
-  SimpleTensor build_normalized_ray_caster_image(float min_dist,
-                                                 float max_dist);
   std::shared_ptr<ObservationTerm> make_base_ang_vel_term(int history);
   std::shared_ptr<ObservationTerm> make_projected_gravity_term(int history);
   std::shared_ptr<ObservationTerm> make_command_term(

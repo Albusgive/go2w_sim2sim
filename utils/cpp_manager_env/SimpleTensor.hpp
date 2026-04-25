@@ -137,6 +137,46 @@ public:
         return *this;
     }
 
+    SimpleTensor& zero_outside_(float min, float max) {
+        for (auto& val : data_) {
+            if (val < min || val > max) {
+                val = 0.0f;
+            }
+        }
+        return *this;
+    }
+
+    SimpleTensor& zero_outside_(const SimpleTensor& min_t, const SimpleTensor& max_t) {
+        for (size_t i = 0; i < data_.size(); ++i) {
+            float min_v = min_t.data_.size() == 1 ? min_t.data_[0] : min_t.data_[i];
+            float max_v = max_t.data_.size() == 1 ? max_t.data_[0] : max_t.data_[i];
+            if (data_[i] < min_v || data_[i] > max_v) {
+                data_[i] = 0.0f;
+            }
+        }
+        return *this;
+    }
+
+    SimpleTensor& clip_normalize_(const SimpleTensor& min_t, const SimpleTensor& max_t,
+                                  bool zero_outside) {
+        for (size_t i = 0; i < data_.size(); ++i) {
+            float min_v = min_t.data_.size() == 1 ? min_t.data_[0] : min_t.data_[i];
+            float max_v = max_t.data_.size() == 1 ? max_t.data_[0] : max_t.data_[i];
+            float range = max_v - min_v;
+            if (range <= 1.0e-6f || !std::isfinite(data_[i])) {
+                data_[i] = 0.0f;
+                continue;
+            }
+            if (zero_outside && (data_[i] < min_v || data_[i] > max_v)) {
+                data_[i] = 0.0f;
+                continue;
+            }
+            data_[i] = std::max(min_v, std::min(data_[i], max_v));
+            data_[i] = (data_[i] - min_v) / range;
+        }
+        return *this;
+    }
+
     SimpleTensor& mul_(float scalar) {
         for (auto& val : data_) val *= scalar;
         return *this;

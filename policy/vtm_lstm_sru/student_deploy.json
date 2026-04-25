@@ -36,13 +36,13 @@
         ]
     },
     "intermediate_tensors": {
-        "encoded_obs_dim": 117,
-        "latent_dim": 256
+        "encoded_obs_dim": 181,
+        "latent_dim": 512
     },
     "memory": {
         "type": "lstm_sru",
         "num_layers": 1,
-        "hidden_dim": 256
+        "hidden_dim": 512
     },
     "pipelines": {
         "jit": {

@@ -31,6 +31,8 @@ public:
   virtual SimpleTensor get_obs();
   virtual void reset();
 
+  // 手动模式下 ManagerBasedEnv::computeObs() 只读取 get_obs()，
+  // 不自动调用 compute_obs()；适合相机/深度图这类按独立频率刷新的观测。
   bool is_manual_ = false;
   void setManualMode(bool is_manual) { is_manual_ = is_manual; }
 
@@ -57,6 +59,15 @@ public:
   SimpleTensor get_obs() override;
   void reset() override;
   void warm_start_history();
+  void setZeroOutsideClipRange(bool enable) {
+    zero_outside_clip_range = enable;
+  }
+  void setNormalizeAfterClip(bool enable) {
+    normalize_after_clip = enable;
+  }
+
+  bool zero_outside_clip_range = false;
+  bool normalize_after_clip = false;
 
 private:
   int stride_;

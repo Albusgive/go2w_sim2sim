@@ -92,8 +92,7 @@ private:
   SimpleTensor get_motion_task();
   SimpleTensor get_motion_anchor_pos_b();
   SimpleTensor get_motion_anchor_ori_b();
-  SimpleTensor build_normalized_depth_image(float min_dist,
-                                            float max_dist) const;
+  SimpleTensor get_real_depth_image() const;
 
   std::shared_ptr<ObservationTerm> make_base_ang_vel_term(int history);
   std::shared_ptr<ObservationTerm> make_projected_gravity_term(int history);

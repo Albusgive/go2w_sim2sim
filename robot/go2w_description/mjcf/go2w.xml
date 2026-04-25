@@ -68,6 +68,7 @@
     <mesh file="wheel.stl" />
 
     <mesh file="336L_with_base.STL" />
+    <mesh file="336L_with_safe_base.STL" />
   </asset>
 
   <worldbody>
@@ -78,22 +79,25 @@
         diaginertia="0.107027 0.0980771 0.0244531" />
       <freejoint />
 
-      <body pos="0.312 0 0.1082">
-        <camera name="RayCasterCamera" pos="0.027 -0.0045 -0.02"
+      <body pos="0.307 0 0.1082">
+        <!-- <geom mesh="336L_with_base"  material="yellow" class="visual" /> -->
+      </body>
+
+      <body pos="0.295 0 0.076">
+        <camera name="RayCasterCamera" pos="0.0235 -0.003 0.025"
           quat="-0.596368 -0.379928 0.379928 0.596368"
           ipd="0.095"
           focal="1 1"
           sensorsize="2.0 1.1547005"
           resolution="640 370"
         />
-        <geom mesh="336L_with_base"  material="yellow" class="visual" />
+        <geom mesh="336L_with_safe_base" material="green" class="visual" />
+        
       </body>
-      <!-- <camera name="RayCasterCamera" pos="0.31 0 0.085" quat="-0.596368 -0.379928 0.379928 0.596368"
-        ipd="0.095"
-        focal="1 1"
-        sensorsize="2.0 1.1547005"
-        resolution="640 370"
-      /> -->
+
+      <!-- <geom type="box" size="0.02 0.05 0.03" pos="0.37 0.09 0.08" quat="-0.596368 -0.379928 0.379928 0.596368"/> -->
+      <geom type="box" size="0.02 0.05 0.03" pos="0.35 0 -0.003" />
+
 
       <geom mesh="base_0" material="black" class="visual" />
       <geom mesh="base_1" material="black" class="visual" />
