@@ -1,6 +1,7 @@
 /build/
 /.cache/
 /mujoco/C++/build/
+/mujoco/C++/build_onnx
 .cache/
 utils/mujoco_ray_caster/
 /split_records/
