@@ -19,10 +19,10 @@ std::vector<PolicySpec> build_policy_list() {
   policy_list.push_back(PolicySpec::MLP(MOTION_POLICY_PATH, "motion_mlp"));
   policy_list.push_back(PolicySpec::MLP(VTM_POLICY_PATH, "vtm"));
   policy_list.push_back(
-      PolicySpec::SRUSplit(VTM_LSTM_SRU_POLICY_PATH, "vtm_lstm_sru", 1, 256,
+      PolicySpec::SRUSplit(VTM_LSTM_SRU_POLICY_PATH, "vtm_lstm_sru", 1, 512,
                            "lstm_sru"));
   policy_list.push_back(
-      PolicySpec::SRUSplit(VTM_GRU_SRU_POLICY_PATH, "vtm_gru_sru", 1, 256,
+      PolicySpec::SRUSplit(VTM_GRU_SRU_POLICY_PATH, "vtm_gru_sru", 1, 512,
                            "gru_sru"));
   return policy_list;
 }
