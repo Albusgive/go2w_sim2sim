@@ -2,16 +2,20 @@
 #include <GLFW/glfw3.h>
 #include <array>
 #include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <deque>
 #include <iostream>
 #include <mujoco/mjtnum.h>
 #include <mujoco/mujoco.h>
 #include <mutex>
+#include <opencv2/videoio.hpp>
 #include <queue>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -91,6 +95,33 @@ public:
                                     uint64_t &frame_id) const;
   bool copy_latest_render_rgb_frame(std::vector<unsigned char> &rgb, int &width,
                                     int &height, uint64_t &frame_id) const;
+  bool get_render_framebuffer_size(int &width, int &height) const;
+
+  bool start_video_recording(const std::string &directory);
+  void stop_video_recording();
+  bool is_video_recording() const;
+  bool add_current_view_video_stream(const std::string &name, int width,
+                                     int height, double fps = 30.0);
+  bool add_relative_body_video_stream(const std::string &name,
+                                      const std::string &body_name, int width,
+                                      int height, mjtNum relative_azimuth,
+                                      mjtNum elevation, mjtNum distance,
+                                      double fps = 30.0);
+  bool add_fixed_camera_video_stream(const std::string &name,
+                                     const std::string &camera_name, int width,
+                                     int height, double fps = 30.0,
+                                     bool include_custom_draw = true,
+                                     bool hide_camera_visualization = false);
+  bool add_rgb_video_stream(const std::string &name, int width, int height,
+                            double fps = 30.0);
+  bool add_gray_video_stream(const std::string &name, int width, int height,
+                             double fps = 30.0);
+  bool submit_rgb_video_frame(const std::string &name,
+                              const unsigned char *rgb, int width, int height,
+                              double sim_time = -1.0);
+  bool submit_gray_video_frame(const std::string &name,
+                               const unsigned char *gray, int width,
+                               int height, double sim_time = -1.0);
 
   std::vector<std::string> get_names(int num, int *adr);
 
@@ -139,6 +170,9 @@ private:
 
   // camera track
   bool is_look_at = false;
+  bool is_relative_look_at = false;
+  int relative_look_at_body_id = -1;
+  mjtNum relative_look_at_azimuth = 0;
   // mocap move id
   int target_point_id = -1;
 
@@ -173,6 +207,12 @@ private:
   void scroll(double xoffset, double yoffset);
 
   void select_body(mjrRect &viewport, bool camera_target = false);
+  void toggle_relative_body_tracking();
+  void set_relative_body_camera_preset(const char *body_name,
+                                       mjtNum relative_azimuth,
+                                       mjtNum elevation, mjtNum distance);
+  void update_camera_tracking();
+  mjtNum body_yaw(int body_id) const;
 
   // 可视化
   std::atomic_bool is_show{false};
@@ -193,6 +233,55 @@ private:
   int latest_render_width = 0;
   int latest_render_height = 0;
   uint64_t latest_render_frame_id = 0;
+
+  enum class VideoStreamKind {
+    CurrentView,
+    RelativeBodyView,
+    FixedCameraView,
+    Rgb,
+    Gray
+  };
+  struct VideoFrame {
+    std::vector<unsigned char> pixels;
+    int width = 0;
+    int height = 0;
+    int channels = 0;
+    bool flip_vertical = false;
+  };
+  struct VideoStream {
+    std::string name;
+    std::string path;
+    VideoStreamKind kind = VideoStreamKind::Rgb;
+    int width = 0;
+    int height = 0;
+    double fps = 30.0;
+    double next_capture_time = 0.0;
+    bool has_next_capture_time = false;
+    int body_id = -1;
+    int camera_id = -1;
+    bool include_custom_draw = true;
+    bool hide_camera_visualization = false;
+    mjtNum relative_azimuth = 0;
+    mjtNum elevation = 0;
+    mjtNum distance = 0;
+    std::deque<VideoFrame> queue;
+  };
+
+  std::atomic_bool video_recording_{false};
+  mutable std::mutex video_mutex_;
+  std::condition_variable video_cv_;
+  std::thread video_thread_;
+  std::string video_directory_;
+  std::unordered_map<std::string, VideoStream> video_streams_;
+  size_t max_video_queue_frames_ = 8;
+
+  bool add_video_stream(const std::string &name, int width, int height,
+                        double fps, VideoStreamKind kind);
+  bool enqueue_video_frame(const std::string &name,
+                           std::vector<unsigned char> pixels, int width,
+                           int height, int channels, bool flip_vertical);
+  void capture_current_view_video_streams(double sim_time);
+  void video_writer_loop();
 
 public:
   std::vector<mjtNum> get_sensor_data(const std::string &sensor_name);

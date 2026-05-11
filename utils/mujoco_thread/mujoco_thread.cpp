@@ -1,12 +1,16 @@
 #include "mujoco_thread.h"
+#include <cmath>
 #include <chrono>
 #include <cstddef>
+#include <filesystem>
 #include <functional>
 #include <iomanip>
 #include <mujoco/mjmodel.h>
 #include <mujoco/mjrender.h>
 #include <mujoco/mujoco.h>
 #include <mutex>
+#include <opencv2/imgproc.hpp>
+#include <sstream>
 #include <utility>
 #include <vector>
 mujoco_thread::mujoco_thread(std::string model_file, double max_FPS, int width,
@@ -18,6 +22,7 @@ mujoco_thread::mujoco_thread(std::string model_file, double max_FPS, int width,
 }
 
 mujoco_thread::~mujoco_thread() {
+  stop_video_recording();
   destroyRender();
   // free MuJoCo model and data
   mj_deleteData(d);
@@ -96,6 +101,9 @@ void mujoco_thread::sim() {
       std::unique_lock<std::mutex> lk(m_mtx);
       step();
       for (int i = 0; i < _sub_step; i++) {
+        mju_zero(d->xfrc_applied, 6 * m->nbody);
+        mjv_applyPerturbPose(m, d, &pert, 0);
+        mjv_applyPerturbForce(m, d, &pert);
         mj_step(m, d);
         // 记录轨迹
         track();
@@ -252,6 +260,396 @@ bool mujoco_thread::copy_latest_render_rgb_frame(
   return true;
 }
 
+bool mujoco_thread::get_render_framebuffer_size(int &width, int &height) const {
+  if (!window) {
+    return false;
+  }
+  glfwGetFramebufferSize(window, &width, &height);
+  return width > 0 && height > 0;
+}
+
+bool mujoco_thread::start_video_recording(const std::string &directory) {
+  std::lock_guard<std::mutex> lock(video_mutex_);
+  if (video_recording_.load()) {
+    return false;
+  }
+  std::error_code ec;
+  std::filesystem::create_directories(directory, ec);
+  if (ec) {
+    std::cerr << "Failed to create video directory: " << directory << " "
+              << ec.message() << std::endl;
+    return false;
+  }
+  video_directory_ = directory;
+  video_recording_.store(true);
+  video_thread_ = std::thread([this]() { video_writer_loop(); });
+  return true;
+}
+
+void mujoco_thread::stop_video_recording() {
+  if (!video_recording_.exchange(false)) {
+    return;
+  }
+  video_cv_.notify_all();
+  if (video_thread_.joinable()) {
+    video_thread_.join();
+  }
+  std::lock_guard<std::mutex> lock(video_mutex_);
+  video_streams_.clear();
+  video_directory_.clear();
+}
+
+bool mujoco_thread::is_video_recording() const {
+  return video_recording_.load();
+}
+
+bool mujoco_thread::add_current_view_video_stream(const std::string &name,
+                                                  int width, int height,
+                                                  double fps) {
+  return add_video_stream(name, width, height, fps,
+                          VideoStreamKind::CurrentView);
+}
+
+bool mujoco_thread::add_relative_body_video_stream(
+    const std::string &name, const std::string &body_name, int width, int height,
+    mjtNum relative_azimuth, mjtNum elevation, mjtNum distance, double fps) {
+  if (!m || body_name.empty()) {
+    return false;
+  }
+  const int body_id = mj_name2id(m, mjOBJ_BODY, body_name.c_str());
+  if (body_id <= 0) {
+    std::cerr << "Video camera body not found: " << body_name << std::endl;
+    return false;
+  }
+  if (!add_video_stream(name, width, height, fps,
+                        VideoStreamKind::RelativeBodyView)) {
+    return false;
+  }
+  std::lock_guard<std::mutex> lock(video_mutex_);
+  VideoStream &stream = video_streams_.at(name);
+  stream.body_id = body_id;
+  stream.relative_azimuth = relative_azimuth;
+  stream.elevation = elevation;
+  stream.distance = distance;
+  return true;
+}
+
+bool mujoco_thread::add_fixed_camera_video_stream(const std::string &name,
+                                                  const std::string &camera_name,
+                                                  int width, int height,
+                                                  double fps,
+                                                  bool include_custom_draw,
+                                                  bool hide_camera_visualization) {
+  if (!m || camera_name.empty()) {
+    return false;
+  }
+  const int camera_id = mj_name2id(m, mjOBJ_CAMERA, camera_name.c_str());
+  if (camera_id < 0) {
+    std::cerr << "Video camera not found: " << camera_name << std::endl;
+    return false;
+  }
+  if (!add_video_stream(name, width, height, fps,
+                        VideoStreamKind::FixedCameraView)) {
+    return false;
+  }
+  std::lock_guard<std::mutex> lock(video_mutex_);
+  VideoStream &stream = video_streams_.at(name);
+  stream.camera_id = camera_id;
+  stream.include_custom_draw = include_custom_draw;
+  stream.hide_camera_visualization = hide_camera_visualization;
+  return true;
+}
+
+bool mujoco_thread::add_rgb_video_stream(const std::string &name, int width,
+                                         int height, double fps) {
+  return add_video_stream(name, width, height, fps, VideoStreamKind::Rgb);
+}
+
+bool mujoco_thread::add_gray_video_stream(const std::string &name, int width,
+                                          int height, double fps) {
+  return add_video_stream(name, width, height, fps, VideoStreamKind::Gray);
+}
+
+bool mujoco_thread::submit_rgb_video_frame(const std::string &name,
+                                           const unsigned char *rgb, int width,
+                                           int height, double sim_time) {
+  (void)sim_time;
+  if (!rgb || width <= 0 || height <= 0) {
+    return false;
+  }
+  std::vector<unsigned char> pixels(rgb, rgb + width * height * 3);
+  return enqueue_video_frame(name, std::move(pixels), width, height, 3, false);
+}
+
+bool mujoco_thread::submit_gray_video_frame(const std::string &name,
+                                            const unsigned char *gray,
+                                            int width, int height,
+                                            double sim_time) {
+  (void)sim_time;
+  if (!gray || width <= 0 || height <= 0) {
+    return false;
+  }
+  std::vector<unsigned char> pixels(gray, gray + width * height);
+  return enqueue_video_frame(name, std::move(pixels), width, height, 1, false);
+}
+
+bool mujoco_thread::add_video_stream(const std::string &name, int width,
+                                     int height, double fps,
+                                     VideoStreamKind kind) {
+  if (name.empty() || width <= 0 || height <= 0 || fps <= 0.0) {
+    return false;
+  }
+  std::lock_guard<std::mutex> lock(video_mutex_);
+  if (video_directory_.empty()) {
+    return false;
+  }
+  if (video_streams_.count(name) > 0) {
+    return false;
+  }
+  VideoStream stream;
+  stream.name = name;
+  stream.kind = kind;
+  stream.width = width;
+  stream.height = height;
+  stream.fps = fps;
+  stream.path = (std::filesystem::path(video_directory_) / (name + ".mp4"))
+                    .string();
+  video_streams_.emplace(name, std::move(stream));
+  return true;
+}
+
+bool mujoco_thread::enqueue_video_frame(const std::string &name,
+                                        std::vector<unsigned char> pixels,
+                                        int width, int height, int channels,
+                                        bool flip_vertical) {
+  if (!video_recording_.load()) {
+    return false;
+  }
+  std::lock_guard<std::mutex> lock(video_mutex_);
+  auto it = video_streams_.find(name);
+  if (it == video_streams_.end()) {
+    return false;
+  }
+  VideoStream &stream = it->second;
+  if (stream.width != width || stream.height != height) {
+    return false;
+  }
+  while (stream.queue.size() >= max_video_queue_frames_) {
+    stream.queue.pop_front();
+  }
+  VideoFrame frame;
+  frame.pixels = std::move(pixels);
+  frame.width = width;
+  frame.height = height;
+  frame.channels = channels;
+  frame.flip_vertical = flip_vertical;
+  stream.queue.push_back(std::move(frame));
+  video_cv_.notify_one();
+  return true;
+}
+
+void mujoco_thread::capture_current_view_video_streams(double sim_time) {
+  if (!video_recording_.load()) {
+    return;
+  }
+
+  std::vector<std::pair<std::string, std::array<int, 2>>> streams;
+  {
+    std::lock_guard<std::mutex> lock(video_mutex_);
+    for (auto &[name, stream] : video_streams_) {
+      if (stream.kind != VideoStreamKind::CurrentView &&
+          stream.kind != VideoStreamKind::RelativeBodyView &&
+          stream.kind != VideoStreamKind::FixedCameraView) {
+        continue;
+      }
+      if (!stream.has_next_capture_time) {
+        stream.next_capture_time = sim_time;
+        stream.has_next_capture_time = true;
+      }
+      if (sim_time + 1e-9 < stream.next_capture_time) {
+        continue;
+      }
+      stream.next_capture_time += 1.0 / stream.fps;
+      streams.push_back({name, {stream.width, stream.height}});
+    }
+  }
+
+  if (streams.empty()) {
+    return;
+  }
+
+  int previous_buffer = con.currentBuffer;
+  mjvCamera previous_cam = cam;
+  for (const auto &stream : streams) {
+    VideoStreamKind kind = VideoStreamKind::CurrentView;
+    int body_id = -1;
+    int camera_id = -1;
+    mjtNum relative_azimuth = 0;
+    mjtNum elevation = 0;
+    mjtNum distance = 0;
+    bool include_custom_draw = true;
+    bool hide_camera_visualization = false;
+    {
+      std::lock_guard<std::mutex> lock(video_mutex_);
+      auto it = video_streams_.find(stream.first);
+      if (it == video_streams_.end()) {
+        continue;
+      }
+      kind = it->second.kind;
+      body_id = it->second.body_id;
+      camera_id = it->second.camera_id;
+      relative_azimuth = it->second.relative_azimuth;
+      elevation = it->second.elevation;
+      distance = it->second.distance;
+      include_custom_draw = it->second.include_custom_draw;
+      hide_camera_visualization = it->second.hide_camera_visualization;
+    }
+
+    const mjtByte previous_camera_vis = opt.flags[mjtVisFlag::mjVIS_CAMERA];
+    if (hide_camera_visualization) {
+      opt.flags[mjtVisFlag::mjVIS_CAMERA] = 0;
+    }
+
+    if (kind == VideoStreamKind::RelativeBodyView) {
+      if (body_id <= 0) {
+        opt.flags[mjtVisFlag::mjVIS_CAMERA] = previous_camera_vis;
+        continue;
+      }
+      mjvCamera preset_cam = cam;
+      preset_cam.type = mjCAMERA_FREE;
+      preset_cam.fixedcamid = -1;
+      preset_cam.trackbodyid = body_id;
+      preset_cam.azimuth = body_yaw(body_id) + relative_azimuth;
+      preset_cam.elevation = elevation;
+      preset_cam.distance = distance;
+      mju_copy3(preset_cam.lookat, d->xpos + 3 * body_id);
+      mjv_updateScene(m, d, &opt, &pert, &preset_cam, mjCAT_ALL, &scn);
+      if (include_custom_draw) {
+        draw();
+      }
+    } else if (kind == VideoStreamKind::FixedCameraView) {
+      if (camera_id < 0) {
+        opt.flags[mjtVisFlag::mjVIS_CAMERA] = previous_camera_vis;
+        continue;
+      }
+      mjvCamera preset_cam = cam;
+      preset_cam.type = mjCAMERA_FIXED;
+      preset_cam.fixedcamid = camera_id;
+      preset_cam.trackbodyid = m->cam_targetbodyid[camera_id];
+      mjv_updateScene(m, d, &opt, &pert, &preset_cam, mjCAT_ALL, &scn);
+      if (include_custom_draw) {
+        draw();
+      }
+    } else {
+      mjv_updateScene(m, d, &opt, &pert, &previous_cam, mjCAT_ALL, &scn);
+      if (include_custom_draw) {
+        draw();
+      }
+    }
+    opt.flags[mjtVisFlag::mjVIS_CAMERA] = previous_camera_vis;
+
+    int w = stream.second[0];
+    int h = stream.second[1];
+    if (con.offWidth < w || con.offHeight < h) {
+      mjr_resizeOffscreen(w, h, &con);
+    }
+    mjr_setBuffer(mjFB_OFFSCREEN, &con);
+    mjrRect viewport = {0, 0, w, h};
+    mjr_render(viewport, &scn, &con);
+    std::vector<unsigned char> rgb(static_cast<size_t>(w) *
+                                   static_cast<size_t>(h) * 3);
+    mjr_readPixels(rgb.data(), nullptr, viewport, &con);
+    enqueue_video_frame(stream.first, std::move(rgb), w, h, 3, true);
+  }
+  mjv_updateScene(m, d, &opt, &pert, &previous_cam, mjCAT_ALL, &scn);
+  draw();
+  mjr_setBuffer(previous_buffer, &con);
+}
+
+void mujoco_thread::video_writer_loop() {
+  std::unordered_map<std::string, cv::VideoWriter> writers;
+  while (true) {
+    std::vector<std::pair<std::string, VideoFrame>> frames;
+    {
+      std::unique_lock<std::mutex> lock(video_mutex_);
+      video_cv_.wait(lock, [this]() {
+        for (const auto &item : video_streams_) {
+          if (!item.second.queue.empty()) {
+            return true;
+          }
+        }
+        return !video_recording_.load();
+      });
+      for (auto &[name, stream] : video_streams_) {
+        while (!stream.queue.empty()) {
+          frames.push_back({name, std::move(stream.queue.front())});
+          stream.queue.pop_front();
+        }
+      }
+    }
+
+    if (frames.empty() && !video_recording_.load()) {
+      break;
+    }
+
+    for (auto &item : frames) {
+      const std::string &name = item.first;
+      VideoFrame &frame = item.second;
+      std::string path;
+      int stream_width = 0;
+      int stream_height = 0;
+      double stream_fps = 0.0;
+      {
+        std::lock_guard<std::mutex> lock(video_mutex_);
+        auto it = video_streams_.find(name);
+        if (it == video_streams_.end()) {
+          continue;
+        }
+        path = it->second.path;
+        stream_width = it->second.width;
+        stream_height = it->second.height;
+        stream_fps = it->second.fps;
+      }
+
+      auto writer_it = writers.find(name);
+      if (writer_it == writers.end()) {
+        cv::VideoWriter writer;
+        int fourcc = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
+        if (!writer.open(path, fourcc, stream_fps,
+                         cv::Size(stream_width, stream_height), true)) {
+          std::cerr << "Failed to open video stream: " << path
+                    << std::endl;
+          continue;
+        }
+        writer_it = writers.emplace(name, std::move(writer)).first;
+      }
+
+      cv::Mat src;
+      if (frame.channels == 3) {
+        src = cv::Mat(frame.height, frame.width, CV_8UC3, frame.pixels.data());
+        cv::Mat bgr;
+        cv::cvtColor(src, bgr, cv::COLOR_RGB2BGR);
+        if (frame.flip_vertical) {
+          cv::flip(bgr, bgr, 0);
+        }
+        writer_it->second.write(bgr);
+      } else if (frame.channels == 1) {
+        src = cv::Mat(frame.height, frame.width, CV_8UC1, frame.pixels.data());
+        cv::Mat bgr;
+        cv::cvtColor(src, bgr, cv::COLOR_GRAY2BGR);
+        if (frame.flip_vertical) {
+          cv::flip(bgr, bgr, 0);
+        }
+        writer_it->second.write(bgr);
+      }
+    }
+  }
+
+  for (auto &item : writers) {
+    item.second.release();
+  }
+}
+
 void mujoco_thread::destroyRender() {
   if (is_render_close.load() && !is_show.load()) {
     std::lock_guard<std::mutex> lock(m_mtx);
@@ -402,6 +800,36 @@ void mujoco_thread::keyboard(int key, int scancode, int act, int mods) {
       cam.type = mjCAMERA_FREE;
       cam.trackbodyid = this->pert.select;
     } break;
+    case GLFW_KEY_V: {
+      if (video_recording_.load()) {
+        stop_video_recording();
+        std::cout << "Video recording stopped" << std::endl;
+      } else {
+        std::string directory = "mujoco_videos";
+        if (start_video_recording(directory)) {
+          int w = 0;
+          int h = 0;
+          if (window) {
+            glfwGetFramebufferSize(window, &w, &h);
+          }
+          if (w <= 0)
+            w = width;
+          if (h <= 0)
+            h = height;
+          add_current_view_video_stream("current_view", w, h, max_FPS);
+          std::cout << "Video recording started: " << directory << std::endl;
+        }
+      }
+    } break;
+    case GLFW_KEY_F: {
+      toggle_relative_body_tracking();
+    } break;
+    case GLFW_KEY_F1: {
+      set_relative_body_camera_preset("base_link", 15.0, -18.0, 3.2);
+    } break;
+    case GLFW_KEY_F2: {
+      set_relative_body_camera_preset("base_link", 90.0, -5.0, 3.0);
+    } break;
     }
     auto _realtime = realtime.load();
     if (_realtime > 1.0) {
@@ -433,6 +861,30 @@ void mujoco_thread::mouse_button(int button, int act, int mods) {
   // update mouse position
   glfwGetCursorPos(window, &lastx, &lasty);
 
+  ctrl_pressed = (mods & GLFW_MOD_CONTROL) ||
+                 glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+                 glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
+
+  if (act == GLFW_PRESS && ctrl_pressed && pert.select > 0) {
+    int new_perturb = 0;
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+      new_perturb = mjPERT_ROTATE;
+    } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+      new_perturb = mjPERT_TRANSLATE;
+    }
+    if (new_perturb) {
+      std::lock_guard<std::mutex> lock(m_mtx);
+      mjv_initPerturb(m, d, &scn, &pert);
+      pert.active = new_perturb;
+      return;
+    }
+  }
+
+  if (act == GLFW_RELEASE) {
+    std::lock_guard<std::mutex> lock(m_mtx);
+    pert.active = 0;
+  }
+
   // handle double-click selection
   if (act == GLFW_PRESS) {
     double current_time = glfwGetTime();
@@ -448,6 +900,10 @@ void mujoco_thread::mouse_button(int button, int act, int mods) {
     last_click_time = current_time;
     if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
       is_look_at = !is_look_at;
+      if (!is_look_at) {
+        is_relative_look_at = false;
+        relative_look_at_body_id = -1;
+      }
     }
   }
 }
@@ -482,11 +938,11 @@ void mujoco_thread::mouse_move(double xpos, double ypos) {
   } else {
     action = mjMOUSE_ZOOM;
   }
-  // apply force if Ctrl is pressed
-  if (ctrl_pressed) {
+  // move perturb or camera
+  if (pert.active) {
+    std::lock_guard<std::mutex> lock(m_mtx);
     mjv_movePerturb(m, d, action, dx / height, dy / height, &scn, &pert);
   } else {
-    // move camera
     mjv_moveCamera(m, action, dx / height, dy / height, &scn, &cam);
   }
 }
@@ -525,7 +981,80 @@ void mujoco_thread::select_body(mjrRect &viewport, bool camera_target) {
     this->pert.select = 0;
     this->pert.flexselect = -1;
     this->pert.skinselect = -1;
+    is_relative_look_at = false;
+    relative_look_at_body_id = -1;
   }
+}
+
+mjtNum mujoco_thread::body_yaw(int body_id) const {
+  if (!d || body_id <= 0) {
+    return 0;
+  }
+  const mjtNum *xmat = d->xmat + 9 * body_id;
+  return std::atan2(xmat[3], xmat[0]) * 180.0 / mjPI;
+}
+
+void mujoco_thread::toggle_relative_body_tracking() {
+  std::lock_guard<std::mutex> lock(m_mtx);
+  if (!m || !d || pert.select <= 0) {
+    return;
+  }
+
+  if (is_relative_look_at) {
+    is_relative_look_at = false;
+    relative_look_at_body_id = -1;
+    return;
+  }
+
+  is_look_at = true;
+  is_relative_look_at = true;
+  relative_look_at_body_id = pert.select;
+  relative_look_at_azimuth = cam.azimuth - body_yaw(relative_look_at_body_id);
+}
+
+void mujoco_thread::set_relative_body_camera_preset(const char *body_name,
+                                                    mjtNum relative_azimuth,
+                                                    mjtNum elevation,
+                                                    mjtNum distance) {
+  std::lock_guard<std::mutex> lock(m_mtx);
+  if (!m || !d || !body_name) {
+    return;
+  }
+
+  const int body_id = mj_name2id(m, mjOBJ_BODY, body_name);
+  if (body_id <= 0) {
+    std::cerr << "Camera preset body not found: " << body_name << std::endl;
+    return;
+  }
+
+  cam_id = 0;
+  cam.type = mjCAMERA_FREE;
+  cam.fixedcamid = -1;
+  cam.trackbodyid = body_id;
+  cam.elevation = elevation;
+  cam.distance = distance;
+  cam.azimuth = body_yaw(body_id) + relative_azimuth;
+  mju_copy3(cam.lookat, d->xpos + 3 * body_id);
+
+  pert.select = body_id;
+  is_look_at = true;
+  is_relative_look_at = true;
+  relative_look_at_body_id = body_id;
+  relative_look_at_azimuth = relative_azimuth;
+}
+
+void mujoco_thread::update_camera_tracking() {
+  if (!is_look_at || pert.select <= 0 || cam_id != 0) {
+    return;
+  }
+
+  if (is_relative_look_at && relative_look_at_body_id > 0) {
+    mju_copy3(cam.lookat, d->xpos + 3 * relative_look_at_body_id);
+    cam.azimuth = body_yaw(relative_look_at_body_id) + relative_look_at_azimuth;
+    return;
+  }
+
+  mju_copy3(cam.lookat, d->xpos + pert.select * 3);
 }
 
 void mujoco_thread::updateRender() {
@@ -546,10 +1075,7 @@ void mujoco_thread::updateRender() {
         mjtNum *pos = d->mocap_pos + 3 * target_point_id;
         mju_copy3(pos, target_point_pos);
       }
-      // look at
-      if (is_look_at && pert.select > 0 && cam_id == 0) {
-        mju_copy3(cam.lookat, d->xpos + pert.select * 3);
-      }
+      update_camera_tracking();
 
       mjv_updateScene(m, d, &opt, &pert, &cam, mjCAT_ALL, &scn);
       draw();
@@ -565,6 +1091,8 @@ void mujoco_thread::updateRender() {
           }
         }
       }
+
+      capture_current_view_video_streams(d->time);
 
       lk.unlock();
       mjr_render(viewport, &scn, &con);

@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cmath>
 #include <ctime>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <opencv2/core/mat.hpp>
@@ -82,6 +83,7 @@ MJ_ENV::MJ_ENV(std::string model_file,
 }
 
 MJ_ENV::~MJ_ENV() {
+  stop_policy_video_recording();
   if (ray_caster_camera_img)
     delete[] ray_caster_camera_img;
   if (ray_caster_camera_noise_img)
@@ -138,6 +140,11 @@ void MJ_ENV::step_unlock() {
                                                       false, false);
   ray_caster_camera.get_distance_to_image_plane_image(
       ray_caster_camera_noise_img, true, false);
+  if (policy_video_recording_) {
+    submit_gray_video_frame("policy_depth", ray_caster_camera_noise_img,
+                            camera_cfg.h_ray_num, camera_cfg.v_ray_num,
+                            d ? d->time : -1.0);
+  }
   // cv::Mat img(ray_caster_camera.v_ray_num, ray_caster_camera.h_ray_num,
   // CV_8UC1,
   //             ray_caster_camera_inv_img);
@@ -238,8 +245,8 @@ SimpleTensor MJ_ENV::get_motion_anchor_ori_b() {
 // ----------------------------------------------------
 
 void MJ_ENV::vis_cfg() {
-  opt.flags[mjtVisFlag::mjVIS_CONTACTPOINT] = true;
-  opt.flags[mjtVisFlag::mjVIS_CONTACTFORCE] = true;
+  // opt.flags[mjtVisFlag::mjVIS_CONTACTPOINT] = true;
+  // opt.flags[mjtVisFlag::mjVIS_CONTACTFORCE] = true;
   opt.flags[mjtVisFlag::mjVIS_CAMERA] = true;
 }
 
@@ -258,6 +265,14 @@ void MJ_ENV::draw_windows() {
   drawGrayPixels(ray_caster_camera_img, 0, {w, h}, {w * r, h * r});
   drawGrayPixels(ray_caster_camera_noise_img, 1, {w, h}, {w * r, h * r});
   //   drawGrayPixels(ray_caster_camera_img, 1, {w, h}, {w * r, h * r});
+}
+
+void MJ_ENV::keyboard_press(std::string key) {
+  if (key == "z") {
+    toggle_policy_video_recording();
+    return;
+  }
+  Sim2SimEnv::keyboard_press(key);
 }
 
 bool MJ_ENV::uses_visual_policy(int policy_idx) const {
@@ -300,6 +315,96 @@ void MJ_ENV::refresh_visual_observations(bool warm_start_history) {
 
 void MJ_ENV::on_sensor_enabled_changed(bool enabled) {
   ray_caster_camera.enable_sensor(enabled);
+  opt.flags[mjtVisFlag::mjVIS_CAMERA] = enabled;
+}
+
+std::vector<std::pair<std::string, std::string>>
+MJ_ENV::build_extra_left_table_rows() const {
+  return {{"Video Record", policy_video_recording_ ? "on" : "off"},
+          {"Video Dir", policy_video_record_dir_.empty()
+                            ? "-"
+                            : policy_video_record_dir_}};
+}
+
+std::string MJ_ENV::make_video_record_timestamp() {
+  auto now = std::chrono::system_clock::now();
+  auto time = std::chrono::system_clock::to_time_t(now);
+  std::tm tm{};
+  localtime_r(&time, &tm);
+  std::ostringstream stream;
+  stream << std::put_time(&tm, "%Y%m%d_%H%M%S");
+  return stream.str();
+}
+
+void MJ_ENV::toggle_policy_video_recording() {
+  if (policy_video_recording_) {
+    stop_policy_video_recording();
+    std::cout << "Policy video recording stopped" << std::endl;
+    return;
+  }
+
+  const std::filesystem::path repo_root =
+      std::filesystem::path(__FILE__).parent_path().parent_path().parent_path();
+  std::filesystem::path dir = repo_root / "policy_videos" /
+                              (policy_description[policy_id] + "_" +
+                               make_video_record_timestamp());
+  if (!start_video_recording(dir.string())) {
+    std::cerr << "Failed to start policy video recording" << std::endl;
+    return;
+  }
+
+  int render_width = 0;
+  int render_height = 0;
+  uint64_t render_frame_id = 0;
+  if (!get_render_framebuffer_size(render_width, render_height)) {
+    get_latest_render_frame_info(render_width, render_height, render_frame_id);
+  }
+  if (render_width <= 0 || render_height <= 0) {
+    render_width = 1920;
+    render_height = 1080;
+  }
+
+  int ray_camera_width = 640;
+  int ray_camera_height = 370;
+  const int ray_camera_id = mj_name2id(m, mjOBJ_CAMERA, "RayCasterCamera");
+  if (ray_camera_id >= 0) {
+    ray_camera_width = m->cam_resolution[2 * ray_camera_id];
+    ray_camera_height = m->cam_resolution[2 * ray_camera_id + 1];
+  }
+
+  bool ok = add_relative_body_video_stream("third_person", "base_link",
+                                           render_width, render_height, 15.0,
+                                           -18.0, 3.2, 30.0) &&
+            add_relative_body_video_stream("right_view", "base_link",
+                                           render_width, render_height, 90.0,
+                                           -5.0, 3.0, 30.0) &&
+            add_fixed_camera_video_stream("raycaster_rgb", "RayCasterCamera",
+                                          ray_camera_width, ray_camera_height,
+                                          30.0) &&
+            add_fixed_camera_video_stream("raycaster_rgb_clean",
+                                          "RayCasterCamera", ray_camera_width,
+                                          ray_camera_height, 30.0, false,
+                                          true) &&
+            add_gray_video_stream("policy_depth", camera_cfg.h_ray_num,
+                                  camera_cfg.v_ray_num, 30.0);
+  if (!ok) {
+    stop_video_recording();
+    std::cerr << "Failed to add policy video streams" << std::endl;
+    return;
+  }
+
+  policy_video_recording_ = true;
+  policy_video_record_dir_ = dir.string();
+  std::cout << "Policy video recording started: " << policy_video_record_dir_
+            << std::endl;
+}
+
+void MJ_ENV::stop_policy_video_recording() {
+  if (!policy_video_recording_) {
+    return;
+  }
+  stop_video_recording();
+  policy_video_recording_ = false;
 }
 
 void MJ_ENV::on_env_reset() {
