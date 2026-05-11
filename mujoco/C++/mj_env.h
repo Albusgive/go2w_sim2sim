@@ -23,6 +23,7 @@ public:
   void step_unlock() override;  // 渲染步进（处理相机等耗时操作）
   void draw() override;         // 自定义 MuJoCo 场景绘制
   void draw_windows() override; // OpenCV 窗口绘制
+  void keyboard_press(std::string key) override;
 
   // -----------------------------------------------------------------------
   // 代理配置
@@ -74,6 +75,8 @@ protected:
   void refresh_visual_observations(bool warm_start_history) override;
   void on_sensor_enabled_changed(bool enabled) override;
   void on_env_reset() override;
+  std::vector<std::pair<std::string, std::string>>
+  build_extra_left_table_rows() const override;
 
 private:
   // -----------------------------------------------------------------------
@@ -89,6 +92,10 @@ private:
   SimpleTensor get_motion_task();
   SimpleTensor get_motion_anchor_pos_b();
   SimpleTensor get_motion_anchor_ori_b();
+
+  void toggle_policy_video_recording();
+  void stop_policy_video_recording();
+  static std::string make_video_record_timestamp();
 
   // 传感器句柄/名称缓存
   std::vector<std::pair<int, int>> base_ang_vel_pd;
@@ -109,4 +116,7 @@ private:
   make_ray_image_term(int history, int stride, int stride_range, float min_dist,
                       float max_dist, bool manual_mode = true);
   std::shared_ptr<ActionTerm> make_action_term(bool use_action2_scale = false);
+
+  bool policy_video_recording_ = false;
+  std::string policy_video_record_dir_;
 };
