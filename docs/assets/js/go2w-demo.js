@@ -150,6 +150,7 @@ class Go2WDemo {
     this.canvas = $('go2w-canvas');
     this.statusPill = $('status-pill');
     this.policyReadout = $('policy-readout');
+    this.errorReadout = $('error-readout');
     this.policyId = 0;
     this.keys = new Set();
     this.cmd = { x: 0.7, y: 0, yaw: 0 };
@@ -394,9 +395,18 @@ class Go2WDemo {
     if (!window.ort) {
       throw new Error('ONNX Runtime Web did not load');
     }
-    window.ort.env.wasm.wasmPaths = ORT_WASM_PATH;
+    const wasmBaseUrl = new URL(ORT_WASM_PATH, window.location.href).href;
+    const policyUrl = new URL(MOTION_POLICY_URL, window.location.href).href;
+
+    window.ort.env.wasm.wasmPaths = wasmBaseUrl;
     window.ort.env.wasm.numThreads = 1;
-    this.motionPolicy = await window.ort.InferenceSession.create(MOTION_POLICY_URL, {
+    window.ort.env.wasm.proxy = false;
+
+    this.setStatus('Loading', 'Fetching motion_mlp ONNX');
+    const modelBuffer = await checked(await fetch(policyUrl)).arrayBuffer();
+
+    this.setStatus('Loading', 'Creating motion_mlp ONNX session');
+    this.motionPolicy = await window.ort.InferenceSession.create(modelBuffer, {
       executionProviders: ['wasm'],
       graphOptimizationLevel: 'all',
     });
@@ -745,6 +755,14 @@ class Go2WDemo {
     this.statusPill.textContent = label;
     this.statusPill.title = title;
     this.statusPill.className = `status-pill ${klass}`.trim();
+    if (!this.errorReadout) return;
+    if (klass === 'error') {
+      this.errorReadout.hidden = false;
+      this.errorReadout.textContent = title || 'Unknown error';
+    } else {
+      this.errorReadout.hidden = true;
+      this.errorReadout.textContent = '';
+    }
   }
 }
 
