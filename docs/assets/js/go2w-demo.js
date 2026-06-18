@@ -59,7 +59,6 @@ const WHEEL_JOINTS = [
 const POLICY_NAMES = ['motion_mlp', 'vtm', 'vtm_lstm_sru', 'vtm_gru_sru'];
 const SIM_DT = 0.005;
 const POLICY_DECIMATION = 4;
-const ORT_WASM_PATH = 'assets/vendor/onnxruntime-web/';
 const MOTION_POLICY_URL = 'demo-assets/policies/motion_tracking/policy.onnx';
 const MOTION_OBS_PREFIX_DIM = 24 + 1 + 3 + 6;
 const MOTION_OBS_DIM = 187;
@@ -163,6 +162,10 @@ class Go2WDemo {
     this.physicsStep = 0;
     this.policyPending = false;
     this.policyFailed = false;
+    this.policyWorkerReady = false;
+    this.policySeq = 0;
+    this.policyRuns = 0;
+    this.lastPolicyDurationMs = 0;
     this.lastRawAction = new Float32Array(16);
     this.currentCtrl = new Float32Array(ACT_DEFAULT_DOF_POS);
     this.jointAdr = new Map();
@@ -172,6 +175,7 @@ class Go2WDemo {
     this.activeGeoms = 0;
     this.meshGeometries = new Map();
     this.baseBodyId = -1;
+    this.frameCount = 0;
   }
 
   async init() {
@@ -209,8 +213,7 @@ class Go2WDemo {
     window.__go2wWebglStarted = true;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.enabled = false;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x151b17);
@@ -225,14 +228,21 @@ class Go2WDemo {
 
     const sun = new THREE.DirectionalLight(0xffffff, 2.4);
     sun.position.set(-4, 7, 5);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
     this.scene.add(sun);
 
     this.mujocoRoot = new THREE.Group();
     this.mujocoRoot.name = 'MuJoCo Root';
     this.mujocoRoot.rotation.x = -Math.PI / 2;
     this.scene.add(this.mujocoRoot);
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(120, 50),
+      new THREE.MeshLambertMaterial({
+        color: 0xd4ddd0,
+      }),
+    );
+    ground.name = 'Ground Plane';
+    this.mujocoRoot.add(ground);
 
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.target.set(0.6, 0.35, 0);
@@ -392,23 +402,48 @@ class Go2WDemo {
   }
 
   async loadMotionPolicy() {
-    if (!window.ort) {
-      throw new Error('ONNX Runtime Web did not load');
-    }
-    const wasmBaseUrl = new URL(ORT_WASM_PATH, window.location.href).href;
     const policyUrl = new URL(MOTION_POLICY_URL, window.location.href).href;
+    this.setStatus('Loading', 'Starting motion_mlp worker');
+    this.motionPolicyWorker = new Worker(new URL('policy-worker.js?v=worker-2', import.meta.url), {
+      name: 'go2w-motion-policy',
+    });
+    this.motionPolicyWorker.onmessage = (event) => this.handlePolicyWorkerMessage(event.data || {});
+    this.motionPolicyWorker.onerror = (error) => {
+      this.policyFailed = true;
+      this.policyPending = false;
+      this.setStatus('Policy Error', error.message || 'motion_mlp worker failed', 'error');
+    };
 
-    window.ort.env.wasm.wasmPaths = wasmBaseUrl;
-    window.ort.env.wasm.numThreads = 1;
-    window.ort.env.wasm.proxy = false;
-
-    this.setStatus('Loading', 'Fetching motion_mlp ONNX');
-    const modelBuffer = await checked(await fetch(policyUrl)).arrayBuffer();
-
-    this.setStatus('Loading', 'Creating motion_mlp ONNX session');
-    this.motionPolicy = await window.ort.InferenceSession.create(modelBuffer, {
-      executionProviders: ['wasm'],
-      graphOptimizationLevel: 'all',
+    await new Promise((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        reject(new Error('Timed out while loading motion_mlp worker'));
+      }, 30000);
+      const onMessage = (event) => {
+        const data = event.data || {};
+        if (data.type === 'ready') {
+          window.clearTimeout(timeout);
+          this.motionPolicyWorker.removeEventListener('message', onMessage);
+          this.motionPolicyWorker.removeEventListener('message', onError);
+          this.policyWorkerReady = true;
+          resolve();
+        } else if (data.type === 'error') {
+          window.clearTimeout(timeout);
+          this.motionPolicyWorker.removeEventListener('message', onMessage);
+          this.motionPolicyWorker.removeEventListener('message', onError);
+          reject(new Error(data.message || 'motion_mlp worker failed to initialize'));
+        }
+      };
+      const onError = (event) => {
+        const data = event.data || {};
+        if (data.type !== 'error') return;
+        window.clearTimeout(timeout);
+        this.motionPolicyWorker.removeEventListener('message', onMessage);
+        this.motionPolicyWorker.removeEventListener('message', onError);
+        reject(new Error(data.message || 'motion_mlp worker failed to initialize'));
+      };
+      this.motionPolicyWorker.addEventListener('message', onMessage);
+      this.motionPolicyWorker.addEventListener('message', onError);
+      this.motionPolicyWorker.postMessage({ type: 'init', policyUrl });
     });
     this.policyReadout.textContent = `policy 0: motion_mlp · ONNX ${MOTION_OBS_DIM}D`;
   }
@@ -421,6 +456,9 @@ class Go2WDemo {
     this.mujoco.mjv_defaultCamera(this.mjvCamera);
     this.mujoco.mjv_defaultOption(this.mjvOption);
     this.mujoco.mjv_defaultPerturb(this.mjvPerturb);
+    if (this.mjvOption.geomgroup && this.mjvOption.geomgroup.length > 3) {
+      this.mjvOption.geomgroup[3] = 0;
+    }
     this.baseBodyId = this.mujoco.mj_name2id(
       this.model,
       this.mujoco.mjtObj.mjOBJ_BODY.value,
@@ -447,6 +485,7 @@ class Go2WDemo {
     for (let i = 0; i < this.mjvScene.ngeom; i += 1) {
       const geom = this.mjvScene.geoms.get(i);
       if (!geom || geom.type >= GEOM_LINE) continue;
+      if (geom.type === GEOM_PLANE) continue;
 
       const mesh = this.getOrCreateVisualMesh(meshIndex);
       meshIndex += 1;
@@ -464,10 +503,14 @@ class Go2WDemo {
       );
       mesh.quaternion.setFromRotationMatrix(TMP_MAT4);
 
+      const opacity = geom.rgba[3];
+      const transparent = opacity < 1;
       mesh.material.color.setRGB(geom.rgba[0], geom.rgba[1], geom.rgba[2]);
-      mesh.material.opacity = geom.rgba[3];
-      mesh.material.transparent = geom.rgba[3] < 1;
-      mesh.material.needsUpdate = true;
+      if (mesh.material.opacity !== opacity || mesh.material.transparent !== transparent) {
+        mesh.material.opacity = opacity;
+        mesh.material.transparent = transparent;
+        mesh.material.needsUpdate = true;
+      }
       mesh.visible = true;
     }
 
@@ -479,15 +522,11 @@ class Go2WDemo {
 
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshLambertMaterial({
         color: 0xd9e1d3,
-        roughness: 0.72,
-        metalness: 0.03,
         side: THREE.DoubleSide,
       }),
     );
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
     mesh.visible = false;
     this.mujocoRoot.add(mesh);
     this.geomPool.push(mesh);
@@ -517,10 +556,19 @@ class Go2WDemo {
       }
       return this.meshGeometries.get(key);
     }
-    if (geom.type === GEOM_MESH && geom.dataid >= 0) {
-      return this.meshGeometry(geom.dataid);
+    if (geom.type === GEOM_MESH) {
+      const meshId = this.meshIdForVisualGeom(geom);
+      if (meshId >= 0) return this.meshGeometry(meshId);
     }
     return this.sharedGeometries.box;
+  }
+
+  meshIdForVisualGeom(geom) {
+    if (Number.isInteger(geom.objid) && geom.objid >= 0 && this.model.geom_dataid) {
+      const meshId = this.model.geom_dataid[geom.objid];
+      if (Number.isInteger(meshId) && meshId >= 0) return meshId;
+    }
+    return Number.isInteger(geom.dataid) ? geom.dataid : -1;
   }
 
   meshGeometry(meshId) {
@@ -576,6 +624,9 @@ class Go2WDemo {
     this.physicsStep = 0;
     this.policyPending = false;
     this.policyFailed = false;
+    this.policySeq += 1;
+    this.policyRuns = 0;
+    this.lastPolicyDurationMs = 0;
     this.lastRawAction.fill(0);
     this.currentCtrl.set(ACT_DEFAULT_DOF_POS);
     this.mujoco.mj_resetData(this.model, this.data);
@@ -587,11 +638,13 @@ class Go2WDemo {
 
   frame() {
     const dt = Math.min(this.clock.getDelta(), 0.04);
+    this.frameCount += 1;
     this.stepSimulation(dt * this.realtime);
     this.updateVisualScene();
     this.followBase(dt);
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
+    this.updateRuntimeStats();
   }
 
   setInitialPose() {
@@ -627,33 +680,41 @@ class Go2WDemo {
   }
 
   requestPolicyStep() {
-    if (!this.motionPolicy || this.policyPending || this.policyFailed || this.policyId !== 0) return;
+    if (!this.motionPolicyWorker || !this.policyWorkerReady || this.policyPending || this.policyFailed || this.policyId !== 0) return;
 
     const obs = this.buildMotionObservation();
-    const inputName = this.motionPolicy.inputNames[0];
-    const outputName = this.motionPolicy.outputNames[0];
-    const feeds = {
-      [inputName]: new window.ort.Tensor('float32', obs, [1, obs.length]),
-    };
-
+    const seq = this.policySeq + 1;
+    this.policySeq = seq;
     this.policyPending = true;
-    this.motionPolicy.run(feeds).then((results) => {
-      const raw = results[outputName]?.data;
-      if (!raw || raw.length < 16) {
-        throw new Error('motion_mlp returned an invalid action tensor');
-      }
-      for (let i = 0; i < 16; i += 1) {
-        this.lastRawAction[i] = Number.isFinite(raw[i]) ? raw[i] : 0;
-      }
-      this.applyAction(this.lastRawAction);
-      this.policyReadout.textContent = `policy 0: motion_mlp · ONNX ${obs.length}D`;
-    }).catch((error) => {
-      console.error(error);
+    this.motionPolicyWorker.postMessage({
+      type: 'run',
+      seq,
+      obs: obs.buffer,
+      dims: [1, MOTION_OBS_DIM],
+    }, [obs.buffer]);
+  }
+
+  handlePolicyWorkerMessage(data) {
+    if (data.type === 'ready') return;
+    if (data.type === 'error') {
+      console.error(data.message);
       this.policyFailed = true;
-      this.setStatus('Policy Error', error.message, 'error');
-    }).finally(() => {
       this.policyPending = false;
-    });
+      this.setStatus('Policy Error', data.message, 'error');
+      return;
+    }
+    if (data.type !== 'result' || data.seq !== this.policySeq) return;
+
+    const raw = data.action;
+    for (let i = 0; i < 16; i += 1) {
+      this.lastRawAction[i] = Number.isFinite(raw[i]) ? raw[i] : 0;
+    }
+    this.lastPolicyDurationMs = data.durationMs || 0;
+    this.policyRuns += 1;
+    this.applyAction(this.lastRawAction);
+    this.policyPending = false;
+    this.policyReadout.textContent =
+      `policy 0: motion_mlp · worker ${this.lastPolicyDurationMs.toFixed(0)}ms`;
   }
 
   applyAction(rawAction) {
@@ -751,6 +812,25 @@ class Go2WDemo {
     this.controls.target.lerp(base, 1 - Math.pow(0.001, dt));
   }
 
+  updateRuntimeStats() {
+    if (!this.data) return;
+    const baseOffset = this.baseBodyId >= 0 ? this.baseBodyId * 3 : -1;
+    window.__go2wRuntime = {
+      frameCount: this.frameCount,
+      simTime: this.data.time,
+      activeGeoms: this.activeGeoms,
+      policyPending: this.policyPending,
+      policyFailed: this.policyFailed,
+      policyRuns: this.policyRuns,
+      lastPolicyDurationMs: this.lastPolicyDurationMs,
+      base: baseOffset >= 0 ? [
+        this.data.xpos[baseOffset],
+        this.data.xpos[baseOffset + 1],
+        this.data.xpos[baseOffset + 2],
+      ] : null,
+    };
+  }
+
   setStatus(label, title, klass = '') {
     this.statusPill.textContent = label;
     this.statusPill.title = title;
@@ -837,6 +917,7 @@ function clampFinite(value, min, max) {
 }
 
 const demo = new Go2WDemo();
+window.__go2wDemo = demo;
 demo.init().catch((error) => {
   console.error(error);
   if (!window.__go2wWebglStarted && window.__go2wStartFallback) {
