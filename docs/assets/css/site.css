@@ -406,6 +406,18 @@ output {
   font-size: 0.86rem;
 }
 
+.error-readout {
+  margin: 10px 0 0;
+  padding: 10px 11px;
+  border: 1px solid rgba(228, 128, 114, 0.38);
+  border-radius: 7px;
+  background: rgba(228, 128, 114, 0.1);
+  color: #ffd0ca;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 820px) {
   .topnav {
     position: absolute;
