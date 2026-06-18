@@ -120,6 +120,25 @@ robot/go2w_description/mjcf/scene_parkour.xml
 
 The scene path is compiled into the executable from `mujoco/C++/CMakeLists.txt` via `MJCF_PATH`.
 
+## GitHub Pages Demo
+
+This repository includes a static project page under `docs/` for GitHub Pages.
+Configure Pages to deploy from the `main` branch and `/docs` folder. The hosted
+demo is the `lab2mj` browser path only: MuJoCo WASM renders the Go2W MJCF scene
+and ONNX Runtime Web runs the `motion_mlp` policy. It does not deploy ROS2,
+`real2sim`, or a native simulator process. The visual VTM/SRU policies remain a
+separate browser-porting step because they require the RayCaster image
+observation and recurrent state pipeline.
+
+Local preview:
+
+```bash
+cd docs
+python3 -m http.server 8000
+```
+
+Open `http://localhost:8000/demo.html`.
+
 ## Default Scene
 
 The default `scene_parkour.xml` contains a multi-lane parkour course:

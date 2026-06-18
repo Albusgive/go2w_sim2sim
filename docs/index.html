@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Go2W Sim2Sim</title>
+  <meta name="description" content="Go2W Sim2Sim project page and browser-based lab2mj MuJoCo/ONNX demo.">
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+  <nav class="topnav">
+    <a class="brand" href="#top">Go2W Sim2Sim</a>
+    <div class="navlinks">
+      <a href="demo.html">Demo</a>
+      <a href="#assets">Assets</a>
+      <a href="#deploy">Pages</a>
+      <a href="https://github.com/Albusgive/go2w_sim2sim" rel="noopener">GitHub</a>
+    </div>
+  </nav>
+
+  <header id="top" class="hero">
+    <img class="hero-media" src="assets/images/raycam.png" alt="Go2W MuJoCo simulation with ray camera visualization.">
+    <div class="hero-shade"></div>
+    <div class="hero-content">
+      <p class="eyebrow">MuJoCo browser demo</p>
+      <h1>Go2W Sim2Sim</h1>
+      <p class="hero-copy">A GitHub Pages demo for the Go2W `lab2mj` path: MuJoCo WASM renders the MJCF scene and ONNX Runtime Web runs the `motion_mlp` policy in the browser.</p>
+      <div class="actions">
+        <a class="button primary" href="demo.html">Open Demo</a>
+        <a class="button" href="#deploy">Deploy Pages</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section intro">
+      <div>
+        <h2>What This Page Hosts</h2>
+        <p>The static site is designed for GitHub Pages. It loads the Go2W MJCF scene, mesh assets, MuJoCo WASM runtime, and the `motion_mlp` ONNX checkpoint directly in the browser, then exposes a `lab2mj`-style velocity command surface.</p>
+      </div>
+      <div class="stat-grid">
+        <div class="stat">
+          <span>Default Scene</span>
+          <strong>scene_parkour.xml</strong>
+        </div>
+        <div class="stat">
+          <span>Pages Entry</span>
+          <strong>demo.html</strong>
+        </div>
+        <div class="stat">
+          <span>Policy Slots</span>
+          <strong>4</strong>
+        </div>
+      </div>
+    </section>
+
+    <section id="assets" class="section split">
+      <div>
+        <h2>Lab2mj Scene Assets</h2>
+        <p>The demo mirrors the `lab2mj` scene layout with static assets under `docs/demo-assets`. It runs MuJoCo stepping and ONNX inference in the browser and does not require a local simulator process.</p>
+        <pre><code>docs/demo-assets/scenes/scene_parkour.xml
+docs/demo-assets/scenes/go2w.xml
+docs/demo-assets/scenes/assets/</code></pre>
+      </div>
+      <figure>
+        <img src="assets/images/history-policy.png" alt="Go2W policy history visualization.">
+      </figure>
+    </section>
+
+    <section class="section">
+      <h2>Lab2mj Controls</h2>
+      <div class="feature-grid">
+        <article>
+          <h3>Command</h3>
+          <p>Set forward, lateral, and yaw command values from the browser. The controls mirror `w/s`, `a/d`, `q/e`, and zero-command behavior.</p>
+        </article>
+        <article>
+          <h3>Policy Slots</h3>
+          <p>`motion_mlp` is enabled online through ONNX Runtime Web. Visual VTM/SRU slots are visible but disabled until the RayCaster image and recurrent state path is ported.</p>
+        </article>
+        <article>
+          <h3>Browser Actions</h3>
+          <p>Reset the simulation, zero commands, and adjust realtime factor without leaving the GitHub Pages demo.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="deploy" class="section deploy">
+      <h2>GitHub Pages Deployment</h2>
+      <p>Configure the repository Pages source to `main` and `/docs`. The demo is static, so GitHub Pages only needs the files in this directory.</p>
+      <pre><code>git add docs README.md
+git commit -m "Add Go2W GitHub Pages demo"
+git push origin main</code></pre>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Go2W Sim2Sim</span>
+    <a href="demo.html">Launch demo</a>
+  </footer>
+  <script src="assets/js/site.js"></script>
+</body>
+</html>
