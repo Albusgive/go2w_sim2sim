@@ -3,10 +3,11 @@
 This directory is the GitHub Pages root for the project page and the browser
 `lab2mj` demo.
 
-The demo runs the Go2W MJCF scene with MuJoCo WASM and drives the robot with the
-`motion_mlp` ONNX policy through ONNX Runtime Web. ROS2, `real2sim`, and the
-native C++ process are not deployed here. The visual VTM/SRU policies are
-intentionally disabled until the browser ray-image pipeline is ported.
+The demo runs the Go2W MJCF scene with MuJoCo WASM and drives the robot through
+ONNX Runtime Web. ROS2, `real2sim`, and the native C++ process are not deployed
+here. The default browser policy is `vtm_lstm_sru`; the demo also exposes
+`motion_mlp`, `vtm`, and `vtm_gru_sru`. Visual policies receive a browser
+RayCasterCamera depth image (`32 x 18`) and show the ray image in the bottom UI.
 
 ## Local Preview
 
@@ -28,4 +29,4 @@ Folder: /docs
 
 The browser demo is static and uses only the assets checked into this directory:
 MuJoCo WASM, Three.js, ONNX Runtime Web, the Go2W MJCF assets, and the
-`policy/motion_tracking/policy.onnx` checkpoint.
+ONNX checkpoints under `docs/demo-assets/policies/`.

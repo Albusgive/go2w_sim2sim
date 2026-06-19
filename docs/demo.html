@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Go2W Lab2mj Demo</title>
   <meta name="description" content="Browser Go2W lab2mj MuJoCo and ONNX demo.">
-  <link rel="stylesheet" href="assets/css/site.css?v=render-3">
+  <link rel="stylesheet" href="assets/css/site.css?v=visual-sru-1">
 </head>
 <body class="demo-body">
   <canvas id="go2w-canvas"></canvas>
@@ -38,9 +38,9 @@
     <section class="control-group">
       <h2>Policy Slot</h2>
       <div class="policy-grid" id="policy-grid">
-        <button type="button" data-policy="0" class="active">motion_mlp ONNX</button>
+        <button type="button" data-policy="0">motion_mlp</button>
         <button type="button" data-policy="1">vtm</button>
-        <button type="button" data-policy="2">vtm_lstm_sru</button>
+        <button type="button" data-policy="2" class="active">vtm_lstm_sru</button>
         <button type="button" data-policy="3">vtm_gru_sru</button>
       </div>
     </section>
@@ -48,6 +48,8 @@
     <section class="control-group compact-actions">
       <button id="zero-command" type="button">Zero</button>
       <button id="reset-sim" type="button">Reset Sim</button>
+      <button id="reset-policy" type="button">Reset Net</button>
+      <button id="follow-camera" type="button" class="active">Follow Cam</button>
     </section>
 
     <section class="control-group">
@@ -60,10 +62,28 @@
     </section>
 
     <div class="hud-line">
-      <span id="policy-readout">policy 0: motion_mlp</span>
+      <span id="policy-readout">policy 2: vtm_lstm_sru</span>
       <span>MuJoCo WASM + ONNX Runtime Web</span>
     </div>
     <p id="error-readout" class="error-readout" hidden></p>
+  </aside>
+
+  <aside class="demo-bottom-bar" aria-label="Go2W keyboard hints and ray camera">
+    <div class="hint-strip">
+      <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
+      <span><kbd>Q</kbd><kbd>E</kbd> yaw</span>
+      <span><kbd>Space</kbd> zero</span>
+      <span><kbd>R</kbd> reset sim</span>
+      <span><kbd>N</kbd> reset net</span>
+      <span>Drag mouse: orbit camera</span>
+    </div>
+    <div class="ray-panel">
+      <div>
+        <strong>RayCasterCamera</strong>
+        <span id="ray-readout">32 x 18 depth</span>
+      </div>
+      <canvas id="ray-canvas" width="32" height="18"></canvas>
+    </div>
   </aside>
 
   <script type="importmap">
@@ -73,6 +93,6 @@
       }
     }
   </script>
-  <script type="module" src="assets/js/go2w-demo.js?v=worker-2"></script>
+  <script type="module" src="assets/js/go2w-demo.js?v=visual-sru-1"></script>
 </body>
 </html>
