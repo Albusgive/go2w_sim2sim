@@ -484,6 +484,8 @@ class Go2WDemo {
     this.policyFailed = false;
     this.lastRawAction.fill(0);
     this.currentCtrl.set(ACT_DEFAULT_DOF_POS);
+    this.policyRuns = 0;
+    this.lastPolicyDurationMs = 0;
     this.applyAction(this.lastRawAction);
     this.resetObservationHistory();
     this.updatePolicyButtons();
