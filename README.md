@@ -125,10 +125,11 @@ The scene path is compiled into the executable from `mujoco/C++/CMakeLists.txt` 
 This repository includes a static project page under `docs/` for GitHub Pages.
 Configure Pages to deploy from the `main` branch and `/docs` folder. The hosted
 demo is the `lab2mj` browser path only: MuJoCo WASM renders the Go2W MJCF scene
-and ONNX Runtime Web runs the `motion_mlp` policy. It does not deploy ROS2,
-`real2sim`, or a native simulator process. The visual VTM/SRU policies remain a
-separate browser-porting step because they require the RayCaster image
-observation and recurrent state pipeline.
+and ONNX Runtime Web runs the policy worker. It does not deploy ROS2,
+`real2sim`, or a native simulator process. The browser demo supports
+`motion_mlp`, `vtm`, `vtm_lstm_sru`, and `vtm_gru_sru`; it defaults to
+`vtm_lstm_sru` and computes a `32 x 18` RayCasterCamera depth observation for
+the visual policies.
 
 Local preview:
 

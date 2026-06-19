@@ -299,6 +299,24 @@ code {
   backdrop-filter: blur(16px);
 }
 
+.demo-bottom-bar {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
 .panel-head,
 .hud-line {
   display: flex;
@@ -397,6 +415,60 @@ output {
   overflow-wrap: anywhere;
 }
 
+.hint-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  margin-right: 4px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font: 700 0.76rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.ray-panel {
+  display: grid;
+  grid-template-columns: 128px 160px;
+  gap: 12px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.ray-panel strong,
+.ray-panel span {
+  display: block;
+}
+
+.ray-panel strong {
+  margin-bottom: 5px;
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+#ray-canvas {
+  width: 160px;
+  height: 90px;
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #050706;
+  image-rendering: pixelated;
+}
+
 .hud-line {
   justify-content: space-between;
   margin-top: 14px;
@@ -443,8 +515,22 @@ output {
     top: 12px;
     left: 12px;
     width: calc(100vw - 24px);
-    max-height: min(48vh, 430px);
+    max-height: min(52vh, 470px);
     padding: 14px;
     background: #141816;
+  }
+
+  .demo-bottom-bar {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    grid-template-columns: 1fr;
+    max-height: 38vh;
+    overflow: auto;
+    background: #141816;
+  }
+
+  .ray-panel {
+    grid-template-columns: 1fr 160px;
   }
 }

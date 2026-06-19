@@ -1,0 +1,35 @@
+{
+    "model_name": "student",
+    "total_input_length": 629,
+    "memory": {
+        "type": "lstm_sru",
+        "num_layers": 1,
+        "hidden_dim": 512
+    },
+    "input_segments": [
+        {
+            "group": "policy_normal",
+            "type": "1D",
+            "range": [
+                0,
+                53
+            ],
+            "shape": [
+                53
+            ]
+        },
+        {
+            "group": "policy_image",
+            "type": "2D",
+            "range": [
+                53,
+                629
+            ],
+            "shape": [
+                1,
+                18,
+                32
+            ]
+        }
+    ]
+}

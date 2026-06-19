@@ -24,7 +24,7 @@
     <div class="hero-content">
       <p class="eyebrow">MuJoCo browser demo</p>
       <h1>Go2W Sim2Sim</h1>
-      <p class="hero-copy">A GitHub Pages demo for the Go2W `lab2mj` path: MuJoCo WASM renders the MJCF scene and ONNX Runtime Web runs the `motion_mlp` policy in the browser.</p>
+      <p class="hero-copy">A GitHub Pages demo for the Go2W `lab2mj` path: MuJoCo WASM renders the MJCF scene, computes RayCasterCamera depth, and runs ONNX policies in the browser.</p>
       <div class="actions">
         <a class="button primary" href="demo.html">Open Demo</a>
         <a class="button" href="#deploy">Deploy Pages</a>
@@ -36,7 +36,7 @@
     <section class="section intro">
       <div>
         <h2>What This Page Hosts</h2>
-        <p>The static site is designed for GitHub Pages. It loads the Go2W MJCF scene, mesh assets, MuJoCo WASM runtime, and the `motion_mlp` ONNX checkpoint directly in the browser, then exposes a `lab2mj`-style velocity command surface.</p>
+        <p>The static site is designed for GitHub Pages. It loads the Go2W MJCF scene, mesh assets, MuJoCo WASM runtime, and ONNX checkpoints directly in the browser, then exposes a `lab2mj`-style velocity command surface.</p>
       </div>
       <div class="stat-grid">
         <div class="stat">
@@ -76,7 +76,7 @@ docs/demo-assets/scenes/assets/</code></pre>
         </article>
         <article>
           <h3>Policy Slots</h3>
-          <p>`motion_mlp` is enabled online through ONNX Runtime Web. Visual VTM/SRU slots are visible but disabled until the RayCaster image and recurrent state path is ported.</p>
+          <p>`motion_mlp`, `vtm`, `vtm_lstm_sru`, and `vtm_gru_sru` run online through ONNX Runtime Web. The visual policies use a browser RayCasterCamera depth image and recurrent state reset support.</p>
         </article>
         <article>
           <h3>Browser Actions</h3>

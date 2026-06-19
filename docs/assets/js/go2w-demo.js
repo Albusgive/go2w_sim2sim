@@ -34,34 +34,103 @@ const ASSET_NAMES = [
   'multi_motion_float_box_terrain_mesh8.stl',
 ];
 
-const JOINT_DEFAULTS = {
-  FR_hip_joint: 0.0,
-  FR_thigh_joint: 0.8,
-  FR_calf_joint: -1.5,
-  FL_hip_joint: 0.0,
-  FL_thigh_joint: 0.8,
-  FL_calf_joint: -1.5,
-  RR_hip_joint: 0.0,
-  RR_thigh_joint: 0.8,
-  RR_calf_joint: -1.5,
-  RL_hip_joint: 0.0,
-  RL_thigh_joint: 0.8,
-  RL_calf_joint: -1.5,
-};
-
-const WHEEL_JOINTS = [
-  'FR_wheel_joint',
-  'FL_wheel_joint',
-  'RR_wheel_joint',
-  'RL_wheel_joint',
+const POLICY_CONFIGS = [
+  {
+    id: 0,
+    name: 'motion_mlp',
+    kind: 'mlp',
+    url: 'demo-assets/policies/motion_tracking/policy.onnx',
+    obsDim: 187,
+    vectorHistory: 3,
+    imageHistory: -1,
+    actionScale: [
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      2.0, 2.0, 2.0, 2.0,
+    ],
+  },
+  {
+    id: 1,
+    name: 'vtm',
+    kind: 'mlp',
+    url: 'demo-assets/policies/vtm/student.onnx',
+    obsDim: 5449,
+    vectorHistory: 5,
+    imageHistory: 8,
+    actionScale: [
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      5.0, 5.0, 5.0, 5.0,
+    ],
+  },
+  {
+    id: 2,
+    name: 'vtm_lstm_sru',
+    kind: 'split',
+    encoderUrl: 'demo-assets/policies/vtm_lstm_sru/student_encoder.onnx',
+    memoryUrl: 'demo-assets/policies/vtm_lstm_sru/student_memory.onnx',
+    actorUrl: 'demo-assets/policies/vtm_lstm_sru/student_actor.onnx',
+    obsDim: 629,
+    encodedDim: 181,
+    latentDim: 512,
+    numLayers: 1,
+    hiddenDim: 512,
+    memoryType: 'lstm_sru',
+    vectorHistory: 1,
+    imageHistory: 0,
+    actionScale: [
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      5.0, 5.0, 5.0, 5.0,
+    ],
+  },
+  {
+    id: 3,
+    name: 'vtm_gru_sru',
+    kind: 'split',
+    encoderUrl: 'demo-assets/policies/vtm_gru_sru/student_encoder.onnx',
+    memoryUrl: 'demo-assets/policies/vtm_gru_sru/student_memory.onnx',
+    actorUrl: 'demo-assets/policies/vtm_gru_sru/student_actor.onnx',
+    obsDim: 629,
+    encodedDim: 181,
+    latentDim: 512,
+    numLayers: 1,
+    hiddenDim: 512,
+    memoryType: 'gru_sru',
+    vectorHistory: 1,
+    imageHistory: 0,
+    actionScale: [
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      0.125, 0.25, 0.25,
+      5.0, 5.0, 5.0, 5.0,
+    ],
+  },
 ];
 
-const POLICY_NAMES = ['motion_mlp', 'vtm', 'vtm_lstm_sru', 'vtm_gru_sru'];
+const DEFAULT_POLICY_ID = 2;
 const SIM_DT = 0.005;
 const POLICY_DECIMATION = 4;
-const MOTION_POLICY_URL = 'demo-assets/policies/motion_tracking/policy.onnx';
 const MOTION_OBS_PREFIX_DIM = 24 + 1 + 3 + 6;
 const MOTION_OBS_DIM = 187;
+const RAY_WIDTH = 32;
+const RAY_HEIGHT = 18;
+const RAY_SIZE = RAY_WIDTH * RAY_HEIGHT;
+const RAY_MIN_DIST = 0.15;
+const RAY_MAX_DIST = 1.5;
+const RAY_FOCAL = 1.0;
+const RAY_HORIZONTAL_APERTURE = 2.0;
+const RAY_VERTICAL_APERTURE = 1.154700538;
+const RAY_VIS_STRIDE_X = 4;
+const RAY_VIS_STRIDE_Y = 3;
+
 const LEG_POS_SENSOR_NAMES = [
   'FL_hip_joint_pos',
   'FR_hip_joint_pos',
@@ -112,6 +181,26 @@ const ACTUATOR_JOINT_ORDER = [
   'RR_wheel_joint',
   'RL_wheel_joint',
 ];
+const JOINT_DEFAULTS = {
+  FR_hip_joint: 0.0,
+  FR_thigh_joint: 0.8,
+  FR_calf_joint: -1.5,
+  FL_hip_joint: 0.0,
+  FL_thigh_joint: 0.8,
+  FL_calf_joint: -1.5,
+  RR_hip_joint: 0.0,
+  RR_thigh_joint: 0.8,
+  RR_calf_joint: -1.5,
+  RL_hip_joint: 0.0,
+  RL_thigh_joint: 0.8,
+  RL_calf_joint: -1.5,
+};
+const WHEEL_JOINTS = [
+  'FR_wheel_joint',
+  'FL_wheel_joint',
+  'RR_wheel_joint',
+  'RL_wheel_joint',
+];
 const OBS_DEFAULT_DOF_POS = new Float32Array([
   0, 0, 0, 0,
   0.8, 0.8, 0.8, 0.8,
@@ -124,13 +213,7 @@ const ACT_DEFAULT_DOF_POS = new Float32Array([
   0, 0.8, -1.5,
   0, 0, 0, 0,
 ]);
-const ACTION_SCALE_MOTION = new Float32Array([
-  0.125, 0.25, 0.25,
-  0.125, 0.25, 0.25,
-  0.125, 0.25, 0.25,
-  0.125, 0.25, 0.25,
-  2.0, 2.0, 2.0, 2.0,
-]);
+
 const MJCAT_ALL = 7;
 const GEOM_PLANE = 0;
 const GEOM_SPHERE = 2;
@@ -141,28 +224,33 @@ const GEOM_BOX = 6;
 const GEOM_MESH = 7;
 const GEOM_LINE = 100;
 const TMP_MAT4 = new THREE.Matrix4();
+const TMP_RAY_GROUP = [1, 1, 1, 1, 1, 1];
 
 const $ = (id) => document.getElementById(id);
+const POLICY_BY_ID = new Map(POLICY_CONFIGS.map((policy) => [policy.id, policy]));
 
 class Go2WDemo {
   constructor() {
     this.canvas = $('go2w-canvas');
+    this.rayCanvas = $('ray-canvas');
+    this.rayReadout = $('ray-readout');
     this.statusPill = $('status-pill');
     this.policyReadout = $('policy-readout');
     this.errorReadout = $('error-readout');
-    this.policyId = 0;
+    this.policyId = DEFAULT_POLICY_ID;
     this.keys = new Set();
+    this.keyboardCommandActive = false;
     this.cmd = { x: 0.7, y: 0, yaw: 0 };
     this.realtime = 1.0;
-    this.pose = { x: 0, y: 0, z: 0.56, yaw: 0 };
-    this.gaitTime = 0;
-    this.wheelPhase = 0;
+    this.followCamera = true;
     this.clock = new THREE.Clock();
     this.physicsAccumulator = 0;
     this.physicsStep = 0;
     this.policyPending = false;
     this.policyFailed = false;
     this.policyWorkerReady = false;
+    this.policyReady = new Set();
+    this.policyLoading = new Map();
     this.policySeq = 0;
     this.policyRuns = 0;
     this.lastPolicyDurationMs = 0;
@@ -175,7 +263,16 @@ class Go2WDemo {
     this.activeGeoms = 0;
     this.meshGeometries = new Map();
     this.baseBodyId = -1;
+    this.cameraId = -1;
+    this.cameraBodyId = -1;
     this.frameCount = 0;
+    this.rayImage = new Float32Array(RAY_SIZE);
+    this.rayRawImage = new Float32Array(RAY_SIZE);
+    this.rayHitPoints = new Array(RAY_SIZE);
+    this.rayDirty = false;
+    this.rayConvention = null;
+    this.rayCanvasImage = this.rayCanvas?.getContext('2d')?.createImageData(RAY_WIDTH, RAY_HEIGHT) || null;
+    this.rayCtx = this.rayCanvas?.getContext('2d') || null;
   }
 
   async init() {
@@ -190,18 +287,26 @@ class Go2WDemo {
     this.model = this.mujoco.MjModel.loadFromXML('/working/scene_parkour.xml');
     this.data = new this.mujoco.MjData(this.model);
     if (window.__go2wFallbackStarted) return;
+
     this.setupRenderer();
     this.cacheJointAddresses();
     this.cacheSensorAddresses();
     this.setupVisualScene();
-    this.setStatus('Loading', 'Loading motion_mlp ONNX');
-    await this.loadMotionPolicy();
-    this.resetBrowserPose();
+    this.setupRayVisualization();
     this.bindControls();
+    this.updatePolicyButtons();
+    this.setStatus('Loading', `Loading ${this.activePolicy().name}`);
+    await this.startPolicyWorker();
+    await this.ensurePolicyLoaded(this.policyId);
+    this.resetBrowserPose({ resetWorker: true });
 
     window.__go2wDemoReady = true;
     this.setStatus('Ready', 'MuJoCo + ONNX policy ready', 'ready');
     this.renderer.setAnimationLoop(() => this.frame());
+  }
+
+  activePolicy() {
+    return POLICY_BY_ID.get(this.policyId) || POLICY_CONFIGS[0];
   }
 
   setupRenderer() {
@@ -237,9 +342,7 @@ class Go2WDemo {
 
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(120, 50),
-      new THREE.MeshLambertMaterial({
-        color: 0xd4ddd0,
-      }),
+      new THREE.MeshLambertMaterial({ color: 0xd4ddd0 }),
     );
     ground.name = 'Ground Plane';
     this.mujocoRoot.add(ground);
@@ -247,7 +350,11 @@ class Go2WDemo {
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.target.set(0.6, 0.35, 0);
     this.controls.enableDamping = true;
+    this.controls.enablePan = true;
     this.controls.dampingFactor = 0.08;
+    this.controls.addEventListener('start', () => {
+      this.setFollowCamera(false);
+    });
     this.controls.update();
 
     window.addEventListener('resize', () => {
@@ -285,23 +392,24 @@ class Go2WDemo {
       this.setCommand(0, 0, 0);
     });
     $('reset-sim').addEventListener('click', () => {
-      this.resetBrowserPose();
+      this.resetBrowserPose({ resetWorker: true });
+    });
+    $('reset-policy').addEventListener('click', () => {
+      this.resetActivePolicyState();
+    });
+    $('follow-camera').addEventListener('click', () => {
+      this.setFollowCamera(!this.followCamera);
     });
 
     for (const button of document.querySelectorAll('[data-policy]')) {
-      if (Number(button.dataset.policy) !== 0) {
-        button.disabled = true;
-        button.title = 'Visual policy support requires ray image + SRU state migration.';
-      }
       button.addEventListener('click', () => {
         this.setPolicy(Number(button.dataset.policy));
       });
     }
 
     document.addEventListener('keydown', (event) => {
-      if (event.repeat) return;
       this.keys.add(event.code);
-      const handled = this.handleKeyStep(event.code);
+      const handled = this.handleKeyCommand(event.code);
       if (handled) event.preventDefault();
     });
 
@@ -310,28 +418,44 @@ class Go2WDemo {
     });
   }
 
-  handleKeyStep(code) {
-    const step = 0.1;
-    if (code === 'KeyW') this.cmd.x += step;
-    else if (code === 'KeyS') this.cmd.x -= step;
-    else if (code === 'KeyA') this.cmd.y += step;
-    else if (code === 'KeyD') this.cmd.y -= step;
-    else if (code === 'KeyQ') this.cmd.yaw += step;
-    else if (code === 'KeyE') this.cmd.yaw -= step;
-    else if (code === 'Space') this.setCommand(0, 0, 0);
-    else if (code === 'KeyR') {
-      this.resetBrowserPose();
+  handleKeyCommand(code) {
+    if (code === 'Space') {
+      this.setCommand(0, 0, 0);
       return true;
-    } else {
-      const digit = code.match(/^Digit([1-4])$/);
-      if (digit) {
-        this.setPolicy(Number(digit[1]) - 1);
-        return true;
-      }
-      return false;
     }
-    this.setCommand(this.cmd.x, this.cmd.y, this.cmd.yaw);
-    return true;
+    if (code === 'KeyR') {
+      this.resetBrowserPose({ resetWorker: true });
+      return true;
+    }
+    if (code === 'KeyN') {
+      this.resetActivePolicyState();
+      return true;
+    }
+    if (code === 'KeyF') {
+      this.setFollowCamera(!this.followCamera);
+      return true;
+    }
+    const digit = code.match(/^Digit([1-4])$/);
+    if (digit) {
+      this.setPolicy(Number(digit[1]) - 1);
+      return true;
+    }
+    return ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE'].includes(code);
+  }
+
+  updateKeyboardCommand() {
+    const xSign = (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0);
+    const ySign = (this.keys.has('KeyA') ? 1 : 0) - (this.keys.has('KeyD') ? 1 : 0);
+    const yawSign = (this.keys.has('KeyQ') ? 1 : 0) - (this.keys.has('KeyE') ? 1 : 0);
+    if (xSign === 0 && ySign === 0 && yawSign === 0) {
+      if (this.keyboardCommandActive) {
+        this.keyboardCommandActive = false;
+        this.setCommand(0, 0, 0);
+      }
+      return;
+    }
+    this.keyboardCommandActive = true;
+    this.setCommand(xSign * 0.8, ySign * 0.55, yawSign * 1.0);
   }
 
   setCommand(x, y, yaw) {
@@ -346,12 +470,48 @@ class Go2WDemo {
     $('cmd-yaw-out').value = this.cmd.yaw.toFixed(2);
   }
 
-  setPolicy(policyId) {
-    this.policyId = policyId === 0 ? 0 : this.policyId;
-    for (const button of document.querySelectorAll('[data-policy]')) {
-      button.classList.toggle('active', Number(button.dataset.policy) === this.policyId);
+  setFollowCamera(enabled) {
+    this.followCamera = enabled;
+    $('follow-camera')?.classList.toggle('active', enabled);
+  }
+
+  async setPolicy(policyId) {
+    if (!POLICY_BY_ID.has(policyId)) return;
+    if (policyId === this.policyId && this.policyReady.has(policyId)) return;
+    this.policyId = policyId;
+    this.policySeq += 1;
+    this.policyPending = false;
+    this.policyFailed = false;
+    this.lastRawAction.fill(0);
+    this.currentCtrl.set(ACT_DEFAULT_DOF_POS);
+    this.applyAction(this.lastRawAction);
+    this.resetObservationHistory();
+    this.updatePolicyButtons();
+    this.setStatus('Loading', `Loading ${this.activePolicy().name}`);
+    try {
+      await this.ensurePolicyLoaded(policyId);
+      await this.resetActivePolicyState();
+      this.setStatus('Ready', `${this.activePolicy().name} ready`, 'ready');
+    } catch (error) {
+      this.policyFailed = true;
+      this.setStatus('Policy Error', error.message, 'error');
     }
-    this.policyReadout.textContent = `policy ${this.policyId}: ${POLICY_NAMES[this.policyId]} · ONNX ${MOTION_OBS_DIM}D`;
+  }
+
+  updatePolicyButtons() {
+    for (const button of document.querySelectorAll('[data-policy]')) {
+      const id = Number(button.dataset.policy);
+      button.classList.toggle('active', id === this.policyId);
+      button.disabled = this.policyLoading.has(id);
+      if (this.policyLoading.get(id)) {
+        button.textContent = `${POLICY_BY_ID.get(id).name}...`;
+      } else {
+        button.textContent = POLICY_BY_ID.get(id).name;
+      }
+    }
+    const policy = this.activePolicy();
+    const status = this.policyReady.has(policy.id) ? 'ready' : 'loading';
+    this.policyReadout.textContent = `policy ${policy.id}: ${policy.name} · ${status}`;
   }
 
   ensureDir(path) {
@@ -401,51 +561,117 @@ class Go2WDemo {
     }
   }
 
-  async loadMotionPolicy() {
-    const policyUrl = new URL(MOTION_POLICY_URL, window.location.href).href;
-    this.setStatus('Loading', 'Starting motion_mlp worker');
-    this.motionPolicyWorker = new Worker(new URL('policy-worker.js?v=worker-2', import.meta.url), {
-      name: 'go2w-motion-policy',
+  async startPolicyWorker() {
+    const workerConfigs = POLICY_CONFIGS.map((config) => {
+      const out = { ...config };
+      for (const key of ['url', 'encoderUrl', 'memoryUrl', 'actorUrl']) {
+        if (out[key]) out[key] = new URL(out[key], window.location.href).href;
+      }
+      delete out.actionScale;
+      return out;
     });
-    this.motionPolicyWorker.onmessage = (event) => this.handlePolicyWorkerMessage(event.data || {});
-    this.motionPolicyWorker.onerror = (error) => {
+    this.policyWorker = new Worker(new URL('policy-worker.js?v=visual-sru-1', import.meta.url), {
+      name: 'go2w-policy-worker',
+    });
+    this.policyWorker.onmessage = (event) => this.handlePolicyWorkerMessage(event.data || {});
+    this.policyWorker.onerror = (error) => {
       this.policyFailed = true;
       this.policyPending = false;
-      this.setStatus('Policy Error', error.message || 'motion_mlp worker failed', 'error');
+      this.setStatus('Policy Error', error.message || 'policy worker failed', 'error');
     };
 
     await new Promise((resolve, reject) => {
       const timeout = window.setTimeout(() => {
-        reject(new Error('Timed out while loading motion_mlp worker'));
+        reject(new Error('Timed out while starting policy worker'));
       }, 30000);
       const onMessage = (event) => {
         const data = event.data || {};
         if (data.type === 'ready') {
           window.clearTimeout(timeout);
-          this.motionPolicyWorker.removeEventListener('message', onMessage);
-          this.motionPolicyWorker.removeEventListener('message', onError);
+          this.policyWorker.removeEventListener('message', onMessage);
           this.policyWorkerReady = true;
           resolve();
         } else if (data.type === 'error') {
           window.clearTimeout(timeout);
-          this.motionPolicyWorker.removeEventListener('message', onMessage);
-          this.motionPolicyWorker.removeEventListener('message', onError);
-          reject(new Error(data.message || 'motion_mlp worker failed to initialize'));
+          this.policyWorker.removeEventListener('message', onMessage);
+          reject(new Error(data.message || 'policy worker failed to initialize'));
         }
       };
-      const onError = (event) => {
-        const data = event.data || {};
-        if (data.type !== 'error') return;
-        window.clearTimeout(timeout);
-        this.motionPolicyWorker.removeEventListener('message', onMessage);
-        this.motionPolicyWorker.removeEventListener('message', onError);
-        reject(new Error(data.message || 'motion_mlp worker failed to initialize'));
-      };
-      this.motionPolicyWorker.addEventListener('message', onMessage);
-      this.motionPolicyWorker.addEventListener('message', onError);
-      this.motionPolicyWorker.postMessage({ type: 'init', policyUrl });
+      this.policyWorker.addEventListener('message', onMessage);
+      this.policyWorker.postMessage({ type: 'init', policies: workerConfigs });
     });
-    this.policyReadout.textContent = `policy 0: motion_mlp · ONNX ${MOTION_OBS_DIM}D`;
+  }
+
+  async ensurePolicyLoaded(policyId) {
+    if (this.policyReady.has(policyId)) return;
+    if (this.policyLoading.has(policyId)) return this.policyLoading.get(policyId);
+    const promise = new Promise((resolve, reject) => {
+      const timeout = window.setTimeout(() => {
+        reject(new Error(`Timed out while loading ${POLICY_BY_ID.get(policyId).name}`));
+      }, 60000);
+      const onMessage = (event) => {
+        const data = event.data || {};
+        if (data.policyId !== policyId) return;
+        if (data.type === 'loaded') {
+          window.clearTimeout(timeout);
+          this.policyWorker.removeEventListener('message', onMessage);
+          this.policyReady.add(policyId);
+          resolve();
+        } else if (data.type === 'error') {
+          window.clearTimeout(timeout);
+          this.policyWorker.removeEventListener('message', onMessage);
+          reject(new Error(data.message || `Failed to load ${POLICY_BY_ID.get(policyId).name}`));
+        }
+      };
+      this.policyWorker.addEventListener('message', onMessage);
+      this.policyWorker.postMessage({ type: 'load', policyId });
+    }).finally(() => {
+      this.policyLoading.delete(policyId);
+      this.updatePolicyButtons();
+    });
+    this.policyLoading.set(policyId, promise);
+    this.updatePolicyButtons();
+    return promise;
+  }
+
+  async resetActivePolicyState() {
+    this.policySeq += 1;
+    this.policyPending = false;
+    this.lastRawAction.fill(0);
+    this.currentCtrl.set(ACT_DEFAULT_DOF_POS);
+    this.policyRuns = 0;
+    this.lastPolicyDurationMs = 0;
+    this.applyAction(this.lastRawAction);
+    this.resetObservationHistory();
+    if (this.policyWorkerReady) {
+      this.policyWorker.postMessage({ type: 'reset', policyId: this.policyId });
+    }
+    this.policyReadout.textContent = `policy ${this.policyId}: ${this.activePolicy().name} · reset`;
+  }
+
+  handlePolicyWorkerMessage(data) {
+    if (data.type === 'ready' || data.type === 'loaded' || data.type === 'reset') return;
+    if (data.type === 'error') {
+      console.error(data.message);
+      if (data.seq !== undefined && data.seq !== this.policySeq) return;
+      this.policyFailed = true;
+      this.policyPending = false;
+      this.setStatus('Policy Error', data.message, 'error');
+      return;
+    }
+    if (data.type !== 'result' || data.seq !== this.policySeq || data.policyId !== this.policyId) return;
+
+    const raw = data.action;
+    for (let i = 0; i < 16; i += 1) {
+      this.lastRawAction[i] = Number.isFinite(raw[i]) ? raw[i] : 0;
+    }
+    this.lastPolicyDurationMs = data.durationMs || 0;
+    this.policyRuns += 1;
+    this.applyAction(this.lastRawAction);
+    this.policyPending = false;
+    const policy = this.activePolicy();
+    this.policyReadout.textContent =
+      `policy ${policy.id}: ${policy.name} · worker ${this.lastPolicyDurationMs.toFixed(0)}ms`;
   }
 
   setupVisualScene() {
@@ -464,6 +690,36 @@ class Go2WDemo {
       this.mujoco.mjtObj.mjOBJ_BODY.value,
       'base_link',
     );
+    this.cameraId = this.mujoco.mj_name2id(
+      this.model,
+      this.mujoco.mjtObj.mjOBJ_CAMERA.value,
+      'RayCasterCamera',
+    );
+    this.cameraBodyId = this.cameraId >= 0 && this.model.cam_bodyid
+      ? this.model.cam_bodyid[this.cameraId]
+      : this.baseBodyId;
+  }
+
+  setupRayVisualization() {
+    this.raySampleIndices = [];
+    for (let row = 0; row < RAY_HEIGHT; row += RAY_VIS_STRIDE_Y) {
+      for (let col = 0; col < RAY_WIDTH; col += RAY_VIS_STRIDE_X) {
+        this.raySampleIndices.push(row * RAY_WIDTH + col);
+      }
+    }
+    this.rayLinePositions = new Float32Array(this.raySampleIndices.length * 2 * 3);
+    this.rayLineGeometry = new THREE.BufferGeometry();
+    this.rayLineGeometry.setAttribute('position', new THREE.BufferAttribute(this.rayLinePositions, 3));
+    this.rayLines = new THREE.LineSegments(
+      this.rayLineGeometry,
+      new THREE.LineBasicMaterial({
+        color: 0x88ff74,
+        transparent: true,
+        opacity: 0.62,
+      }),
+    );
+    this.rayLines.frustumCulled = false;
+    this.mujocoRoot.add(this.rayLines);
   }
 
   updateVisualScene() {
@@ -619,7 +875,7 @@ class Go2WDemo {
     }
   }
 
-  resetBrowserPose() {
+  resetBrowserPose({ resetWorker = false } = {}) {
     this.physicsAccumulator = 0;
     this.physicsStep = 0;
     this.policyPending = false;
@@ -634,15 +890,23 @@ class Go2WDemo {
     this.applyAction(this.lastRawAction);
     this.mujoco.mj_forward(this.model, this.data);
     this.resetObservationHistory();
+    this.computeRaycasterImage();
+    this.updateRayVisualization();
+    if (resetWorker && this.policyWorkerReady) {
+      this.policyWorker.postMessage({ type: 'reset', policyId: null });
+    }
+    this.setStatus('Ready', 'Simulation reset', 'ready');
   }
 
   frame() {
     const dt = Math.min(this.clock.getDelta(), 0.04);
     this.frameCount += 1;
+    this.updateKeyboardCommand();
     this.stepSimulation(dt * this.realtime);
     this.updateVisualScene();
     this.followBase(dt);
     this.controls.update();
+    this.updateRayVisualization();
     this.renderer.render(this.scene, this.camera);
     this.updateRuntimeStats();
   }
@@ -680,46 +944,34 @@ class Go2WDemo {
   }
 
   requestPolicyStep() {
-    if (!this.motionPolicyWorker || !this.policyWorkerReady || this.policyPending || this.policyFailed || this.policyId !== 0) return;
+    const policy = this.activePolicy();
+    if (
+      !this.policyWorker ||
+      !this.policyWorkerReady ||
+      !this.policyReady.has(policy.id) ||
+      this.policyPending ||
+      this.policyFailed
+    ) {
+      return;
+    }
 
-    const obs = this.buildMotionObservation();
+    const obs = policy.id === 0 ? this.buildMotionObservation() : this.buildVisualObservation(policy);
     const seq = this.policySeq + 1;
     this.policySeq = seq;
     this.policyPending = true;
-    this.motionPolicyWorker.postMessage({
+    this.policyWorker.postMessage({
       type: 'run',
+      policyId: policy.id,
       seq,
       obs: obs.buffer,
-      dims: [1, MOTION_OBS_DIM],
+      dims: [1, policy.obsDim],
     }, [obs.buffer]);
   }
 
-  handlePolicyWorkerMessage(data) {
-    if (data.type === 'ready') return;
-    if (data.type === 'error') {
-      console.error(data.message);
-      this.policyFailed = true;
-      this.policyPending = false;
-      this.setStatus('Policy Error', data.message, 'error');
-      return;
-    }
-    if (data.type !== 'result' || data.seq !== this.policySeq) return;
-
-    const raw = data.action;
-    for (let i = 0; i < 16; i += 1) {
-      this.lastRawAction[i] = Number.isFinite(raw[i]) ? raw[i] : 0;
-    }
-    this.lastPolicyDurationMs = data.durationMs || 0;
-    this.policyRuns += 1;
-    this.applyAction(this.lastRawAction);
-    this.policyPending = false;
-    this.policyReadout.textContent =
-      `policy 0: motion_mlp · worker ${this.lastPolicyDurationMs.toFixed(0)}ms`;
-  }
-
   applyAction(rawAction) {
+    const scale = this.activePolicy().actionScale || POLICY_CONFIGS[0].actionScale;
     for (let i = 0; i < 16 && i < this.data.ctrl.length; i += 1) {
-      const target = ACT_DEFAULT_DOF_POS[i] + rawAction[i] * ACTION_SCALE_MOTION[i];
+      const target = ACT_DEFAULT_DOF_POS[i] + rawAction[i] * scale[i];
       this.currentCtrl[i] = clampFinite(target, -100, 100);
       this.data.ctrl[i] = this.currentCtrl[i];
     }
@@ -733,6 +985,18 @@ class Go2WDemo {
     this.histDofVel = new HistoryBuffer(16, 3);
     this.histLastAction = new HistoryBuffer(16, 3);
     this.pushObservationTerms();
+
+    const policy = this.activePolicy();
+    this.visualHistBaseAngVel = new HistoryBuffer(3, policy.vectorHistory);
+    this.visualHistProjectedGravity = new HistoryBuffer(3, policy.vectorHistory);
+    this.visualHistCommand = new HistoryBuffer(3, policy.vectorHistory);
+    this.visualHistDofPos = new HistoryBuffer(12, policy.vectorHistory);
+    this.visualHistDofVel = new HistoryBuffer(16, policy.vectorHistory);
+    this.visualHistLastAction = new HistoryBuffer(16, policy.vectorHistory);
+    this.visualImageHistory = new ImageHistoryBuffer(RAY_SIZE, Math.max(policy.imageHistory, 0));
+    this.pushVisualObservationTerms();
+    const image = this.computeRaycasterImage();
+    this.visualImageHistory.reset(image);
   }
 
   buildMotionObservation() {
@@ -759,6 +1023,38 @@ class Go2WDemo {
     return obs;
   }
 
+  buildVisualObservation(policy) {
+    this.pushVisualObservationTerms();
+    const image = this.computeRaycasterImage();
+    const imageObs = policy.imageHistory > 0
+      ? this.visualImageHistory.flatWithCurrent(image)
+      : image;
+    if (policy.imageHistory > 0) {
+      this.visualImageHistory.push(image);
+    }
+
+    const obs = new Float32Array(policy.obsDim);
+    let offset = 0;
+    obs.set(this.visualHistBaseAngVel.flat(), offset);
+    offset += this.visualHistBaseAngVel.size;
+    obs.set(this.visualHistProjectedGravity.flat(), offset);
+    offset += this.visualHistProjectedGravity.size;
+    obs.set(this.visualHistCommand.flat(), offset);
+    offset += this.visualHistCommand.size;
+    obs.set(this.visualHistDofPos.flat(), offset);
+    offset += this.visualHistDofPos.size;
+    obs.set(this.visualHistDofVel.flat(), offset);
+    offset += this.visualHistDofVel.size;
+    obs.set(this.visualHistLastAction.flat(), offset);
+    offset += this.visualHistLastAction.size;
+    obs.set(imageObs, offset);
+    offset += imageObs.length;
+    if (offset !== policy.obsDim) {
+      throw new Error(`Unexpected ${policy.name} obs size: ${offset}, expected ${policy.obsDim}`);
+    }
+    return obs;
+  }
+
   pushObservationTerms() {
     const baseAngVel = this.readSensorVector('imu_gyro');
     for (let i = 0; i < baseAngVel.length; i += 1) baseAngVel[i] *= 0.25;
@@ -767,6 +1063,16 @@ class Go2WDemo {
     this.histCommand.push(new Float32Array([this.cmd.x, this.cmd.y, this.cmd.yaw]));
     this.histDofPos.push(this.readDofPos());
     this.histDofVel.push(this.readDofVel());
+  }
+
+  pushVisualObservationTerms() {
+    if (!this.visualHistBaseAngVel) return;
+    this.visualHistBaseAngVel.push(this.readSensorVector('imu_gyro'));
+    this.visualHistProjectedGravity.push(quatRotateInverse(this.readSensorVector('imu_quat'), [0, 0, -1]));
+    this.visualHistCommand.push(new Float32Array([this.cmd.x, this.cmd.y, this.cmd.yaw]));
+    this.visualHistDofPos.push(this.readDofPos());
+    this.visualHistDofVel.push(this.readDofVel());
+    this.visualHistLastAction.push(this.lastRawAction);
   }
 
   readDofPos() {
@@ -800,8 +1106,190 @@ class Go2WDemo {
     return values;
   }
 
+  computeRaycasterImage() {
+    if (!this.model || !this.data || this.cameraId < 0) return this.rayImage;
+    const pose = this.cameraPoseMujoco();
+    if (!pose) return this.rayImage;
+    if (!this._rayGeomId) this._rayGeomId = new Int32Array(1);
+    if (!this.rayConvention) {
+      this.rayConvention = this.chooseRayConvention(pose);
+    }
+
+    const centerDir = this.cameraRayDir(0, 0, pose.mat, this.rayConvention);
+    for (let row = 0; row < RAY_HEIGHT; row += 1) {
+      const v = (0.5 - (row + 0.5) / RAY_HEIGHT) * RAY_VERTICAL_APERTURE;
+      for (let col = 0; col < RAY_WIDTH; col += 1) {
+        const u = ((col + 0.5) / RAY_WIDTH - 0.5) * RAY_HORIZONTAL_APERTURE;
+        const index = row * RAY_WIDTH + col;
+        const dir = this.cameraRayDir(u, v, pose.mat, this.rayConvention);
+        this._rayGeomId[0] = -1;
+        const dist = this.mujoco.mj_ray(
+          this.model,
+          this.data,
+          pose.pos,
+          dir,
+          TMP_RAY_GROUP,
+          1,
+          this.baseBodyId,
+          this._rayGeomId,
+        );
+        const planeDist = dist > 0 ? dist * Math.max(0.05, dot3(dir, centerDir)) : 0;
+        this.rayRawImage[index] = planeDist;
+        this.rayImage[index] = normalizeDepth(planeDist);
+        this.rayHitPoints[index] = dist > 0
+          ? [
+            pose.pos[0] + dir[0] * dist,
+            pose.pos[1] + dir[1] * dist,
+            pose.pos[2] + dir[2] * dist,
+          ]
+          : null;
+      }
+    }
+    this.lastRayPose = pose;
+    this.rayDirty = true;
+    return new Float32Array(this.rayImage);
+  }
+
+  cameraPoseMujoco() {
+    if (this.data.cam_xpos && this.data.cam_xmat) {
+      const p = this.cameraId * 3;
+      const m = this.cameraId * 9;
+      return {
+        pos: [
+          this.data.cam_xpos[p],
+          this.data.cam_xpos[p + 1],
+          this.data.cam_xpos[p + 2],
+        ],
+        mat: [
+          this.data.cam_xmat[m],
+          this.data.cam_xmat[m + 1],
+          this.data.cam_xmat[m + 2],
+          this.data.cam_xmat[m + 3],
+          this.data.cam_xmat[m + 4],
+          this.data.cam_xmat[m + 5],
+          this.data.cam_xmat[m + 6],
+          this.data.cam_xmat[m + 7],
+          this.data.cam_xmat[m + 8],
+        ],
+      };
+    }
+    if (this.cameraBodyId < 0 || !this.model.cam_pos || !this.model.cam_quat) return null;
+    const body = this.cameraBodyId;
+    const bodyPos = [
+      this.data.xpos[body * 3],
+      this.data.xpos[body * 3 + 1],
+      this.data.xpos[body * 3 + 2],
+    ];
+    const bodyMat = [
+      this.data.xmat[body * 9],
+      this.data.xmat[body * 9 + 1],
+      this.data.xmat[body * 9 + 2],
+      this.data.xmat[body * 9 + 3],
+      this.data.xmat[body * 9 + 4],
+      this.data.xmat[body * 9 + 5],
+      this.data.xmat[body * 9 + 6],
+      this.data.xmat[body * 9 + 7],
+      this.data.xmat[body * 9 + 8],
+    ];
+    const localPos = [
+      this.model.cam_pos[this.cameraId * 3],
+      this.model.cam_pos[this.cameraId * 3 + 1],
+      this.model.cam_pos[this.cameraId * 3 + 2],
+    ];
+    const posOffset = mulMat3Vec3(bodyMat, localPos);
+    return {
+      pos: [
+        bodyPos[0] + posOffset[0],
+        bodyPos[1] + posOffset[1],
+        bodyPos[2] + posOffset[2],
+      ],
+      mat: bodyMat,
+    };
+  }
+
+  chooseRayConvention(pose) {
+    const conventions = [
+      { name: '-z', local: (u, v) => normalize3([u, v, -RAY_FOCAL]) },
+      { name: '+z', local: (u, v) => normalize3([u, v, RAY_FOCAL]) },
+      { name: '+x', local: (u, v) => normalize3([RAY_FOCAL, -u, v]) },
+      { name: '-x', local: (u, v) => normalize3([-RAY_FOCAL, u, v]) },
+      { name: '+y', local: (u, v) => normalize3([u, RAY_FOCAL, v]) },
+      { name: '-y', local: (u, v) => normalize3([u, -RAY_FOCAL, v]) },
+    ];
+    let best = conventions[0];
+    let bestScore = -Infinity;
+    const sample = [-0.6, 0, 0.6];
+    for (const convention of conventions) {
+      let score = 0;
+      for (const u of sample) {
+        for (const v of sample) {
+          const dir = this.cameraRayDir(u, v, pose.mat, convention);
+          this._rayGeomId[0] = -1;
+          const dist = this.mujoco.mj_ray(
+            this.model,
+            this.data,
+            pose.pos,
+            dir,
+            TMP_RAY_GROUP,
+            1,
+            this.baseBodyId,
+            this._rayGeomId,
+          );
+          if (dist > 0 && dist < 4.0) score += 1;
+          if (dist >= RAY_MIN_DIST && dist <= RAY_MAX_DIST) score += 2;
+        }
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = convention;
+      }
+    }
+    return best;
+  }
+
+  cameraRayDir(u, v, mat, convention) {
+    return normalize3(mulMat3Vec3(mat, convention.local(u, v)));
+  }
+
+  updateRayVisualization() {
+    if (!this.rayDirty) return;
+    this.rayDirty = false;
+    if (this.rayCanvasImage && this.rayCtx) {
+      const pixels = this.rayCanvasImage.data;
+      for (let i = 0; i < RAY_SIZE; i += 1) {
+        const value = clamp(this.rayImage[i], 0, 1);
+        const color = depthColor(value);
+        const p = i * 4;
+        pixels[p] = color[0];
+        pixels[p + 1] = color[1];
+        pixels[p + 2] = color[2];
+        pixels[p + 3] = 255;
+      }
+      this.rayCtx.putImageData(this.rayCanvasImage, 0, 0);
+      if (this.rayReadout) {
+        const validCount = this.rayImage.reduce((acc, value) => acc + (value > 0 ? 1 : 0), 0);
+        this.rayReadout.textContent = `${RAY_WIDTH} x ${RAY_HEIGHT} depth · ${validCount} hits`;
+      }
+    }
+    if (this.rayLines && this.lastRayPose) {
+      let p = 0;
+      for (const index of this.raySampleIndices) {
+        const hit = this.rayHitPoints[index];
+        const end = hit || this.lastRayPose.pos;
+        this.rayLinePositions[p++] = this.lastRayPose.pos[0];
+        this.rayLinePositions[p++] = this.lastRayPose.pos[1];
+        this.rayLinePositions[p++] = this.lastRayPose.pos[2];
+        this.rayLinePositions[p++] = end[0];
+        this.rayLinePositions[p++] = end[1];
+        this.rayLinePositions[p++] = end[2];
+      }
+      this.rayLineGeometry.attributes.position.needsUpdate = true;
+      this.rayLineGeometry.computeBoundingSphere();
+    }
+  }
+
   followBase(dt) {
-    if (this.baseBodyId < 0) return;
+    if (!this.followCamera || this.baseBodyId < 0) return;
     const base = new THREE.Vector3(
       this.data.xpos[this.baseBodyId * 3],
       this.data.xpos[this.baseBodyId * 3 + 2],
@@ -819,10 +1307,15 @@ class Go2WDemo {
       frameCount: this.frameCount,
       simTime: this.data.time,
       activeGeoms: this.activeGeoms,
+      policyId: this.policyId,
+      policyName: this.activePolicy().name,
       policyPending: this.policyPending,
       policyFailed: this.policyFailed,
       policyRuns: this.policyRuns,
       lastPolicyDurationMs: this.lastPolicyDurationMs,
+      rayConvention: this.rayConvention?.name || null,
+      rayMean: meanPositive(this.rayImage),
+      followCamera: this.followCamera,
       base: baseOffset >= 0 ? [
         this.data.xpos[baseOffset],
         this.data.xpos[baseOffset + 1],
@@ -849,8 +1342,8 @@ class Go2WDemo {
 class HistoryBuffer {
   constructor(width, length) {
     this.width = width;
-    this.length = length;
-    this.size = width * length;
+    this.length = Math.max(1, length);
+    this.size = width * this.length;
     this.buffer = new Float32Array(this.size);
     this.pointer = 0;
     this.empty = true;
@@ -879,6 +1372,46 @@ class HistoryBuffer {
       const src = ((this.pointer + i) % this.length) * this.width;
       out.set(this.buffer.subarray(src, src + this.width), i * this.width);
     }
+    return out;
+  }
+}
+
+class ImageHistoryBuffer {
+  constructor(width, historyLength) {
+    this.width = width;
+    this.historyLength = Math.max(0, historyLength);
+    this.buffer = new Float32Array(this.width * this.historyLength);
+    this.pointer = 0;
+    this.empty = true;
+  }
+
+  reset(frame) {
+    if (this.historyLength <= 0) return;
+    for (let i = 0; i < this.historyLength; i += 1) {
+      this.buffer.set(frame, i * this.width);
+    }
+    this.pointer = 0;
+    this.empty = false;
+  }
+
+  push(frame) {
+    if (this.historyLength <= 0) return;
+    if (frame.length !== this.width) {
+      throw new Error(`Image history width mismatch: expected ${this.width}, got ${frame.length}`);
+    }
+    if (this.empty) this.reset(frame);
+    this.buffer.set(frame, this.pointer * this.width);
+    this.pointer = (this.pointer + 1) % this.historyLength;
+  }
+
+  flatWithCurrent(frame) {
+    if (this.historyLength <= 0) return new Float32Array(frame);
+    const out = new Float32Array(this.width * (this.historyLength + 1));
+    for (let i = 0; i < this.historyLength; i += 1) {
+      const src = ((this.pointer + i) % this.historyLength) * this.width;
+      out.set(this.buffer.subarray(src, src + this.width), i * this.width);
+    }
+    out.set(frame, this.width * this.historyLength);
     return out;
   }
 }
@@ -914,6 +1447,50 @@ function clamp(value, min, max) {
 function clampFinite(value, min, max) {
   if (!Number.isFinite(value)) return 0;
   return clamp(value, min, max);
+}
+
+function normalizeDepth(value) {
+  if (!Number.isFinite(value) || value < RAY_MIN_DIST || value > RAY_MAX_DIST) return 0;
+  return (value - RAY_MIN_DIST) / (RAY_MAX_DIST - RAY_MIN_DIST);
+}
+
+function normalize3(vec) {
+  const len = Math.hypot(vec[0], vec[1], vec[2]);
+  if (len <= 1.0e-9) return [0, 0, 0];
+  return [vec[0] / len, vec[1] / len, vec[2] / len];
+}
+
+function dot3(a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+function mulMat3Vec3(mat, vec) {
+  return [
+    mat[0] * vec[0] + mat[1] * vec[1] + mat[2] * vec[2],
+    mat[3] * vec[0] + mat[4] * vec[1] + mat[5] * vec[2],
+    mat[6] * vec[0] + mat[7] * vec[1] + mat[8] * vec[2],
+  ];
+}
+
+function depthColor(value) {
+  if (value <= 0) return [10, 14, 12];
+  const t = clamp(value, 0, 1);
+  const r = Math.round(38 + 205 * t);
+  const g = Math.round(92 + 142 * (1 - Math.abs(t - 0.5) * 1.6));
+  const b = Math.round(72 + 42 * (1 - t));
+  return [r, g, b];
+}
+
+function meanPositive(values) {
+  let sum = 0;
+  let count = 0;
+  for (const value of values) {
+    if (value > 0) {
+      sum += value;
+      count += 1;
+    }
+  }
+  return count > 0 ? sum / count : 0;
 }
 
 const demo = new Go2WDemo();
