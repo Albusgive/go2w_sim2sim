@@ -21,12 +21,31 @@ function toConfigMap(rawConfigs) {
 }
 
 async function createSession(url) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`${response.status} ${response.url}`);
-  const modelBuffer = await response.arrayBuffer();
+  const modelBuffer = await fetchArrayBufferWithRetry(url);
   return self.ort.InferenceSession.create(modelBuffer, {
     executionProviders: ['wasm'],
     graphOptimizationLevel: 'all',
+  });
+}
+
+async function fetchArrayBufferWithRetry(url, attempts = 5) {
+  let lastError = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`${response.status} ${response.url}`);
+      return await response.arrayBuffer();
+    } catch (error) {
+      lastError = error;
+      await delay(350 * (attempt + 1));
+    }
+  }
+  throw new Error(`${url}: ${lastError?.message || 'failed to fetch policy model'}`);
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    self.setTimeout(resolve, ms);
   });
 }
 
