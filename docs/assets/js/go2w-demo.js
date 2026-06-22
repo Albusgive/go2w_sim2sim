@@ -115,7 +115,7 @@ const POLICY_CONFIGS = [
   },
 ];
 
-const DEFAULT_POLICY_ID = 2;
+const DEFAULT_POLICY_ID = 0;
 const SIM_DT = 0.005;
 const POLICY_DECIMATION = 4;
 const MOTION_OBS_PREFIX_DIM = 24 + 1 + 3 + 6;
@@ -128,8 +128,11 @@ const RAY_MAX_DIST = 1.5;
 const RAY_FOCAL = 1.0;
 const RAY_HORIZONTAL_APERTURE = 2.0;
 const RAY_VERTICAL_APERTURE = 1.154700538;
+const RAY_UPDATE_DT = 0.02;
 const RAY_VIS_STRIDE_X = 4;
 const RAY_VIS_STRIDE_Y = 3;
+const CTRL_LIMIT = 23.7;
+const VISUAL_UPDATE_INTERVAL = 20;
 
 const LEG_POS_SENSOR_NAMES = [
   'FL_hip_joint_pos',
@@ -224,7 +227,6 @@ const GEOM_BOX = 6;
 const GEOM_MESH = 7;
 const GEOM_LINE = 100;
 const TMP_MAT4 = new THREE.Matrix4();
-const TMP_RAY_GROUP = [1, 1, 1, 1, 1, 1];
 
 const $ = (id) => document.getElementById(id);
 const POLICY_BY_ID = new Map(POLICY_CONFIGS.map((policy) => [policy.id, policy]));
@@ -253,6 +255,7 @@ class Go2WDemo {
     this.policyLoading = new Map();
     this.policySeq = 0;
     this.policyRuns = 0;
+    this.policyRequestStartedAt = 0;
     this.lastPolicyDurationMs = 0;
     this.lastRawAction = new Float32Array(16);
     this.currentCtrl = new Float32Array(ACT_DEFAULT_DOF_POS);
@@ -266,11 +269,18 @@ class Go2WDemo {
     this.cameraId = -1;
     this.cameraBodyId = -1;
     this.frameCount = 0;
+    this.lastFrameWallTime = 0;
+    this.frameError = null;
+    this.frameStage = 'init';
     this.rayImage = new Float32Array(RAY_SIZE);
     this.rayRawImage = new Float32Array(RAY_SIZE);
     this.rayHitPoints = new Array(RAY_SIZE);
     this.rayDirty = false;
     this.rayConvention = null;
+    this.rayLastUpdateTime = -Infinity;
+    this.rayLocalDirsByConvention = new Map();
+    this.rayTerrainMeshes = [];
+    this.threeRaycaster = new THREE.Raycaster();
     this.rayCanvasImage = this.rayCanvas?.getContext('2d')?.createImageData(RAY_WIDTH, RAY_HEIGHT) || null;
     this.rayCtx = this.rayCanvas?.getContext('2d') || null;
   }
@@ -279,6 +289,7 @@ class Go2WDemo {
     this.setStatus('Loading', 'Loading MuJoCo');
 
     this.mujoco = await loadMujoco();
+    window.__go2wApp = this;
     this.ensureDir('/working');
     this.ensureDir('/working/assets');
     await this.loadFiles();
@@ -302,7 +313,8 @@ class Go2WDemo {
 
     window.__go2wDemoReady = true;
     this.setStatus('Ready', 'MuJoCo + ONNX policy ready', 'ready');
-    this.renderer.setAnimationLoop(() => this.frame());
+    this.renderer.setAnimationLoop(() => this.safeFrame());
+    this.startFrameWatchdog();
   }
 
   activePolicy() {
@@ -345,6 +357,8 @@ class Go2WDemo {
       new THREE.MeshLambertMaterial({ color: 0xd4ddd0 }),
     );
     ground.name = 'Ground Plane';
+    ground.userData.isRayTerrain = true;
+    this.groundMesh = ground;
     this.mujocoRoot.add(ground);
 
     this.controls = new OrbitControls(this.camera, this.canvas);
@@ -481,6 +495,7 @@ class Go2WDemo {
     this.policyId = policyId;
     this.policySeq += 1;
     this.policyPending = false;
+    this.policyRequestStartedAt = 0;
     this.policyFailed = false;
     this.lastRawAction.fill(0);
     this.currentCtrl.set(ACT_DEFAULT_DOF_POS);
@@ -639,6 +654,7 @@ class Go2WDemo {
   async resetActivePolicyState() {
     this.policySeq += 1;
     this.policyPending = false;
+    this.policyRequestStartedAt = 0;
     this.lastRawAction.fill(0);
     this.currentCtrl.set(ACT_DEFAULT_DOF_POS);
     this.policyRuns = 0;
@@ -658,6 +674,7 @@ class Go2WDemo {
       if (data.seq !== undefined && data.seq !== this.policySeq) return;
       this.policyFailed = true;
       this.policyPending = false;
+      this.policyRequestStartedAt = 0;
       this.setStatus('Policy Error', data.message, 'error');
       return;
     }
@@ -671,6 +688,7 @@ class Go2WDemo {
     this.policyRuns += 1;
     this.applyAction(this.lastRawAction);
     this.policyPending = false;
+    this.policyRequestStartedAt = 0;
     const policy = this.activePolicy();
     this.policyReadout.textContent =
       `policy ${policy.id}: ${policy.name} · worker ${this.lastPolicyDurationMs.toFixed(0)}ms`;
@@ -740,39 +758,52 @@ class Go2WDemo {
     }
 
     let meshIndex = 0;
+    this.rayTerrainMeshes = this.groundMesh ? [this.groundMesh] : [];
     for (let i = 0; i < this.mjvScene.ngeom; i += 1) {
       const geom = this.mjvScene.geoms.get(i);
-      if (!geom || geom.type >= GEOM_LINE) continue;
-      if (geom.type === GEOM_PLANE) continue;
+      try {
+        if (!geom || geom.type >= GEOM_LINE) continue;
+        if (geom.type === GEOM_PLANE) continue;
 
-      const mesh = this.getOrCreateVisualMesh(meshIndex);
-      meshIndex += 1;
+        const mesh = this.getOrCreateVisualMesh(meshIndex);
+        meshIndex += 1;
 
-      const geometry = this.geometryForVisualGeom(geom);
-      if (mesh.geometry !== geometry) mesh.geometry = geometry;
-      this.scaleVisualMesh(mesh, geom);
+        const geometry = this.geometryForVisualGeom(geom);
+        if (mesh.geometry !== geometry) mesh.geometry = geometry;
+        this.scaleVisualMesh(mesh, geom);
 
-      mesh.position.set(geom.pos[0], geom.pos[1], geom.pos[2]);
-      TMP_MAT4.set(
-        geom.mat[0], geom.mat[1], geom.mat[2], 0,
-        geom.mat[3], geom.mat[4], geom.mat[5], 0,
-        geom.mat[6], geom.mat[7], geom.mat[8], 0,
-        0, 0, 0, 1,
-      );
-      mesh.quaternion.setFromRotationMatrix(TMP_MAT4);
+        mesh.position.set(geom.pos[0], geom.pos[1], geom.pos[2]);
+        TMP_MAT4.set(
+          geom.mat[0], geom.mat[1], geom.mat[2], 0,
+          geom.mat[3], geom.mat[4], geom.mat[5], 0,
+          geom.mat[6], geom.mat[7], geom.mat[8], 0,
+          0, 0, 0, 1,
+        );
+        mesh.quaternion.setFromRotationMatrix(TMP_MAT4);
 
-      const opacity = geom.rgba[3];
-      const transparent = opacity < 1;
-      mesh.material.color.setRGB(geom.rgba[0], geom.rgba[1], geom.rgba[2]);
-      if (mesh.material.opacity !== opacity || mesh.material.transparent !== transparent) {
-        mesh.material.opacity = opacity;
-        mesh.material.transparent = transparent;
-        mesh.material.needsUpdate = true;
+        const opacity = geom.rgba[3];
+        const transparent = opacity < 1;
+        mesh.material.color.setRGB(geom.rgba[0], geom.rgba[1], geom.rgba[2]);
+        if (mesh.material.opacity !== opacity || mesh.material.transparent !== transparent) {
+          mesh.material.opacity = opacity;
+          mesh.material.transparent = transparent;
+          mesh.material.needsUpdate = true;
+        }
+        mesh.userData.isRayTerrain = this.isTerrainRayGeom(geom.objid);
+        if (mesh.userData.isRayTerrain) this.rayTerrainMeshes.push(mesh);
+        mesh.visible = true;
+      } finally {
+        if (geom && typeof geom.delete === 'function') geom.delete();
       }
-      mesh.visible = true;
     }
 
     this.activeGeoms = meshIndex;
+  }
+
+  isTerrainRayGeom(geomId) {
+    if (!Number.isInteger(geomId) || geomId < 0 || !this.model.geom_bodyid) return false;
+    const group = this.model.geom_group?.[geomId] ?? 0;
+    return this.model.geom_bodyid[geomId] === 0 && group <= 1;
   }
 
   getOrCreateVisualMesh(index) {
@@ -881,6 +912,7 @@ class Go2WDemo {
     this.physicsAccumulator = 0;
     this.physicsStep = 0;
     this.policyPending = false;
+    this.policyRequestStartedAt = 0;
     this.policyFailed = false;
     this.policySeq += 1;
     this.policyRuns = 0;
@@ -891,8 +923,9 @@ class Go2WDemo {
     this.setInitialPose();
     this.applyAction(this.lastRawAction);
     this.mujoco.mj_forward(this.model, this.data);
+    this.rayLastUpdateTime = -Infinity;
     this.resetObservationHistory();
-    this.computeRaycasterImage();
+    this.refreshRaycasterImage(true);
     this.updateRayVisualization();
     if (resetWorker && this.policyWorkerReady) {
       this.policyWorker.postMessage({ type: 'reset', policyId: null });
@@ -900,17 +933,57 @@ class Go2WDemo {
     this.setStatus('Ready', 'Simulation reset', 'ready');
   }
 
+  safeFrame() {
+    try {
+      this.frameStage = 'frame';
+      this.frame();
+      this.frameError = null;
+      if (this.statusPill.textContent === 'Runtime Error') {
+        this.setStatus('Ready', 'Recovered after a transient browser runtime error', 'ready');
+      }
+    } catch (error) {
+      this.frameError = error;
+      console.error(error);
+      this.policyPending = false;
+      this.policyRequestStartedAt = 0;
+      this.setStatus('Runtime Error', error?.message || String(error), 'error');
+    }
+  }
+
+  startFrameWatchdog() {
+    window.setInterval(() => {
+      if (!window.__go2wDemoReady || !this.renderer || document.hidden) return;
+      if (performance.now() - this.lastFrameWallTime > 1000) {
+        window.requestAnimationFrame(() => this.safeFrame());
+      }
+    }, 1000);
+  }
+
   frame() {
+    this.lastFrameWallTime = performance.now();
     const dt = Math.min(this.clock.getDelta(), 0.04);
     this.frameCount += 1;
+    this.frameStage = 'keyboard';
     this.updateKeyboardCommand();
+    this.frameStage = 'physics';
     this.stepSimulation(dt * this.realtime);
-    this.updateVisualScene();
+    const unsafe = this.needsVisualGuard();
+    if (unsafe) {
+      if (this.needsSafetyReset()) this.stopUnsafeSimulation();
+    } else if (this.frameCount % VISUAL_UPDATE_INTERVAL === 1) {
+      this.frameStage = 'visual';
+      this.updateVisualScene();
+    }
+    this.frameStage = 'follow';
     this.followBase(dt);
     this.controls.update();
+    this.frameStage = 'ray-vis';
     this.updateRayVisualization();
+    this.frameStage = 'render';
     this.renderer.render(this.scene, this.camera);
+    this.frameStage = 'stats';
     this.updateRuntimeStats();
+    this.frameStage = 'idle';
   }
 
   setInitialPose() {
@@ -935,18 +1008,61 @@ class Go2WDemo {
     this.physicsAccumulator = Math.min(this.physicsAccumulator + dt, 0.08);
     let steps = 0;
     while (this.physicsAccumulator >= SIM_DT && steps < 24) {
+      if (this.needsSafetyReset()) {
+        this.stopUnsafeSimulation();
+        this.physicsAccumulator = 0;
+        break;
+      }
       if (this.physicsStep % POLICY_DECIMATION === 0) {
+        this.frameStage = 'policy-request';
         this.requestPolicyStep();
       }
+      this.frameStage = 'mj-step';
       this.mujoco.mj_step(this.model, this.data);
+      this.wrapWheelJointPositions();
       this.physicsStep += 1;
       steps += 1;
       this.physicsAccumulator -= SIM_DT;
+    }
+    this.frameStage = 'ray-refresh';
+    this.refreshRaycasterImage();
+  }
+
+  needsSafetyReset() {
+    if (!this.data || this.baseBodyId < 0) return false;
+    return hasNonFinite(this.data.qpos) ||
+      hasNonFinite(this.data.qvel) ||
+      maxAbs(this.data.qvel) > 80 ||
+      maxAbs(this.data.ctrl) > 120;
+  }
+
+  needsVisualGuard() {
+    if (!this.data || this.baseBodyId < 0) return false;
+    const baseOffset = this.baseBodyId * 3;
+    const baseZ = this.data.xpos[baseOffset + 2];
+    return !Number.isFinite(baseZ) || baseZ < 0.36 || this.needsSafetyReset();
+  }
+
+  stopUnsafeSimulation() {
+    for (let i = 0; i < this.data.ctrl.length; i += 1) this.data.ctrl[i] = 0;
+    this.policyPending = false;
+    this.policyRequestStartedAt = 0;
+  }
+
+  wrapWheelJointPositions() {
+    for (const name of WHEEL_JOINTS) {
+      const adr = this.jointAdr.get(name);
+      if (adr !== undefined) this.data.qpos[adr] = wrapPi(this.data.qpos[adr]);
     }
   }
 
   requestPolicyStep() {
     const policy = this.activePolicy();
+    if (this.policyPending && performance.now() - this.policyRequestStartedAt > 500) {
+      this.policyPending = false;
+      this.policyRequestStartedAt = 0;
+      this.policySeq += 1;
+    }
     if (
       !this.policyWorker ||
       !this.policyWorkerReady ||
@@ -961,20 +1077,27 @@ class Go2WDemo {
     const seq = this.policySeq + 1;
     this.policySeq = seq;
     this.policyPending = true;
-    this.policyWorker.postMessage({
-      type: 'run',
-      policyId: policy.id,
-      seq,
-      obs: obs.buffer,
-      dims: [1, policy.obsDim],
-    }, [obs.buffer]);
+    this.policyRequestStartedAt = performance.now();
+    try {
+      this.policyWorker.postMessage({
+        type: 'run',
+        policyId: policy.id,
+        seq,
+        obs: obs.buffer,
+        dims: [1, policy.obsDim],
+      }, [obs.buffer]);
+    } catch (error) {
+      this.policyPending = false;
+      this.policyRequestStartedAt = 0;
+      throw error;
+    }
   }
 
   applyAction(rawAction) {
     const scale = this.activePolicy().actionScale || POLICY_CONFIGS[0].actionScale;
     for (let i = 0; i < 16 && i < this.data.ctrl.length; i += 1) {
       const target = ACT_DEFAULT_DOF_POS[i] + rawAction[i] * scale[i];
-      this.currentCtrl[i] = clampFinite(target, -100, 100);
+      this.currentCtrl[i] = clampFinite(target, -CTRL_LIMIT, CTRL_LIMIT);
       this.data.ctrl[i] = this.currentCtrl[i];
     }
   }
@@ -997,7 +1120,7 @@ class Go2WDemo {
     this.visualHistLastAction = new HistoryBuffer(16, policy.vectorHistory);
     this.visualImageHistory = new ImageHistoryBuffer(RAY_SIZE, Math.max(policy.imageHistory, 0));
     this.pushVisualObservationTerms();
-    const image = this.computeRaycasterImage();
+    const image = this.refreshRaycasterImage(true);
     this.visualImageHistory.reset(image);
   }
 
@@ -1027,7 +1150,7 @@ class Go2WDemo {
 
   buildVisualObservation(policy) {
     this.pushVisualObservationTerms();
-    const image = this.computeRaycasterImage();
+    const image = this.refreshRaycasterImage();
     const imageObs = policy.imageHistory > 0
       ? this.visualImageHistory.flatWithCurrent(image)
       : image;
@@ -1108,8 +1231,20 @@ class Go2WDemo {
     return values;
   }
 
+  refreshRaycasterImage(force = false) {
+    if (!this.data) return this.rayImage;
+    if (!force && this.data.time - this.rayLastUpdateTime < RAY_UPDATE_DT) {
+      return this.rayImage;
+    }
+    return this.computeRaycasterImage();
+  }
+
   computeRaycasterImage() {
     if (!this.model || !this.data || this.cameraId < 0) return this.rayImage;
+    if (this.needsVisualGuard()) {
+      if (this.needsSafetyReset()) this.stopUnsafeSimulation();
+      return this.rayImage;
+    }
     const pose = this.cameraPoseMujoco();
     if (!pose) return this.rayImage;
     if (!this._rayGeomId) this._rayGeomId = new Int32Array(1);
@@ -1118,38 +1253,26 @@ class Go2WDemo {
     }
 
     const centerDir = this.cameraRayDir(0, 0, pose.mat, this.rayConvention);
+    const localDirs = this.rayLocalDirs(this.rayConvention);
+    const dir = this._rayDir || (this._rayDir = [0, 0, 0]);
     for (let row = 0; row < RAY_HEIGHT; row += 1) {
-      const v = (0.5 - (row + 0.5) / RAY_HEIGHT) * RAY_VERTICAL_APERTURE;
       for (let col = 0; col < RAY_WIDTH; col += 1) {
-        const u = ((col + 0.5) / RAY_WIDTH - 0.5) * RAY_HORIZONTAL_APERTURE;
         const index = row * RAY_WIDTH + col;
-        const dir = this.cameraRayDir(u, v, pose.mat, this.rayConvention);
-        this._rayGeomId[0] = -1;
-        const dist = this.mujoco.mj_ray(
-          this.model,
-          this.data,
-          pose.pos,
-          dir,
-          TMP_RAY_GROUP,
-          1,
-          this.baseBodyId,
-          this._rayGeomId,
-        );
+        this.cameraRayDirFromLocal(localDirs, index, pose.mat, dir);
+        this.frameStage = 'three-ray';
+        const hit = this.raycastTerrain(pose.pos, dir);
+        const dist = hit ? hit.distance : -1;
         const planeDist = dist > 0 ? dist * Math.max(0.05, dot3(dir, centerDir)) : 0;
         this.rayRawImage[index] = planeDist;
         this.rayImage[index] = normalizeDepth(planeDist);
-        this.rayHitPoints[index] = dist > 0
-          ? [
-            pose.pos[0] + dir[0] * dist,
-            pose.pos[1] + dir[1] * dist,
-            pose.pos[2] + dir[2] * dist,
-          ]
-          : null;
+        this.rayHitPoints[index] = hit ? hit.pointMujoco : null;
       }
     }
     this.lastRayPose = pose;
+    this.frameStage = 'ray-finished';
+    this.rayLastUpdateTime = this.data.time;
     this.rayDirty = true;
-    return new Float32Array(this.rayImage);
+    return this.rayImage;
   }
 
   cameraPoseMujoco() {
@@ -1218,6 +1341,8 @@ class Go2WDemo {
       { name: '+y', local: (u, v) => normalize3([u, RAY_FOCAL, v]) },
       { name: '-y', local: (u, v) => normalize3([u, -RAY_FOCAL, v]) },
     ];
+    const cameraLike = conventions.find((convention) => convention.name === '-y');
+    if (!this.rayTerrainMeshes.length) return cameraLike || conventions[0];
     let best = conventions[0];
     let bestScore = -Infinity;
     const sample = [-0.6, 0, 0.6];
@@ -1226,17 +1351,8 @@ class Go2WDemo {
       for (const u of sample) {
         for (const v of sample) {
           const dir = this.cameraRayDir(u, v, pose.mat, convention);
-          this._rayGeomId[0] = -1;
-          const dist = this.mujoco.mj_ray(
-            this.model,
-            this.data,
-            pose.pos,
-            dir,
-            TMP_RAY_GROUP,
-            1,
-            this.baseBodyId,
-            this._rayGeomId,
-          );
+          const hit = this.raycastTerrain(pose.pos, dir);
+          const dist = hit ? hit.distance : -1;
           if (dist > 0 && dist < 4.0) score += 1;
           if (dist >= RAY_MIN_DIST && dist <= RAY_MAX_DIST) score += 2;
         }
@@ -1251,6 +1367,52 @@ class Go2WDemo {
 
   cameraRayDir(u, v, mat, convention) {
     return normalize3(mulMat3Vec3(mat, convention.local(u, v)));
+  }
+
+  raycastTerrain(posMujoco, dirMujoco) {
+    if (!this.rayTerrainMeshes.length) return null;
+    const origin = mujocoToThreePoint(posMujoco);
+    const direction = mujocoToThreeVector(dirMujoco);
+    this.threeRaycaster.set(origin, direction);
+    this.threeRaycaster.near = RAY_MIN_DIST;
+    this.threeRaycaster.far = RAY_MAX_DIST;
+    const hits = this.threeRaycaster.intersectObjects(this.rayTerrainMeshes, false);
+    if (!hits.length) return null;
+    const hit = hits[0];
+    return {
+      distance: hit.distance,
+      pointMujoco: threeToMujocoPoint(hit.point),
+    };
+  }
+
+  rayLocalDirs(convention) {
+    const key = convention.name;
+    if (this.rayLocalDirsByConvention.has(key)) return this.rayLocalDirsByConvention.get(key);
+    const localDirs = new Float32Array(RAY_SIZE * 3);
+    for (let row = 0; row < RAY_HEIGHT; row += 1) {
+      const v = (0.5 - (row + 0.5) / RAY_HEIGHT) * RAY_VERTICAL_APERTURE;
+      for (let col = 0; col < RAY_WIDTH; col += 1) {
+        const u = ((col + 0.5) / RAY_WIDTH - 0.5) * RAY_HORIZONTAL_APERTURE;
+        const local = convention.local(u, v);
+        const offset = (row * RAY_WIDTH + col) * 3;
+        localDirs[offset] = local[0];
+        localDirs[offset + 1] = local[1];
+        localDirs[offset + 2] = local[2];
+      }
+    }
+    this.rayLocalDirsByConvention.set(key, localDirs);
+    return localDirs;
+  }
+
+  cameraRayDirFromLocal(localDirs, index, mat, out) {
+    const offset = index * 3;
+    const x = localDirs[offset];
+    const y = localDirs[offset + 1];
+    const z = localDirs[offset + 2];
+    out[0] = mat[0] * x + mat[1] * y + mat[2] * z;
+    out[1] = mat[3] * x + mat[4] * y + mat[5] * z;
+    out[2] = mat[6] * x + mat[7] * y + mat[8] * z;
+    return out;
   }
 
   updateRayVisualization() {
@@ -1315,8 +1477,13 @@ class Go2WDemo {
       policyFailed: this.policyFailed,
       policyRuns: this.policyRuns,
       lastPolicyDurationMs: this.lastPolicyDurationMs,
+      frameError: this.frameError?.message || null,
+      frameStage: this.frameStage,
       rayConvention: this.rayConvention?.name || null,
       rayMean: meanPositive(this.rayImage),
+      qposMaxAbs: maxAbs(this.data.qpos),
+      qvelMaxAbs: maxAbs(this.data.qvel),
+      ctrlMaxAbs: maxAbs(this.data.ctrl),
       followCamera: this.followCamera,
       base: baseOffset >= 0 ? [
         this.data.xpos[baseOffset],
@@ -1474,6 +1641,18 @@ function mulMat3Vec3(mat, vec) {
   ];
 }
 
+function mujocoToThreePoint(pos) {
+  return new THREE.Vector3(pos[0], pos[2], -pos[1]);
+}
+
+function mujocoToThreeVector(vec) {
+  return new THREE.Vector3(vec[0], vec[2], -vec[1]).normalize();
+}
+
+function threeToMujocoPoint(point) {
+  return [point.x, -point.z, point.y];
+}
+
 function depthColor(value) {
   if (value <= 0) return [10, 14, 12];
   const t = clamp(value, 0, 1);
@@ -1493,6 +1672,27 @@ function meanPositive(values) {
     }
   }
   return count > 0 ? sum / count : 0;
+}
+
+function maxAbs(values) {
+  let max = 0;
+  for (const value of values) {
+    const abs = Math.abs(value);
+    if (Number.isFinite(abs) && abs > max) max = abs;
+  }
+  return max;
+}
+
+function hasNonFinite(values) {
+  for (const value of values) {
+    if (!Number.isFinite(value)) return true;
+  }
+  return false;
+}
+
+function wrapPi(value) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.atan2(Math.sin(value), Math.cos(value));
 }
 
 const demo = new Go2WDemo();
