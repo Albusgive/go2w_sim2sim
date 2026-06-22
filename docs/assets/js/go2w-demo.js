@@ -539,14 +539,16 @@ class Go2WDemo {
 
   async loadFiles() {
     const textFiles = ['scene_parkour.xml', 'go2w.xml'].map(async (name) => {
-      const text = await fetch(`demo-assets/scenes/${name}`).then((r) => checked(r).text());
+      const text = await fetchWithRetry(`demo-assets/scenes/${name}`, 'text');
       this.mujoco.FS.writeFile(`/working/${name}`, text);
     });
-    const assetFiles = ASSET_NAMES.map(async (name) => {
-      const buffer = await fetch(`demo-assets/scenes/assets/${name}`).then((r) => checked(r).arrayBuffer());
+    await Promise.all(textFiles);
+
+    const assetFiles = ASSET_NAMES.map((name) => async () => {
+      const buffer = await fetchWithRetry(`demo-assets/scenes/assets/${name}`, 'arrayBuffer');
       this.mujoco.FS.writeFile(`/working/assets/${name}`, new Uint8Array(buffer));
     });
-    await Promise.all([...textFiles, ...assetFiles]);
+    await runLimited(assetFiles, 4);
   }
 
   cacheJointAddresses() {
@@ -1607,6 +1609,38 @@ function checked(response) {
     throw new Error(`${response.status} ${response.url}`);
   }
   return response;
+}
+
+async function fetchWithRetry(url, bodyType, attempts = 4) {
+  let lastError = null;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = checked(await fetch(url));
+      return await response[bodyType]();
+    } catch (error) {
+      lastError = error;
+      await delay(250 * (attempt + 1));
+    }
+  }
+  throw lastError || new Error(`Failed to fetch ${url}`);
+}
+
+async function runLimited(tasks, limit) {
+  let next = 0;
+  const workers = new Array(Math.min(limit, tasks.length)).fill(0).map(async () => {
+    while (next < tasks.length) {
+      const index = next;
+      next += 1;
+      await tasks[index]();
+    }
+  });
+  await Promise.all(workers);
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function clamp(value, min, max) {
