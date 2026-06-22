@@ -93,6 +93,19 @@
       }
     }
   </script>
+  <script>
+    (() => {
+      const NativeWorker = window.Worker;
+      window.Worker = function go2wWorker(url, options) {
+        const workerUrl = String(url);
+        if (workerUrl.includes('policy-worker.js?v=visual-sru-1')) {
+          return new NativeWorker('assets/js/policy-worker.js?v=visual-sru-2', options);
+        }
+        return new NativeWorker(url, options);
+      };
+      window.Worker.prototype = NativeWorker.prototype;
+    })();
+  </script>
   <script type="module" src="assets/js/go2w-demo.js?v=visual-sru-5"></script>
 </body>
 </html>
