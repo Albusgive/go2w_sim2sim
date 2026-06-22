@@ -38,9 +38,9 @@
     <section class="control-group">
       <h2>Policy Slot</h2>
       <div class="policy-grid" id="policy-grid">
-        <button type="button" data-policy="0">motion_mlp</button>
+        <button type="button" data-policy="0" class="active">motion_mlp</button>
         <button type="button" data-policy="1">vtm</button>
-        <button type="button" data-policy="2" class="active">vtm_lstm_sru</button>
+        <button type="button" data-policy="2">vtm_lstm_sru</button>
         <button type="button" data-policy="3">vtm_gru_sru</button>
       </div>
     </section>
@@ -62,7 +62,7 @@
     </section>
 
     <div class="hud-line">
-      <span id="policy-readout">policy 2: vtm_lstm_sru</span>
+      <span id="policy-readout">policy 0: motion_mlp</span>
       <span>MuJoCo WASM + ONNX Runtime Web</span>
     </div>
     <p id="error-readout" class="error-readout" hidden></p>
@@ -93,6 +93,6 @@
       }
     }
   </script>
-  <script type="module" src="assets/js/go2w-demo.js?v=visual-sru-2"></script>
+  <script type="module" src="assets/js/go2w-demo.js?v=visual-sru-3"></script>
 </body>
 </html>
