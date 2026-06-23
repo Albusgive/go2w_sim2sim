@@ -1,5 +1,5 @@
 (function installGo2WDemoOptimizer() {
-  const VERSION = 'preload-ray-2';
+  const VERSION = 'preload-ray-10';
   const RAY_WIDTH = 32;
   const RAY_HEIGHT = 18;
   const RAY_MIN_DIST = 0.1;
@@ -9,12 +9,13 @@
   const RAY_UPDATE_WALL_MS_MAX = 140;
   const RAY_SLOW_FRAME_MS = 8;
   const RAY_FAST_FRAME_MS = 3;
-  const MAX_BASE_XY = 12.0;
-  const MAX_BASE_Y = 5.5;
-  const MIN_SAFE_BASE_Z = 0.15;
+  const MAX_BASE_XY = 7.0;
+  const MAX_BASE_Y = 4.8;
+  const MIN_SAFE_BASE_Z = 0.25;
   const MAX_QVEL = 60;
   const MAX_CTRL = 90;
   const RECOVERY_COOLDOWN_MS = 1200;
+  const RAY_GEOMGROUP = [1, 1, 0, 0, 0, 0];
 
   function normalize3(vec) {
     const len = Math.hypot(vec[0], vec[1], vec[2]);
@@ -91,13 +92,29 @@
   function snapFollowCameraToBase(demo) {
     const base = basePosition(demo);
     if (!base || !demo.camera || !demo.controls) return;
-    demo.controls.target.set(base[0], base[2], -base[1]);
-    demo.camera.position.set(base[0] - 2.4, base[2] + 1.45, -base[1] + 2.2);
+    demo.controls.target.set(base[0], base[2] + 0.22, -base[1]);
+    demo.camera.position.set(base[0] - 1.55, base[2] + 1.05, -base[1] + 1.65);
     demo.controls.update();
+  }
+
+  function syncCommandFromControls(demo) {
+    if (!demo?.cmd) return;
+    const cmdX = document.getElementById('cmd-x');
+    const cmdY = document.getElementById('cmd-y');
+    const cmdYaw = document.getElementById('cmd-yaw');
+    demo.cmd.x = Number(cmdX?.value || 0);
+    demo.cmd.y = Number(cmdY?.value || 0);
+    demo.cmd.yaw = Number(cmdYaw?.value || 0);
   }
 
   function installLegacyRuntimePatch(demo) {
     demo.rayConvention = cameraConvention;
+    syncCommandFromControls(demo);
+    if (demo.mjvOption?.geomgroup && demo.mjvOption.geomgroup.length > 3) {
+      demo.mjvOption.geomgroup[2] = 1;
+      demo.mjvOption.geomgroup[3] = 1;
+      demo.updateVisualScene?.();
+    }
     demo.rayLocalDirsByConvention?.clear?.();
     demo.__lastRayOptimizerWallMs = 0;
     demo.__lastRayOptimizerDurationMs = 0;
@@ -180,6 +197,40 @@
       };
     }
 
+    const originalUpdateVisualScene = demo.updateVisualScene?.bind(demo);
+    if (originalUpdateVisualScene && !demo.__optimizerVisualWrapped) {
+      demo.__optimizerVisualWrapped = true;
+      demo.updateVisualScene = function updateVisualSceneOptimized() {
+        originalUpdateVisualScene();
+        for (const mesh of this.geomPool || []) {
+          if (!mesh?.visible || mesh.userData?.isRayTerrain) continue;
+          mesh.material.color.setHex(0x263238);
+          mesh.material.opacity = 1;
+          mesh.material.transparent = false;
+          mesh.material.needsUpdate = true;
+        }
+      };
+    }
+
+    const originalSafeFrame = demo.safeFrame?.bind(demo);
+    if (originalSafeFrame && !demo.__optimizerSafeFrameWrapped) {
+      demo.__optimizerSafeFrameWrapped = true;
+      demo.safeFrame = function safeFrameRecovering() {
+        originalSafeFrame();
+        if (this.statusPill?.textContent !== 'Runtime Error') return;
+        const message = this.errorReadout?.textContent || this.frameError?.message || 'runtime error';
+        this.policyPending = false;
+        this.policyRequestStartedAt = 0;
+        this.__recoveryCount = (this.__recoveryCount || 0) + 1;
+        this.__lastRecoveryReason = message;
+        if (originalResetBrowserPose) originalResetBrowserPose({ resetWorker: true });
+        if (this.setFollowCamera) this.setFollowCamera(true);
+        snapFollowCameraToBase(this);
+        this.frameError = null;
+        this.setStatus?.('Ready', `Recovered from ${message}`, 'ready');
+      };
+    }
+
     const originalRefreshRaycasterImage = demo.refreshRaycasterImage?.bind(demo);
     if (originalRefreshRaycasterImage && !demo.__optimizerRayRefreshWrapped) {
       demo.__optimizerRayRefreshWrapped = true;
@@ -214,7 +265,52 @@
     }
 
     demo.raycastTerrain = function raycastTerrainOptimized(posMujoco, dirMujoco) {
+      if (this.mujoco?.mj_ray && this.model && this.data) {
+        if (!this._mjRayPoint) {
+          this._mjRayPoint = new Float64Array(3);
+          this._mjRayVector = new Float64Array(3);
+          this._mjRayGeomGroup = new Uint8Array(RAY_GEOMGROUP);
+          this._mjRayGeomId = new Int32Array(1);
+        }
+        const len = Math.hypot(dirMujoco[0], dirMujoco[1], dirMujoco[2]);
+        if (len <= 1.0e-9) return null;
+        const scale = RAY_MAX_DIST / len;
+        this._mjRayPoint[0] = posMujoco[0];
+        this._mjRayPoint[1] = posMujoco[1];
+        this._mjRayPoint[2] = posMujoco[2];
+        this._mjRayVector[0] = dirMujoco[0] * scale;
+        this._mjRayVector[1] = dirMujoco[1] * scale;
+        this._mjRayVector[2] = dirMujoco[2] * scale;
+        this._mjRayGeomId[0] = -1;
+        const bodyExclude = this.cameraBodyId > 0 ? this.cameraBodyId : -1;
+        const ratio = this.mujoco.mj_ray(
+          this.model,
+          this.data,
+          this._mjRayPoint,
+          this._mjRayVector,
+          this._mjRayGeomGroup,
+          1,
+          bodyExclude,
+          this._mjRayGeomId,
+        );
+        this.rayBackend = 'mujoco-mj_ray';
+        if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1 || this._mjRayGeomId[0] < 0) {
+          return null;
+        }
+        const distance = ratio * RAY_MAX_DIST;
+        return {
+          distance,
+          geomid: this._mjRayGeomId[0],
+          pointMujoco: [
+            posMujoco[0] + dirMujoco[0] * (distance / len),
+            posMujoco[1] + dirMujoco[1] * (distance / len),
+            posMujoco[2] + dirMujoco[2] * (distance / len),
+          ],
+        };
+      }
+
       if (!this.rayTerrainMeshes.length) return null;
+      this.rayBackend = 'three';
       this.threeRaycaster.ray.origin.set(posMujoco[0], posMujoco[2], -posMujoco[1]);
       this.threeRaycaster.ray.direction.set(dirMujoco[0], dirMujoco[2], -dirMujoco[1]).normalize();
       this.threeRaycaster.near = RAY_MIN_DIST;
@@ -243,7 +339,7 @@
         for (let col = 0; col < RAY_WIDTH; col += 1) {
           const index = row * RAY_WIDTH + col;
           this.cameraRayDirFromLocal(localDirs, index, pose.mat, dir);
-          this.frameStage = 'three-ray';
+          this.frameStage = this.mujoco?.mj_ray ? 'mujoco-ray' : 'three-ray';
           const hit = this.raycastTerrain(pose.pos, dir);
           const dist = hit ? hit.distance : -1;
           const planeDist = dist > 0 ? dist * Math.max(0.05, dot3(dir, centerDir)) : 0;
@@ -316,6 +412,7 @@
       window.__go2wRuntime.threadCaps = this.threadCaps || detectThreadCapabilities();
       window.__go2wRuntime.frameMs = this.lastFrameDurationMs || this.__lastFrameOptimizerDurationMs || 0;
       window.__go2wRuntime.rayMs = this.lastRayDurationMs || this.__lastRayOptimizerDurationMs || 0;
+      window.__go2wRuntime.rayBackend = this.rayBackend || null;
       window.__go2wRuntime.rayUpdateWallMs = this.rayUpdateWallMs || this.__rayOptimizerWallMs || null;
       window.__go2wRuntime.unsafeReason = this.unsafeReason || this.__unsafeReason || null;
       window.__go2wRuntime.recoveryCount = this.recoveryCount ?? this.__recoveryCount ?? 0;
