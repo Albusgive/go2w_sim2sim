@@ -5,6 +5,8 @@
   const RAY_MIN_DIST = 0.1;
   const RAY_MAX_DIST = 2.0;
   const RAY_FOCAL = 1.0;
+  const RAY_HORIZONTAL_APERTURE = 2.0;
+  const RAY_VERTICAL_APERTURE = 1.1547005;
   const RAY_UPDATE_WALL_MS_MIN = 50;
   const RAY_UPDATE_WALL_MS_MAX = 140;
   const RAY_SLOW_FRAME_MS = 8;
@@ -95,6 +97,73 @@
     demo.controls.target.set(base[0], base[2] + 0.22, -base[1]);
     demo.camera.position.set(base[0] - 1.55, base[2] + 1.05, -base[1] + 1.65);
     demo.controls.update();
+  }
+
+  function nativeRaycasterThreadCount() {
+    const caps = detectThreadCapabilities();
+    return caps.wasmPthreads ? Math.min(2, caps.hardwareConcurrency) : 0;
+  }
+
+  function disposeNativeRaycaster(demo) {
+    try {
+      demo.__nativeRaycaster?.delete?.();
+    } catch {
+      // Best-effort cleanup only; fallback ray casting remains available.
+    }
+    demo.__nativeRaycaster = null;
+  }
+
+  function ensureNativeRaycaster(demo) {
+    const RayCasterCamera = demo?.mujoco?.RayCasterCamera;
+    if (typeof RayCasterCamera !== 'function' || !demo.model || !demo.data || demo.cameraId < 0) {
+      return null;
+    }
+    if (demo.__nativeRaycasterFailed) return null;
+
+    const threads = nativeRaycasterThreadCount();
+    const key = [
+      'RayCasterCamera',
+      RAY_WIDTH,
+      RAY_HEIGHT,
+      RAY_MIN_DIST,
+      RAY_MAX_DIST,
+      RAY_FOCAL,
+      RAY_HORIZONTAL_APERTURE,
+      RAY_VERTICAL_APERTURE,
+      threads,
+    ].join(':');
+
+    try {
+      if (!demo.__nativeRaycaster || demo.__nativeRaycasterKey !== key) {
+        disposeNativeRaycaster(demo);
+        demo.__nativeRaycaster = new RayCasterCamera(
+          demo.model,
+          demo.data,
+          'RayCasterCamera',
+          RAY_WIDTH,
+          RAY_HEIGHT,
+          RAY_MIN_DIST,
+          RAY_MAX_DIST,
+          RAY_FOCAL,
+          RAY_HORIZONTAL_APERTURE,
+          RAY_VERTICAL_APERTURE,
+          false,
+          threads,
+          0.0,
+          0.0,
+          0.0,
+        );
+        demo.__nativeRaycasterKey = key;
+      } else {
+        demo.__nativeRaycaster.changeData?.(demo.model, demo.data);
+        demo.__nativeRaycaster.setNumThreads?.(threads);
+      }
+      return demo.__nativeRaycaster;
+    } catch (error) {
+      disposeNativeRaycaster(demo);
+      demo.__nativeRaycasterFailed = error?.message || String(error);
+      return null;
+    }
   }
 
   function syncCommandFromControls(demo) {
@@ -339,6 +408,43 @@
       }
       const pose = this.cameraPoseMujoco();
       if (!pose) return this.rayImage;
+      const nativeRaycaster = ensureNativeRaycaster(this);
+      if (nativeRaycaster) {
+        try {
+          this.frameStage = 'native-raycaster';
+          nativeRaycaster.compute(this.model, this.data);
+          const depth = nativeRaycaster.depthView();
+          const hitPoints = nativeRaycaster.hitPointView?.();
+          let validCount = 0;
+          for (let index = 0; index < RAY_WIDTH * RAY_HEIGHT; index += 1) {
+            const value = Number(depth[index]) || 0;
+            this.rayRawImage[index] = value;
+            this.rayImage[index] = normalizeDepth(value);
+            if (value > 0) {
+              validCount += 1;
+              const p = index * 3;
+              const hit = hitPoints && Number.isFinite(hitPoints[p])
+                ? [hitPoints[p], hitPoints[p + 1], hitPoints[p + 2]]
+                : null;
+              this.rayHitPoints[index] = hit;
+            } else {
+              this.rayHitPoints[index] = null;
+            }
+          }
+          const centerIndex = Math.floor(RAY_HEIGHT / 2) * RAY_WIDTH + Math.floor(RAY_WIDTH / 2);
+          this.rayValidCount = Number(nativeRaycaster.validCount) || validCount;
+          this.rayCenterDepth = this.rayRawImage[centerIndex] || 0;
+          this.rayBackend = `native-RayCasterCamera/${Number(nativeRaycaster.numThreads) || 0}t`;
+          this.lastRayPose = pose;
+          this.frameStage = 'ray-finished';
+          this.rayLastUpdateTime = this.data.time;
+          this.rayDirty = true;
+          return this.rayImage;
+        } catch (error) {
+          disposeNativeRaycaster(this);
+          this.__nativeRaycasterFailed = error?.message || String(error);
+        }
+      }
       const centerDir = this.cameraRayDir(0, 0, pose.mat, cameraConvention);
       const localDirs = this.rayLocalDirs(cameraConvention);
       const dir = this._rayDir || (this._rayDir = [0, 0, 0]);
@@ -427,6 +533,8 @@
       window.__go2wRuntime.rayHits = this.rayValidCount || 0;
       window.__go2wRuntime.rayCenterDepth = this.rayCenterDepth || 0;
       window.__go2wRuntime.rayBackend = this.rayBackend || null;
+      window.__go2wRuntime.nativeRaycasterAvailable = typeof this.mujoco?.RayCasterCamera === 'function';
+      window.__go2wRuntime.nativeRaycasterFailure = this.__nativeRaycasterFailed || null;
       window.__go2wRuntime.rayUpdateWallMs = this.rayUpdateWallMs || this.__rayOptimizerWallMs || null;
       window.__go2wRuntime.unsafeReason = this.unsafeReason || this.__unsafeReason || null;
       window.__go2wRuntime.recoveryCount = this.recoveryCount ?? this.__recoveryCount ?? 0;
