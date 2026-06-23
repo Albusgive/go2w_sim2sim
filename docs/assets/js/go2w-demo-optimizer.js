@@ -1,5 +1,5 @@
 (function installGo2WDemoOptimizer() {
-  const VERSION = 'preload-ray-12';
+  const VERSION = 'preload-ray-13';
   const RAY_WIDTH = 32;
   const RAY_HEIGHT = 18;
   const RAY_MIN_DIST = 0.1;
@@ -301,7 +301,7 @@
           this._mjRayGeomId,
         );
         this.rayBackend = 'mujoco-mj_ray';
-        if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1 || this._mjRayGeomId[0] < 0) {
+        if (!Number.isFinite(ratio) || ratio < 0 || ratio > 1) {
           return null;
         }
         const distance = ratio * RAY_MAX_DIST;
@@ -342,6 +342,7 @@
       const centerDir = this.cameraRayDir(0, 0, pose.mat, cameraConvention);
       const localDirs = this.rayLocalDirs(cameraConvention);
       const dir = this._rayDir || (this._rayDir = [0, 0, 0]);
+      let validCount = 0;
       for (let row = 0; row < RAY_HEIGHT; row += 1) {
         for (let col = 0; col < RAY_WIDTH; col += 1) {
           const index = row * RAY_WIDTH + col;
@@ -353,8 +354,12 @@
           this.rayRawImage[index] = planeDist;
           this.rayImage[index] = normalizeDepth(planeDist);
           this.rayHitPoints[index] = hit ? hit.pointMujoco : null;
+          if (planeDist > 0) validCount += 1;
         }
       }
+      const centerIndex = Math.floor(RAY_HEIGHT / 2) * RAY_WIDTH + Math.floor(RAY_WIDTH / 2);
+      this.rayValidCount = validCount;
+      this.rayCenterDepth = this.rayRawImage[centerIndex] || 0;
       this.lastRayPose = pose;
       this.frameStage = 'ray-finished';
       this.rayLastUpdateTime = this.data.time;
@@ -419,6 +424,8 @@
       window.__go2wRuntime.threadCaps = this.threadCaps || detectThreadCapabilities();
       window.__go2wRuntime.frameMs = this.lastFrameDurationMs || this.__lastFrameOptimizerDurationMs || 0;
       window.__go2wRuntime.rayMs = this.lastRayDurationMs || this.__lastRayOptimizerDurationMs || 0;
+      window.__go2wRuntime.rayHits = this.rayValidCount || 0;
+      window.__go2wRuntime.rayCenterDepth = this.rayCenterDepth || 0;
       window.__go2wRuntime.rayBackend = this.rayBackend || null;
       window.__go2wRuntime.rayUpdateWallMs = this.rayUpdateWallMs || this.__rayOptimizerWallMs || null;
       window.__go2wRuntime.unsafeReason = this.unsafeReason || this.__unsafeReason || null;
