@@ -5,8 +5,8 @@ import { spawn } from 'node:child_process';
 const DEFAULTS = {
   url: 'https://albusgive.github.io/go2w_sim2sim/demo.html',
   geckodriverPort: 4446,
-  expectVersion: 'preload-ray-14',
-  expectRayBackend: 'mujoco-mj_ray',
+  expectVersion: 'preload-ray-15',
+  expectRayBackend: 'worker-RayCasterCamera/0t',
   minRayHits: 100,
   minOnnxThreads: 2,
   policyId: 2,
@@ -62,8 +62,8 @@ Options:
   --port N                        Local server port when using --local. Default: 8088.
   --geckodriver-port N            WebDriver port. Default: 4446.
   --no-start-geckodriver          Reuse an already running geckodriver.
-  --expect-version VERSION        Expected optimizer version. Default: preload-ray-14.
-  --expect-ray-backend BACKEND    Expected ray backend. Default: mujoco-mj_ray.
+  --expect-version VERSION        Expected optimizer version. Default: preload-ray-15.
+  --expect-ray-backend BACKEND    Expected ray backend. Default: worker-RayCasterCamera/0t.
   --min-ray-hits N                Minimum valid ray hits. Default: 100.
   --min-onnx-threads N            Minimum ONNX worker threads. Default: 2.
   --policy-id ID                  Policy button id to switch to. Default: 2.
@@ -166,6 +166,7 @@ function assertRuntime(snapshot, options, phase) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  const expectedRayBackend = JSON.stringify(options.expectRayBackend);
   const children = [];
   const { wd, execute } = webdriverClient(options.geckodriverPort);
   let sessionId = null;
@@ -196,7 +197,7 @@ async function main() {
     sessionId = session.sessionId;
     await wd(`/session/${sessionId}/url`, 'POST', { url: withCacheBuster(options.url) });
 
-    const ready = await waitForCondition(execute, sessionId, `
+    let ready = await waitForCondition(execute, sessionId, `
       const rt = window.__go2wRuntime || null;
       const status = document.querySelector('.status-pill')?.textContent || '';
       return { ok: !!rt && rt.optimizerVersion === '${options.expectVersion}' && status !== 'Loading',
@@ -212,14 +213,15 @@ async function main() {
       };
     `, options.readyTimeoutMs, 'initial ready');
 
-    await waitForCondition(execute, sessionId, `
+    const afterPreload = await waitForCondition(execute, sessionId, `
       const rt = window.__go2wRuntime || null;
-      return { ok: !!rt && rt.preloadComplete === true,
+      return { ok: !!rt && rt.preloadComplete === true && rt.rayBackend === ${expectedRayBackend},
         value: { status: document.querySelector('.status-pill')?.textContent || '', rt }
       };
     `, options.preloadTimeoutMs, 'policy preload');
 
-    assertRuntime(ready, options, 'initial ready');
+    assertRuntime(afterPreload, options, 'initial ready');
+    ready = afterPreload;
 
     await execute(sessionId, `document.querySelector('[data-policy="${options.policyId}"]')?.click(); return true;`);
     await sleep(options.switchWaitMs);
