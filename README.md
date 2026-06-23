@@ -105,12 +105,43 @@ camera_quat   camera quaternion helper
 real2sim      ROS2-connected real-to-sim executable
 ```
 
+### Local Build (MuJoCo not under /opt)
+
+`MUJOCO_FOLDER` defaults to `/opt/mujoco/lib/cmake` but is overridable, so you can
+build against a MuJoCo release tarball extracted anywhere (no system install
+required). ROS2 must be sourced because `lab2mj` links `ament`/`rclcpp`.
+
+```bash
+cd mujoco/C++
+source /opt/ros/humble/setup.bash
+cmake -S . -B build_local -DUSE_ONNX=ON \
+  -DMUJOCO_FOLDER=/path/to/mujoco-3.4.0/lib/cmake \
+  -DONNXRUNTIME_ROOT=/path/to/onnxruntime-linux-x64-gpu-1.23.2 \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build_local --target lab2mj -j"$(nproc)"
+```
+
+If the MuJoCo tarball ships no CMake package config, drop a minimal
+`mujoco-config.cmake` providing the `mujoco::mujoco` imported target under
+`<mujoco_root>/lib/cmake/mujoco/`. On Ubuntu, `freeglut3-dev` is required for the
+`-lglut` link step.
+
 ## Run
 
 ```bash
 cd mujoco/C++/build_onnx
 ./lab2mj
 ```
+
+Convenience launcher (sets `LD_LIBRARY_PATH`, sources ROS2, then runs `lab2mj`):
+
+```bash
+./run_vtm_lstm_sru.sh
+```
+
+Override dependency locations via `MUJOCO_DIR`, `ONNX_DIR`, and `BUILD_DIR`
+environment variables. After the window opens, press `3` to select
+`vtm_lstm_sru` (it walks forward at 1.0 m/s by default; steer with `w/s/a/d/q/e`).
 
 `lab2mj` loads:
 

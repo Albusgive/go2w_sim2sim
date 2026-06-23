@@ -15,8 +15,8 @@ set(CMAKE_CXX_STANDARD 17)
 # =============================================================================
 # 2. 基础依赖 (MuJoCo, Eigen, ROS2, OpenCV)
 # =============================================================================
-# 编译安装，从cmake安装位置opt使用
-set(MUJOCO_FOLDER /opt/mujoco/lib/cmake)
+# 编译安装，从cmake安装位置opt使用 (overridable via -DMUJOCO_FOLDER=...)
+set(MUJOCO_FOLDER /opt/mujoco/lib/cmake CACHE PATH "Directory containing MuJoCo CMake config")
 find_package(mujoco REQUIRED PATHS ${MUJOCO_FOLDER} NO_DEFAULT_PATH)
 if (mujoco_FOUND)
     message(STATUS "Find mujoco:  ${mujoco_INCLUDE_DIRS}, ${mujoco_LIBRARIES}")

@@ -2,6 +2,9 @@
 /.cache/
 /mujoco/C++/build/
 /mujoco/C++/build_onnx
+/mujoco/C++/build_local/
+/mujoco/C++/MUJOCO_LOG.TXT
+MUJOCO_LOG.TXT
 .cache/
 utils/mujoco_ray_caster/
 /split_records

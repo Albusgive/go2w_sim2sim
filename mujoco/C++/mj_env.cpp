@@ -13,7 +13,7 @@
 
 namespace {
 
-constexpr float kPlayLikeDefaultCmd[3] = {0.7f, 0.0f, 0.0f};
+constexpr float kPlayLikeDefaultCmd[3] = {1.0f, 0.0f, 0.0f};
 
 bool is_zero_cmd(const std::vector<float> &cmd) {
   if (cmd.size() < 3) {
