@@ -21,11 +21,15 @@ RayCasterCamera depth image (`32 x 18`) and show the ray image in the bottom UI.
 - The browser RayCasterCamera uses MuJoCo WASM `mj_ray`, the verified `-z`
   local camera convention, wall-clock throttling, and adaptive backoff when ray
   updates become slow.
+- If a custom MuJoCo WASM artifact exports `mujoco.RayCasterCamera`, the demo
+  automatically switches to that native binding and reports the threaded native
+  backend in `window.__go2wRuntime.rayBackend`.
 - The main runtime exports frame, ray, policy, safety, and thread diagnostics to
   `window.__go2wRuntime` for browser-side testing.
 
-The native C++ RayCasterCamera port is tracked separately in
-[`raycaster-wasm-port.md`](raycaster-wasm-port.md).
+The native C++ RayCasterCamera port scaffold and build preflight are tracked in
+[`raycaster-wasm-port.md`](raycaster-wasm-port.md) and
+[`../tools/raycaster_wasm_port/`](../tools/raycaster_wasm_port/).
 
 ## Local Preview
 
@@ -53,8 +57,10 @@ node tools/verify_go2w_pages_demo.mjs --local docs
 ```
 
 The verifier checks optimizer version, policy preloading, ONNX thread count,
-MuJoCo `mj_ray` usage, nonzero RayCaster hits, policy switching, follow camera,
-runtime error state, and a short long-run window.
+the expected ray backend, nonzero RayCaster hits, policy switching, follow
+camera, runtime error state, and a short long-run window. Until a native
+RayCasterCamera WASM artifact is built, the expected backend remains
+`mujoco-mj_ray`.
 
 ## GitHub Pages
 
