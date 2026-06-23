@@ -103,7 +103,7 @@
         window.location.reload();
       };
       navigator.serviceWorker.addEventListener('controllerchange', reloadOnce);
-      navigator.serviceWorker.register('./coi-serviceworker.js?v=preload-ray-12', { scope: './' })
+      navigator.serviceWorker.register('./coi-serviceworker.js?v=preload-ray-13', { scope: './' })
         .then(() => {
           if (navigator.serviceWorker.controller) reloadOnce();
         })
@@ -116,17 +116,17 @@
       window.Worker = function go2wWorker(url, options) {
         const workerUrl = String(url);
         if (workerUrl.includes('policy-worker.js?v=visual-sru-1')) {
-          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-12', options);
+          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-13', options);
         }
         if (workerUrl.includes('policy-worker.js?v=preload-ray-1')) {
-          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-12', options);
+          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-13', options);
         }
         return new NativeWorker(url, options);
       };
       window.Worker.prototype = NativeWorker.prototype;
     })();
   </script>
-  <script type="module" src="assets/js/go2w-demo.js?v=preload-ray-12"></script>
-  <script src="assets/js/go2w-demo-optimizer.js?v=preload-ray-12"></script>
+  <script type="module" src="assets/js/go2w-demo.js?v=preload-ray-13"></script>
+  <script src="assets/js/go2w-demo-optimizer.js?v=preload-ray-13"></script>
 </body>
 </html>
