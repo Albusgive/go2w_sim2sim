@@ -9,13 +9,17 @@ does not expose the newer normal-output ray overload used by the plugin for
 loss-angle and stereo energy filtering.
 
 The exact port should be implemented as a MuJoCo WASM extension instead of a
-runtime JavaScript patch.
+runtime JavaScript patch. The repository now includes the port scaffold in
+`tools/raycaster_wasm_port/`: an embind include for `RayCasterCamera`, a
+MuJoCo-source patch/preflight script, and a README with the build steps.
 
 ## Target Architecture
 
 1. Build a small Emscripten target that links MuJoCo WASM with the C++
    RayCasterCamera sources from lab2mj. The local source used for comparison is
-   `/home/albusgive2/mujoco_ray_caster/raycaster_src/RayCasterCamera.*`.
+   `utils/mujoco_ray_caster/raycaster_src/RayCasterCamera.*`, or any source
+   directory passed to `tools/raycaster_wasm_port/prepare_mujoco_wasm_port.mjs`
+   with `--raycaster-root`.
 2. Expose a stable C or embind API:
    - create and destroy a camera object
    - configure width, height, near/far range, camera frame, aperture, and noise
@@ -28,6 +32,30 @@ runtime JavaScript patch.
 4. Build two browser artifacts:
    - single-threaded WASM for GitHub Pages compatibility
    - pthread-enabled WASM for hosts that serve COOP/COEP headers
+
+## Current Implementation State
+
+- `docs/assets/js/go2w-demo-optimizer-v13.js` automatically uses
+  `mujoco.RayCasterCamera` when the binding exists.
+- If the binding is absent, it falls back to the current MuJoCo WASM `mj_ray`
+  path.
+- The runtime stats expose `nativeRaycasterAvailable` and
+  `nativeRaycasterFailure` so browser tests can tell which path is active.
+- On this machine, `node tools/raycaster_wasm_port/prepare_mujoco_wasm_port.mjs`
+  currently reports that `emcc` and `emcmake` are missing. Until Emscripten SDK
+  is installed or sourced, the native `.wasm` artifact cannot be built here.
+
+## Build Command
+
+```sh
+node tools/raycaster_wasm_port/prepare_mujoco_wasm_port.mjs \
+  --mujoco-root /home/albusgive2/software/mujoco \
+  --raycaster-root /home/albusgive2/go2w_sim2sim/utils/mujoco_ray_caster \
+  --patch
+```
+
+Then run the printed `emcmake cmake`, `cmake --build`, and copy commands. The
+threaded artifact must keep MuJoCo's existing pthread linker flags.
 
 ## Deployment Requirements
 
