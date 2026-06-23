@@ -295,7 +295,7 @@ class Go2WDemo {
     await this.loadFiles();
 
     this.setStatus('Loading', 'Compiling MJCF');
-    this.model = this.mujoco.MjModel.loadFromXML('/working/scene_parkour.xml');
+    this.model = this.loadModelXml('/working/scene_parkour.xml');
     this.data = new this.mujoco.MjData(this.model);
     if (window.__go2wFallbackStarted) return;
 
@@ -535,6 +535,14 @@ class Go2WDemo {
     if (!this.mujoco.FS.analyzePath(path).exists) {
       this.mujoco.FS.mkdir(path);
     }
+  }
+
+  loadModelXml(path) {
+    const loader = this.mujoco?.MjModel?.mj_loadXML || this.mujoco?.MjModel?.loadFromXML;
+    if (typeof loader !== 'function') {
+      throw new Error('MuJoCo WASM does not expose an MJCF XML loader');
+    }
+    return loader.call(this.mujoco.MjModel, path);
   }
 
   async loadFiles() {
