@@ -128,8 +128,10 @@ demo is the `lab2mj` browser path only: MuJoCo WASM renders the Go2W MJCF scene
 and ONNX Runtime Web runs the policy worker. It does not deploy ROS2,
 `real2sim`, or a native simulator process. The browser demo supports
 `motion_mlp`, `vtm`, `vtm_lstm_sru`, and `vtm_gru_sru`; it defaults to
-`vtm_lstm_sru` and computes a `32 x 18` RayCasterCamera depth observation for
-the visual policies.
+`motion_mlp`, preloads all policy slots, and computes a `32 x 18`
+RayCasterCamera depth observation for the visual policies. GitHub Pages uses a
+COOP/COEP service worker so ONNX Runtime Web can use the threaded WASM backend
+after the first reload.
 
 Local preview:
 
@@ -139,6 +141,12 @@ python3 -m http.server 8000
 ```
 
 Open `http://localhost:8000/demo.html`.
+
+Browser smoke test:
+
+```bash
+node tools/verify_go2w_pages_demo.mjs --url https://albusgive.github.io/go2w_sim2sim/demo.html
+```
 
 ## Default Scene
 
