@@ -3,8 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const MARKER_BEGIN = '// GO2W_RAYCASTER_WASM_BEGIN';
-const MARKER_END = '// GO2W_RAYCASTER_WASM_END';
+const JS_MARKER_BEGIN = '// GO2W_RAYCASTER_WASM_BEGIN';
+const JS_MARKER_END = '// GO2W_RAYCASTER_WASM_END';
+const CMAKE_MARKER_BEGIN = '# GO2W_RAYCASTER_WASM_BEGIN';
+const CMAKE_MARKER_END = '# GO2W_RAYCASTER_WASM_END';
 
 function parseArgs(argv) {
   const out = {
@@ -34,9 +36,16 @@ function parseArgs(argv) {
     }
   }
   out.buildDir ||= path.join(out.mujocoRoot, 'build-go2w-raycaster-wasm');
+  const localRaycasterRoot = path.join(out.repoRoot, 'utils/mujoco_ray_caster');
+  const vendoredRaycasterRoot = path.join(
+    out.repoRoot,
+    'tools/raycaster_wasm_port/vendor/mujoco_ray_caster',
+  );
   out.raycasterRoot ||= process.env.RAYCASTER_ROOT
     ? path.resolve(process.env.RAYCASTER_ROOT)
-    : path.join(out.repoRoot, 'utils/mujoco_ray_caster');
+    : fs.existsSync(path.join(localRaycasterRoot, 'raycaster_src/RayCasterCamera.cpp'))
+      ? localRaycasterRoot
+      : vendoredRaycasterRoot;
   return out;
 }
 
@@ -64,9 +73,9 @@ function requireFile(label, filePath, failures) {
   if (!fs.existsSync(filePath)) failures.push(`${label} missing: ${filePath}`);
 }
 
-function replaceMarkedBlock(source, block) {
-  const escapedBegin = MARKER_BEGIN.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const escapedEnd = MARKER_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function replaceMarkedBlock(source, block, markerBegin, markerEnd) {
+  const escapedBegin = markerBegin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedEnd = markerEnd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const re = new RegExp(`\\n?${escapedBegin}[\\s\\S]*?${escapedEnd}\\n?`, 'm');
   if (re.test(source)) {
     return `${source.replace(re, `\n${block}\n`)}`;
@@ -74,9 +83,15 @@ function replaceMarkedBlock(source, block) {
   return `${source.trimEnd()}\n\n${block}\n`;
 }
 
+function removeMarkedBlock(source, markerBegin, markerEnd) {
+  const escapedBegin = markerBegin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedEnd = markerEnd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return source.replace(new RegExp(`\\n?${escapedBegin}[\\s\\S]*?${escapedEnd}\\n?`, 'm'), '\n');
+}
+
 function patchCMake(cmakePath, raycasterRoot) {
   const normalizedRayRoot = raycasterRoot.replaceAll('\\', '/');
-  const block = `${MARKER_BEGIN}
+  const block = `${CMAKE_MARKER_BEGIN}
 set(GO2W_RAYCASTER_ROOT "${normalizedRayRoot}" CACHE PATH "go2w RayCasterCamera source root")
 target_sources(mujoco_wasm PRIVATE
   "\${GO2W_RAYCASTER_ROOT}/raycaster_src/RayCaster.cpp"
@@ -86,23 +101,24 @@ target_include_directories(mujoco_wasm PRIVATE
   "\${GO2W_RAYCASTER_ROOT}"
   "\${GO2W_RAYCASTER_ROOT}/raycaster_src"
 )
-${MARKER_END}`;
-  const source = fs.readFileSync(cmakePath, 'utf8');
+${CMAKE_MARKER_END}`;
+  let source = fs.readFileSync(cmakePath, 'utf8');
+  source = removeMarkedBlock(source, JS_MARKER_BEGIN, JS_MARKER_END);
   if (!source.includes('add_executable(mujoco_wasm')) {
     throw new Error(`Could not find mujoco_wasm target in ${cmakePath}`);
   }
-  fs.writeFileSync(cmakePath, replaceMarkedBlock(source, block));
+  fs.writeFileSync(cmakePath, replaceMarkedBlock(source, block, CMAKE_MARKER_BEGIN, CMAKE_MARKER_END));
 }
 
 function patchBindings(bindingsPath, repoRoot) {
   const includePath = path
     .join(repoRoot, 'tools/raycaster_wasm_port/raycaster_camera_bindings.inc.cc')
     .replaceAll('\\', '/');
-  const block = `${MARKER_BEGIN}
+  const block = `${JS_MARKER_BEGIN}
 #include "${includePath}"
-${MARKER_END}`;
+${JS_MARKER_END}`;
   const source = fs.readFileSync(bindingsPath, 'utf8');
-  fs.writeFileSync(bindingsPath, replaceMarkedBlock(source, block));
+  fs.writeFileSync(bindingsPath, replaceMarkedBlock(source, block, JS_MARKER_BEGIN, JS_MARKER_END));
 }
 
 function main() {
@@ -158,6 +174,7 @@ function main() {
     `cmake --build ${shellQuote(options.buildDir)} --target mujoco_wasm`,
     `cp ${shellQuote(path.join(options.mujocoRoot, 'wasm/dist/mujoco_wasm.js'))} ${shellQuote(path.join(options.repoRoot, 'docs/demo-assets/mujoco_wasm.js'))}`,
     `cp ${shellQuote(path.join(options.mujocoRoot, 'wasm/dist/mujoco_wasm.wasm'))} ${shellQuote(path.join(options.repoRoot, 'docs/demo-assets/mujoco_wasm.wasm'))}`,
+    `cp ${shellQuote(path.join(options.mujocoRoot, 'wasm/dist/mujoco_wasm.d.ts'))} ${shellQuote(path.join(options.repoRoot, 'docs/demo-assets/mujoco_wasm.d.ts'))}`,
   ];
 
   const result = {
