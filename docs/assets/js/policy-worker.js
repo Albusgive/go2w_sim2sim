@@ -2,6 +2,13 @@ self.importScripts('../vendor/onnxruntime-web/ort.wasm.min.js');
 
 const policies = new Map();
 let configs = new Map();
+let workerCapabilities = {
+  hardwareConcurrency: 1,
+  sharedArrayBuffer: false,
+  crossOriginIsolated: false,
+  wasmPthreads: false,
+  onnxThreads: 1,
+};
 
 function postError(seq, policyId, error) {
   self.postMessage({
@@ -47,6 +54,26 @@ function delay(ms) {
   return new Promise((resolve) => {
     self.setTimeout(resolve, ms);
   });
+}
+
+function chooseThreadCapabilities(requested = {}) {
+  const hardwareConcurrency = Math.max(
+    1,
+    Math.floor(requested.hardwareConcurrency || self.navigator?.hardwareConcurrency || 1),
+  );
+  const sharedArrayBuffer = typeof self.SharedArrayBuffer !== 'undefined';
+  const crossOriginIsolated = self.crossOriginIsolated === true;
+  const wasmPthreads = sharedArrayBuffer && crossOriginIsolated;
+  const requestedThreads = requested.onnxThreads === undefined || requested.onnxThreads === null
+    ? (wasmPthreads ? Math.min(2, hardwareConcurrency) : 1)
+    : Math.max(1, Math.floor(requested.onnxThreads));
+  return {
+    hardwareConcurrency,
+    sharedArrayBuffer,
+    crossOriginIsolated,
+    wasmPthreads,
+    onnxThreads: wasmPthreads ? Math.min(requestedThreads, hardwareConcurrency) : 1,
+  };
 }
 
 function zeros(length) {
@@ -179,11 +206,15 @@ self.onmessage = async (event) => {
   try {
     if (data.type === 'init') {
       const wasmBaseUrl = new URL('../vendor/onnxruntime-web/', self.location.href).href;
+      workerCapabilities = chooseThreadCapabilities({
+        ...(data.threadCaps || {}),
+        onnxThreads: data.onnxThreads,
+      });
       self.ort.env.wasm.wasmPaths = wasmBaseUrl;
-      self.ort.env.wasm.numThreads = 1;
+      self.ort.env.wasm.numThreads = workerCapabilities.onnxThreads;
       self.ort.env.wasm.proxy = false;
       configs = toConfigMap(data.policies);
-      self.postMessage({ type: 'ready' });
+      self.postMessage({ type: 'ready', capabilities: workerCapabilities });
       return;
     }
 
