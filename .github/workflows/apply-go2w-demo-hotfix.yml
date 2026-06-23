@@ -1,0 +1,42 @@
+name: Apply Go2W Demo Hotfix
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-go2w-demo-hotfix.yml"
+      - "tools/apply_go2w_demo_hotfix.mjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: go2w-demo-hotfix
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip demo-hotfix]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply hotfix
+        run: node tools/apply_go2w_demo_hotfix.mjs "$GITHUB_WORKSPACE"
+
+      - name: Commit hotfix output
+        shell: bash
+        run: |
+          if git diff --quiet -- docs/demo.html docs/assets/js/go2w-demo.js docs/assets/js/go2w-demo-optimizer-v13.js docs/assets/js/go2w-demo-optimizer.js tools/verify_go2w_pages_demo.mjs; then
+            echo "No hotfix changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/demo.html docs/assets/js/go2w-demo.js docs/assets/js/go2w-demo-optimizer-v13.js docs/assets/js/go2w-demo-optimizer.js tools/verify_go2w_pages_demo.mjs
+          git commit -m "Apply Go2W demo follow and stability hotfix [skip demo-hotfix]"
+          git push
