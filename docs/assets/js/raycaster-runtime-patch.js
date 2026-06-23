@@ -195,7 +195,26 @@
     this.rayCenterDepth = this.rayRawImage[centerIndex] || 0;
     this.rayLastUpdateTime = Number.isFinite(data.simTime) ? data.simTime : this.data?.time || 0;
     this.rayLastUpdateWallTime = performance.now();
+    // Update the ray-line origin to the current camera pose. Only the
+    // synchronous raycast paths set lastRayPose; on the async worker path (the
+    // default backend) it would otherwise stay frozen at the spawn pose, making
+    // the debug rays appear to emanate from the world origin instead of the
+    // robot's camera. cameraPoseMujoco() reads the live cam_xpos/cam_xmat.
+    if (typeof this.cameraPoseMujoco === 'function') {
+      const pose = this.cameraPoseMujoco();
+      if (pose) this.lastRayPose = pose;
+    }
     this.rayDirty = true;
+  }
+
+  // True while the async worker is the live backend: it either already exists
+  // (initializing/ready) or can still be (re)started, and has not permanently
+  // failed. When this is true we must NOT run the synchronous 576-ray CPU loop
+  // on the main thread every frame — we return the last image instead.
+  function rayWorkerUsable(demo) {
+    if (demo.rayWorkerFailed) return false;
+    if (typeof Worker !== 'function') return false;
+    return true;
   }
 
   function requestRaycasterWorker(force = false) {
@@ -269,8 +288,27 @@
     if (originalRefresh && !demo.__rayPatchRefreshWrapped) {
       demo.__rayPatchRefreshWrapped = true;
       demo.refreshRaycasterImage = function refreshRaycasterImageRayWorkerPatch(force = false) {
-        if (this.requestRaycasterWorker(force)) return this.rayImage;
-        return originalRefresh(force);
+        // A forced one-shot (reset seeding visual history, etc.) needs a fresh
+        // image RIGHT NOW. The async worker would only return the stale image
+        // and compute later, desyncing visualImageHistory, so compute
+        // synchronously this once. __rayForceSync makes the (also patched)
+        // computeRaycasterImage skip its own worker routing for this call.
+        if (force) {
+          this.__rayForceSync = true;
+          try {
+            return originalRefresh(true);
+          } finally {
+            this.__rayForceSync = false;
+          }
+        }
+        if (this.requestRaycasterWorker(false)) return this.rayImage;
+        // The worker accepted no request. While it is still the live backend
+        // (initializing or a request is in flight) keep returning the last
+        // image instead of blocking the main thread with the synchronous
+        // 576-ray CPU loop. Only a permanent worker failure may fall through to
+        // the synchronous path.
+        if (rayWorkerUsable(this)) return this.rayImage;
+        return originalRefresh(false);
       };
     }
 
@@ -278,7 +316,11 @@
     if (originalCompute && !demo.__rayPatchComputeWrapped) {
       demo.__rayPatchComputeWrapped = true;
       demo.computeRaycasterImage = function computeRaycasterImageRayWorkerPatch() {
+        // During a forced synchronous refresh, compute on the main thread so
+        // the caller gets a fresh image instead of a worker-deferred stale one.
+        if (this.__rayForceSync) return originalCompute();
         if (this.requestRaycasterWorker(false)) return this.rayImage;
+        if (rayWorkerUsable(this)) return this.rayImage;
         return originalCompute();
       };
     }

@@ -2,6 +2,12 @@ self.importScripts('../vendor/onnxruntime-web/ort.wasm.min.js');
 
 const policies = new Map();
 let configs = new Map();
+// Highest run sequence number received from the main thread. Because onmessage
+// is async, several 'run' messages can queue up while an inference is awaiting
+// (e.g. after the main thread's 500ms stale-pending timeout posts a new run).
+// Recording the latest seq synchronously on receipt lets us drop stale runs
+// before paying for ONNX execution, so the worker never falls behind.
+let latestRunSeq = -Infinity;
 let workerCapabilities = {
   hardwareConcurrency: 1,
   sharedArrayBuffer: false,
@@ -240,7 +246,16 @@ self.onmessage = async (event) => {
     }
 
     if (data.type === 'run') {
+      // Record the newest request synchronously, before any await, so queued
+      // older runs can detect that they have been superseded.
+      const seq = typeof data.seq === 'number' ? data.seq : latestRunSeq;
+      if (seq > latestRunSeq) latestRunSeq = seq;
       const policy = await loadPolicy(data.policyId);
+      // A newer run arrived while the session was loading — drop this one. Its
+      // result would be discarded by the main thread anyway (it checks seq),
+      // and for stateful (split) policies executing it would needlessly advance
+      // the recurrent state on stale observations.
+      if (seq < latestRunSeq) return;
       const startedAt = performance.now();
       const obs = new Float32Array(data.obs);
       const raw = policy.kind === 'split'

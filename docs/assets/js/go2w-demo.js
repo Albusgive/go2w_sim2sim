@@ -219,6 +219,7 @@ const ACT_DEFAULT_DOF_POS = new Float32Array([
 ]);
 
 const MJCAT_ALL = 7;
+const MJOBJ_GEOM = 5;
 const GEOM_PLANE = 0;
 const GEOM_SPHERE = 2;
 const GEOM_CAPSULE = 3;
@@ -799,6 +800,14 @@ class Go2WDemo {
         }
         mesh.userData.isRayTerrain = this.isTerrainRayGeom(geom.objid);
         if (mesh.userData.isRayTerrain) this.rayTerrainMeshes.push(mesh);
+        // Record the model geom id for the cheap per-frame pose sync. Only real
+        // model geoms (objtype MJOBJ_GEOM) have a stable transform in
+        // data.geom_xpos/geom_xmat; decor geoms (objtype != MJOBJ_GEOM, e.g.
+        // contact arrows) keep the pose baked at rebuild time.
+        mesh.userData.modelGeomId =
+          geom.objtype === MJOBJ_GEOM && Number.isInteger(geom.objid) && geom.objid >= 0
+            ? geom.objid
+            : -1;
         mesh.visible = true;
       } finally {
         if (geom && typeof geom.delete === 'function') geom.delete();
@@ -806,6 +815,35 @@ class Go2WDemo {
     }
 
     this.activeGeoms = meshIndex;
+  }
+
+  // Cheap per-frame pose sync. The full updateVisualScene() (mjv_updateScene +
+  // a per-geom embind walk) costs ~13-16ms and must stay throttled, but the
+  // robot's body geoms move every physics step. Reading data.geom_xpos /
+  // geom_xmat directly (both refreshed by every mj_step) lets us reposition the
+  // already-built meshes every rendered frame for well under 1ms, eliminating
+  // the ~20-frame "teleport" jumps without the cost of a full rebuild.
+  syncVisualPoses() {
+    const data = this.data;
+    if (!data) return;
+    const xpos = data.geom_xpos;
+    const xmat = data.geom_xmat;
+    if (!xpos || !xmat) return;
+    for (let i = 0; i < this.activeGeoms; i += 1) {
+      const mesh = this.geomPool[i];
+      const gid = mesh.userData.modelGeomId;
+      if (gid === undefined || gid < 0) continue;
+      const p = gid * 3;
+      const m = gid * 9;
+      mesh.position.set(xpos[p], xpos[p + 1], xpos[p + 2]);
+      TMP_MAT4.set(
+        xmat[m], xmat[m + 1], xmat[m + 2], 0,
+        xmat[m + 3], xmat[m + 4], xmat[m + 5], 0,
+        xmat[m + 6], xmat[m + 7], xmat[m + 8], 0,
+        0, 0, 0, 1,
+      );
+      mesh.quaternion.setFromRotationMatrix(TMP_MAT4);
+    }
   }
 
   isTerrainRayGeom(geomId) {
@@ -959,12 +997,36 @@ class Go2WDemo {
   }
 
   startFrameWatchdog() {
-    window.setInterval(() => {
+    // Guard against multiple installs (e.g. re-init) stacking intervals.
+    if (this.frameWatchdogId) {
+      window.clearInterval(this.frameWatchdogId);
+      this.frameWatchdogId = 0;
+    }
+    this.watchdogFramePending = false;
+    this.frameWatchdogId = window.setInterval(() => {
       if (!window.__go2wDemoReady || !this.renderer || document.hidden) return;
-      if (performance.now() - this.lastFrameWallTime > 1000) {
-        window.requestAnimationFrame(() => this.safeFrame());
+      // Only inject a recovery frame when the loop appears truly stalled AND we
+      // have not already queued one. setAnimationLoop is still the primary
+      // driver; injecting extra frames while one is already in flight (or while
+      // frames are merely slow) compounds the work and feeds the spiral of
+      // death. The pending flag clears itself once the recovery frame runs.
+      if (this.watchdogFramePending) return;
+      if (performance.now() - this.lastFrameWallTime > 2000) {
+        this.watchdogFramePending = true;
+        window.requestAnimationFrame(() => {
+          this.watchdogFramePending = false;
+          this.safeFrame();
+        });
       }
     }, 1000);
+  }
+
+  stopFrameWatchdog() {
+    if (this.frameWatchdogId) {
+      window.clearInterval(this.frameWatchdogId);
+      this.frameWatchdogId = 0;
+    }
+    this.watchdogFramePending = false;
   }
 
   frame() {
@@ -978,9 +1040,16 @@ class Go2WDemo {
     const unsafe = this.needsVisualGuard();
     if (unsafe) {
       if (this.needsSafetyReset()) this.stopUnsafeSimulation();
-    } else if (this.frameCount % VISUAL_UPDATE_INTERVAL === 1) {
-      this.frameStage = 'visual';
-      this.updateVisualScene();
+    } else {
+      // Full scene rebuild (mjv_updateScene + per-geom rebuild) is expensive
+      // (~13-16ms) so it stays throttled, but the cheap pose sync runs every
+      // frame so the robot moves smoothly instead of snapping every 20 frames.
+      if (this.frameCount % VISUAL_UPDATE_INTERVAL === 1) {
+        this.frameStage = 'visual';
+        this.updateVisualScene();
+      }
+      this.frameStage = 'visual-pose';
+      this.syncVisualPoses();
     }
     this.frameStage = 'follow';
     this.followBase(dt);
@@ -1203,7 +1272,13 @@ class Go2WDemo {
 
   pushVisualObservationTerms() {
     if (!this.visualHistBaseAngVel) return;
-    this.visualHistBaseAngVel.push(this.readSensorVector('imu_gyro'));
+    // base_ang_vel obs term is scaled by 0.25 for every policy (matches the
+    // motion path in pushObservationTerms() and make_base_ang_vel_term() in the
+    // C++ reference, mj_env.cpp). Omitting it feeds the visual policies angular
+    // velocity at 4x the trained magnitude, causing rapid in-place shaking.
+    const baseAngVel = this.readSensorVector('imu_gyro');
+    for (let i = 0; i < baseAngVel.length; i += 1) baseAngVel[i] *= 0.25;
+    this.visualHistBaseAngVel.push(baseAngVel);
     this.visualHistProjectedGravity.push(quatRotateInverse(this.readSensorVector('imu_quat'), [0, 0, -1]));
     this.visualHistCommand.push(new Float32Array([this.cmd.x, this.cmd.y, this.cmd.yaw]));
     this.visualHistDofPos.push(this.readDofPos());

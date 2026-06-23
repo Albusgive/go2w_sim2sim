@@ -483,24 +483,33 @@
     const oldRealtime = demo.realtime;
     demo.realtime = 0;
     demo.__optimizerPreloadErrors = [];
-    for (let i = 0; i < ids.length; i += 1) {
-      const id = ids[i];
-      const name = demo.activePolicy?.call({ policyId: id })?.name || `policy ${id}`;
-      demo.setStatus?.('Loading', `Preloading ${name} (${i + 1}/${ids.length})`);
-      try {
-        await demo.ensurePolicyLoaded(id);
-      } catch (error) {
-        demo.__optimizerPreloadErrors.push(id);
-        if (id === demo.policyId) throw error;
+    try {
+      for (let i = 0; i < ids.length; i += 1) {
+        const id = ids[i];
+        const name = demo.activePolicy?.call({ policyId: id })?.name || `policy ${id}`;
+        demo.setStatus?.('Loading', `Preloading ${name} (${i + 1}/${ids.length})`);
+        try {
+          await demo.ensurePolicyLoaded(id);
+        } catch (error) {
+          demo.__optimizerPreloadErrors.push(id);
+          if (id === demo.policyId) throw error;
+        }
+        demo.updatePolicyButtons?.();
+        await new Promise((resolve) => window.setTimeout(resolve, 0));
       }
+      demo.__optimizerPreloadComplete = true;
+      if ('preloadComplete' in demo) demo.preloadComplete = true;
+      demo.setStatus?.('Ready', 'MuJoCo + ONNX policies ready', 'ready');
       demo.updatePolicyButtons?.();
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    } finally {
+      // Restore realtime, even if a non-active policy (or the active one)
+      // throws — otherwise the sim stays frozen at realtime=0 while the render
+      // loop keeps running and the page looks permanently "stuck". Only restore
+      // if we still "own" the paused value: the slider's minimum is 0.05, so a
+      // value of exactly 0 means no user speed change landed during preload.
+      // If the user did move the slider, honor their value instead of clobbering it.
+      if (demo.realtime === 0) demo.realtime = oldRealtime;
     }
-    demo.__optimizerPreloadComplete = true;
-    if ('preloadComplete' in demo) demo.preloadComplete = true;
-    demo.realtime = oldRealtime;
-    demo.setStatus?.('Ready', 'MuJoCo + ONNX policies ready', 'ready');
-    demo.updatePolicyButtons?.();
   }
 
   function startPreloadWhenReady(demo) {
