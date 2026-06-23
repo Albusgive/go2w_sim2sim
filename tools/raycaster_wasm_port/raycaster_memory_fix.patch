@@ -1,0 +1,131 @@
+diff --git a/raycaster_src/RayCaster.cpp b/raycaster_src/RayCaster.cpp
+index 249a1ac..2f71657 100644
+--- a/raycaster_src/RayCaster.cpp
++++ b/raycaster_src/RayCaster.cpp
+@@ -11,11 +11,22 @@ RayCaster::RayCaster() {}
+ RayCaster::RayCaster(const RayCasterCfg &cfg) { init(cfg); }
+ 
+ RayCaster::~RayCaster() {
+-  // delete[] _ray_vec;
+-  // delete[] ray_vec;
+-  // delete[] geomids;
+-  // delete[] dist;
+-  // delete[] dist_ratio;
++  delete[] _ray_vec;
++  delete[] ray_vec;
++  delete[] _ray_vec_offset;
++  delete[] ray_vec_offset;
++  delete[] pos_w;
++  delete[] pos_b;
++  delete[] geomids;
++  delete[] dist;
++  delete[] dist_ratio;
++  delete[] is_lost;
++  delete[] is_lost_noise;
++#if mjVERSION_HEADER > 340
++  delete[] ray_normal;
++  delete[] ray_energy;
++#endif
++  delete _noise;
+   if (pool != nullptr)
+     mju_threadPoolDestroy(pool);
+ }
+diff --git a/raycaster_src/RayCaster.h b/raycaster_src/RayCaster.h
+index eeff6bd..1eed66b 100644
+--- a/raycaster_src/RayCaster.h
++++ b/raycaster_src/RayCaster.h
+@@ -146,18 +146,18 @@ public:
+   void setNoise(ray_noise::StereoNoise noise);
+ #endif
+ 
+-  ray_noise::Noise *_noise;
++  ray_noise::Noise *_noise = nullptr;
+ 
+-  mjtNum *dist;               // 距离 h_ray_num * v_ray_num
++  mjtNum *dist = nullptr;     // 距离 h_ray_num * v_ray_num
+   int nray;                   // 射线数量
+   int no_detect_body_id = -1; // 是否检测 id 不检测就是-1
+ 
+-  const mjModel *m;
+-  mjData *d;
++  const mjModel *m = nullptr;
++  mjData *d = nullptr;
+   int cam_id; // 相机id
+   std::string _cam_name;
+-  mjtNum *pos; // 相机位置
+-  mjtNum *mat; // 相机的旋转矩阵
++  mjtNum *pos = nullptr; // 相机位置
++  mjtNum *mat = nullptr; // 相机的旋转矩阵
+   mjtNum yaw = 0.0;
+   int h_ray_num = 50; // 水平
+   int v_ray_num = 50; // 垂直
+@@ -166,14 +166,14 @@ public:
+   mjtNum deep_min_ratio;
+   mjtNum deep_min_ratio_dif;
+   mjtNum deep_min_dif;
+-  mjtNum *_ray_vec;        // h_ray_num * v_ray_num * 3 相对于相机坐标系的偏转
+-  mjtNum *_ray_vec_offset; // h_ray_num * v_ray_num * 3 相对于相机坐标系的位移
+-  mjtNum *ray_vec;         // h_ray_num * v_ray_num * 3 世界坐标系下的偏转
+-  mjtNum *ray_vec_offset;  // h_ray_num * v_ray_num * 3 世界坐标系下的位移
+-  int *geomids;            // 命中的geomid
+-  bool *is_lost;           // 是否丢失射线
+-  bool *is_lost_noise;
+-  mjtNum *dist_ratio;
++  mjtNum *_ray_vec = nullptr;        // h_ray_num * v_ray_num * 3 相对于相机坐标系的偏转
++  mjtNum *_ray_vec_offset = nullptr; // h_ray_num * v_ray_num * 3 相对于相机坐标系的位移
++  mjtNum *ray_vec = nullptr;         // h_ray_num * v_ray_num * 3 世界坐标系下的偏转
++  mjtNum *ray_vec_offset = nullptr;  // h_ray_num * v_ray_num * 3 世界坐标系下的位移
++  int *geomids = nullptr;            // 命中的geomid
++  bool *is_lost = nullptr;           // 是否丢失射线
++  bool *is_lost_noise = nullptr;
++  mjtNum *dist_ratio = nullptr;
+   mjtByte geomgroup[8] = {true,  true,  false,
+                           false, false, false}; // 检测哪些类型的geom
+   bool is_offert = true;
+@@ -183,8 +183,8 @@ public:
+   int num_thread = 0;
+ 
+ #if mjVERSION_HEADER > 340
+-  mjtNum *ray_normal; // 射线法线
+-  mjtNum *ray_energy; // 射线能量
++  mjtNum *ray_normal = nullptr; // 射线法线
++  mjtNum *ray_energy = nullptr; // 射线能量
+ #endif
+   mjtNum loss_angle = 0.0;     // 0-90
+   mjtNum loss_angle_cos = 0.0; // 角度cos小于stereo_loss_angle_cos
+@@ -267,8 +267,8 @@ public:
+   // 如果不绘制落点可以关掉提高性能，ray_noise::RayNoise2会自动开启is_compute_hit
+   bool is_compute_hit = true;
+   bool is_compute_hit_b = true;
+-  mjtNum *pos_w; // 命中位置
+-  mjtNum *pos_b; // 命中位置
++  mjtNum *pos_w = nullptr; // 命中位置
++  mjtNum *pos_b = nullptr; // 命中位置
+   void compute_hit();
+   void compute_hit_b();
+ 
+diff --git a/raycaster_src/RayCasterCamera.cpp b/raycaster_src/RayCasterCamera.cpp
+index b90a04a..48e2f55 100644
+--- a/raycaster_src/RayCasterCamera.cpp
++++ b/raycaster_src/RayCasterCamera.cpp
+@@ -6,7 +6,12 @@
+ 
+ RayCasterCamera::RayCasterCamera() {}
+ RayCasterCamera::RayCasterCamera(const RayCasterCameraCfg &cfg) { init(cfg); }
+-RayCasterCamera::~RayCasterCamera() {}
++RayCasterCamera::~RayCasterCamera() {
++#if mjVERSION_HEADER > 340
++  delete[] left_ray_normal;
++  delete[] right_ray_normal;
++#endif
++}
+ void RayCasterCamera::init(const RayCasterCameraCfg &cfg) {
+   this->baseline = cfg.baseline;
+   this->focal_length = cfg.focal_length;
+@@ -174,4 +179,4 @@ void RayCasterCamera::compute_distance() {
+   } else {
+     compute_stereo_ray(0, nray);
+   }
+-}
+\ No newline at end of file
++}
