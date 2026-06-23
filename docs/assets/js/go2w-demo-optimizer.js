@@ -1,5 +1,5 @@
 (function installGo2WDemoOptimizer() {
-  const VERSION = 'preload-ray-10';
+  const VERSION = 'preload-ray-11';
   const RAY_WIDTH = 32;
   const RAY_HEIGHT = 18;
   const RAY_MIN_DIST = 0.1;
@@ -423,7 +423,7 @@
   function patch(demo) {
     if (!demo || demo.__go2wOptimizerVersion === VERSION) return Boolean(demo);
     demo.__go2wOptimizerVersion = VERSION;
-    if (!demo.preloadPolicies) installLegacyRuntimePatch(demo);
+    installLegacyRuntimePatch(demo);
     wrapRuntimeStats(demo);
     startPreloadWhenReady(demo);
     return true;
