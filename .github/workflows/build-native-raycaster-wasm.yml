@@ -1,0 +1,73 @@
+name: Build Native RayCaster WASM
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/build-native-raycaster-wasm.yml"
+      - "tools/raycaster_wasm_port/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: native-raycaster-wasm
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: ${{ github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip raycaster-wasm]') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Install Emscripten
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install 4.0.10
+          /tmp/emsdk/emsdk activate 4.0.10
+
+      - name: Check out MuJoCo
+        run: |
+          git clone https://github.com/google-deepmind/mujoco.git /tmp/mujoco
+          git -C /tmp/mujoco checkout c63ba211e5e9a1b6b5988991d9ee93aa44e18b11
+
+      - name: Check out RayCasterCamera plugin
+        run: |
+          git clone https://github.com/Albusgive/mujoco_ray_caster.git /tmp/mujoco_ray_caster
+          git -C /tmp/mujoco_ray_caster checkout 603198226cca53dc81234ef1418ff0222b6c7341
+          git -C /tmp/mujoco_ray_caster apply "$GITHUB_WORKSPACE/tools/raycaster_wasm_port/raycaster_memory_fix.patch"
+
+      - name: Patch and build MuJoCo WASM
+        shell: bash
+        run: |
+          source /tmp/emsdk/emsdk_env.sh
+          npm install --prefix /tmp/mujoco/wasm
+          node tools/raycaster_wasm_port/prepare_mujoco_wasm_port.mjs --patch --mujoco-root /tmp/mujoco --repo-root "$GITHUB_WORKSPACE" --raycaster-root /tmp/mujoco_ray_caster
+          export PATH="/tmp/mujoco/wasm/node_modules/.bin:$PATH"
+          emcmake cmake -S /tmp/mujoco -B /tmp/mujoco/build-go2w-raycaster-wasm -G Ninja
+          cmake --build /tmp/mujoco/build-go2w-raycaster-wasm --target mujoco_wasm
+          cp /tmp/mujoco/wasm/dist/mujoco_wasm.js docs/demo-assets/mujoco_wasm.js
+          cp /tmp/mujoco/wasm/dist/mujoco_wasm.wasm docs/demo-assets/mujoco_wasm.wasm
+          cp /tmp/mujoco/wasm/dist/mujoco_wasm.d.ts docs/demo-assets/mujoco_wasm.d.ts
+          node tools/raycaster_wasm_port/patch_demo_loader.mjs "$GITHUB_WORKSPACE"
+
+      - name: Commit native WASM artifacts
+        shell: bash
+        run: |
+          if git diff --quiet -- docs/demo-assets/mujoco_wasm.js docs/demo-assets/mujoco_wasm.wasm docs/demo-assets/mujoco_wasm.d.ts docs/assets/js/go2w-demo.js; then
+            echo "No native WASM artifact changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/demo-assets/mujoco_wasm.js docs/demo-assets/mujoco_wasm.wasm docs/demo-assets/mujoco_wasm.d.ts docs/assets/js/go2w-demo.js
+          git commit -m "Build native RayCasterCamera WASM [skip raycaster-wasm]"
+          git push
