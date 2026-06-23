@@ -99,14 +99,14 @@
       window.Worker = function go2wWorker(url, options) {
         const workerUrl = String(url);
         if (workerUrl.includes('policy-worker.js?v=visual-sru-1')) {
-          return new NativeWorker('assets/js/policy-worker.js?v=visual-sru-2', options);
+          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-2', options);
         }
         return new NativeWorker(url, options);
       };
       window.Worker.prototype = NativeWorker.prototype;
     })();
   </script>
-  <script type="module" src="assets/js/go2w-demo.js?v=visual-sru-5"></script>
-  <script src="assets/js/raycaster-camera-align.js?v=ray-z-3"></script>
+  <script type="module" src="assets/js/go2w-demo.js?v=preload-ray-1"></script>
+  <script src="assets/js/go2w-demo-optimizer.js?v=preload-ray-2"></script>
 </body>
 </html>
