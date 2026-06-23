@@ -14,11 +14,13 @@ RayCasterCamera depth image (`32 x 18`) and show the ray image in the bottom UI.
 
 - Policy sessions are preloaded during startup so policy switching does not
   lazy-load large ONNX files while the simulation is already running.
-- ONNX Runtime Web runs in a dedicated Worker. The worker uses one WASM thread
-  on GitHub Pages and automatically opts into two ONNX threads only when the
-  page is cross-origin isolated and `SharedArrayBuffer` is available.
-- The browser RayCasterCamera uses the verified `-z` local camera convention,
-  wall-clock throttling, and adaptive backoff when ray updates become slow.
+- ONNX Runtime Web runs in a dedicated Worker. GitHub Pages uses
+  `coi-serviceworker.js` to inject COOP/COEP headers, so the page reloads once
+  on first visit and then opts into two ONNX WASM threads when
+  `SharedArrayBuffer` is available.
+- The browser RayCasterCamera uses MuJoCo WASM `mj_ray`, the verified `-z`
+  local camera convention, wall-clock throttling, and adaptive backoff when ray
+  updates become slow.
 - The main runtime exports frame, ray, policy, safety, and thread diagnostics to
   `window.__go2wRuntime` for browser-side testing.
 
@@ -33,6 +35,26 @@ python3 -m http.server 8000
 ```
 
 Open `http://localhost:8000/demo.html`.
+
+## Verification
+
+The browser demo can be smoke-tested with Firefox/geckodriver:
+
+```bash
+node tools/verify_go2w_pages_demo.mjs \
+  --url https://albusgive.github.io/go2w_sim2sim/demo.html \
+  --screenshot /tmp/go2w-pages-demo.png
+```
+
+For a local preview:
+
+```bash
+node tools/verify_go2w_pages_demo.mjs --local docs
+```
+
+The verifier checks optimizer version, policy preloading, ONNX thread count,
+MuJoCo `mj_ray` usage, nonzero RayCaster hits, policy switching, follow camera,
+runtime error state, and a short long-run window.
 
 ## GitHub Pages
 
