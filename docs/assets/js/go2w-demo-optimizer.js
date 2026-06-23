@@ -1,5 +1,5 @@
 (function installGo2WDemoOptimizer() {
-  const VERSION = 'preload-ray-11';
+  const VERSION = 'preload-ray-12';
   const RAY_WIDTH = 32;
   const RAY_HEIGHT = 18;
   const RAY_MIN_DIST = 0.1;
@@ -223,11 +223,18 @@
         this.policyRequestStartedAt = 0;
         this.__recoveryCount = (this.__recoveryCount || 0) + 1;
         this.__lastRecoveryReason = message;
-        if (originalResetBrowserPose) originalResetBrowserPose({ resetWorker: true });
-        if (this.setFollowCamera) this.setFollowCamera(true);
-        snapFollowCameraToBase(this);
         this.frameError = null;
         this.setStatus?.('Ready', `Recovered from ${message}`, 'ready');
+        try {
+          if (originalResetBrowserPose) originalResetBrowserPose({ resetWorker: true });
+          if (this.setFollowCamera) this.setFollowCamera(true);
+          snapFollowCameraToBase(this);
+          this.setStatus?.('Ready', `Recovered from ${message}`, 'ready');
+        } catch (error) {
+          this.__lastRecoveryReason = error?.message || message;
+          this.frameError = null;
+          this.setStatus?.('Ready', `Recovered from ${message}`, 'ready');
+        }
       };
     }
 
