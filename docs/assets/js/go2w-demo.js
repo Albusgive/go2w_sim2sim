@@ -133,6 +133,7 @@ const RAY_VIS_STRIDE_X = 4;
 const RAY_VIS_STRIDE_Y = 3;
 const CTRL_LIMIT = 23.7;
 const VISUAL_UPDATE_INTERVAL = 20;
+const MAX_PHYSICS_STEPS_PER_FRAME = 10;
 
 const LEG_POS_SENSOR_NAMES = [
   'FL_hip_joint_pos',
@@ -366,9 +367,6 @@ class Go2WDemo {
     this.controls.enableDamping = true;
     this.controls.enablePan = true;
     this.controls.dampingFactor = 0.08;
-    this.controls.addEventListener('start', () => {
-      this.setFollowCamera(false);
-    });
     this.controls.update();
 
     window.addEventListener('resize', () => {
@@ -412,7 +410,7 @@ class Go2WDemo {
       this.resetActivePolicyState();
     });
     $('follow-camera').addEventListener('click', () => {
-      this.setFollowCamera(!this.followCamera);
+      this.setFollowCamera(true);
     });
 
     for (const button of document.querySelectorAll('[data-policy]')) {
@@ -446,7 +444,7 @@ class Go2WDemo {
       return true;
     }
     if (code === 'KeyF') {
-      this.setFollowCamera(!this.followCamera);
+      this.setFollowCamera(true);
       return true;
     }
     const digit = code.match(/^Digit([1-4])$/);
@@ -1017,7 +1015,7 @@ class Go2WDemo {
   stepSimulation(dt) {
     this.physicsAccumulator = Math.min(this.physicsAccumulator + dt, 0.08);
     let steps = 0;
-    while (this.physicsAccumulator >= SIM_DT && steps < 24) {
+    while (this.physicsAccumulator >= SIM_DT && steps < MAX_PHYSICS_STEPS_PER_FRAME) {
       if (this.needsSafetyReset()) {
         this.stopUnsafeSimulation();
         this.physicsAccumulator = 0;
@@ -1033,6 +1031,9 @@ class Go2WDemo {
       this.physicsStep += 1;
       steps += 1;
       this.physicsAccumulator -= SIM_DT;
+    }
+    if (steps >= MAX_PHYSICS_STEPS_PER_FRAME) {
+      this.physicsAccumulator = 0;
     }
     this.frameStage = 'ray-refresh';
     this.refreshRaycasterImage();
@@ -1463,7 +1464,8 @@ class Go2WDemo {
   }
 
   followBase(dt) {
-    if (!this.followCamera || this.baseBodyId < 0) return;
+    this.followCamera = true;
+    if (this.baseBodyId < 0) return;
     const base = new THREE.Vector3(
       this.data.xpos[this.baseBodyId * 3],
       this.data.xpos[this.baseBodyId * 3 + 2],

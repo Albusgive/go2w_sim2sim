@@ -49,7 +49,7 @@
       <button id="zero-command" type="button">Zero</button>
       <button id="reset-sim" type="button">Reset Sim</button>
       <button id="reset-policy" type="button">Reset Net</button>
-      <button id="follow-camera" type="button" class="active">Follow Cam</button>
+      <button id="follow-camera" type="button" class="active">Snap Cam</button>
     </section>
 
     <section class="control-group">
@@ -75,7 +75,7 @@
       <span><kbd>Space</kbd> zero</span>
       <span><kbd>R</kbd> reset sim</span>
       <span><kbd>N</kbd> reset net</span>
-      <span>Drag mouse: orbit camera</span>
+      <span>Camera follows base</span>
     </div>
     <div class="ray-panel">
       <div>
@@ -103,7 +103,7 @@
         window.location.reload();
       };
       navigator.serviceWorker.addEventListener('controllerchange', reloadOnce);
-      navigator.serviceWorker.register('./coi-serviceworker.js?v=preload-ray-13', { scope: './' })
+      navigator.serviceWorker.register('./coi-serviceworker.js?v=preload-ray-14', { scope: './' })
         .then(() => {
           if (navigator.serviceWorker.controller) reloadOnce();
         })
@@ -116,17 +116,17 @@
       window.Worker = function go2wWorker(url, options) {
         const workerUrl = String(url);
         if (workerUrl.includes('policy-worker.js?v=visual-sru-1')) {
-          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-13', options);
+          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-14', options);
         }
         if (workerUrl.includes('policy-worker.js?v=preload-ray-1')) {
-          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-13', options);
+          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-14', options);
         }
         return new NativeWorker(url, options);
       };
       window.Worker.prototype = NativeWorker.prototype;
     })();
   </script>
-  <script type="module" src="assets/js/go2w-demo.js?v=preload-ray-13"></script>
-  <script src="assets/js/go2w-demo-optimizer-v13.js"></script>
+  <script type="module" src="assets/js/go2w-demo.js?v=preload-ray-14"></script>
+  <script src="assets/js/go2w-demo-optimizer-v13.js?v=preload-ray-14"></script>
 </body>
 </html>

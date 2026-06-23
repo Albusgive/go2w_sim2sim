@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 const DEFAULTS = {
   url: 'https://albusgive.github.io/go2w_sim2sim/demo.html',
   geckodriverPort: 4446,
-  expectVersion: 'preload-ray-13',
+  expectVersion: 'preload-ray-14',
   expectRayBackend: 'mujoco-mj_ray',
   minRayHits: 100,
   minOnnxThreads: 2,
@@ -62,7 +62,7 @@ Options:
   --port N                        Local server port when using --local. Default: 8088.
   --geckodriver-port N            WebDriver port. Default: 4446.
   --no-start-geckodriver          Reuse an already running geckodriver.
-  --expect-version VERSION        Expected optimizer version. Default: preload-ray-13.
+  --expect-version VERSION        Expected optimizer version. Default: preload-ray-14.
   --expect-ray-backend BACKEND    Expected ray backend. Default: mujoco-mj_ray.
   --min-ray-hits N                Minimum valid ray hits. Default: 100.
   --min-onnx-threads N            Minimum ONNX worker threads. Default: 2.

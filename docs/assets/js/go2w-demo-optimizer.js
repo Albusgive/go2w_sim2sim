@@ -1,5 +1,5 @@
 (function installGo2WDemoOptimizer() {
-  const VERSION = 'preload-ray-13';
+  const VERSION = 'preload-ray-14';
   const RAY_WIDTH = 32;
   const RAY_HEIGHT = 18;
   const RAY_MIN_DIST = 0.1;
@@ -13,7 +13,6 @@
   const RAY_FAST_FRAME_MS = 3;
   const MAX_BASE_XY = 7.0;
   const MAX_BASE_Y = 4.8;
-  const MIN_SAFE_BASE_Z = 0.25;
   const MAX_QVEL = 60;
   const MAX_CTRL = 90;
   const RECOVERY_COOLDOWN_MS = 1200;
@@ -81,7 +80,6 @@
       if (Math.abs(base[0]) > MAX_BASE_XY || Math.abs(base[1]) > MAX_BASE_Y) {
         return 'base left demo terrain';
       }
-      if (base[2] < MIN_SAFE_BASE_Z) return 'base too low';
     }
     if (maxAbs(demo.data?.qpos) === Infinity || maxAbs(demo.data?.qvel) === Infinity) {
       return 'non-finite state';
@@ -198,8 +196,9 @@
     if (originalSetFollowCamera && !demo.__optimizerSetFollowWrapped) {
       demo.__optimizerSetFollowWrapped = true;
       demo.setFollowCamera = function setFollowCameraOptimized(enabled) {
-        originalSetFollowCamera(enabled);
-        if (enabled) snapFollowCameraToBase(this);
+        originalSetFollowCamera(true);
+        this.followCamera = true;
+        snapFollowCameraToBase(this);
       };
     }
 
@@ -241,7 +240,16 @@
       demo.needsSafetyReset = function needsSafetyResetOptimized() {
         const reason = unsafeReason(this);
         this.__unsafeReason = reason;
-        return Boolean(reason) || originalNeedsSafetyReset();
+        return Boolean(reason);
+      };
+    }
+
+    if (!demo.__optimizerVisualGuardWrapped) {
+      demo.__optimizerVisualGuardWrapped = true;
+      demo.needsVisualGuard = function needsVisualGuardOptimized() {
+        if (!this.data || this.baseBodyId < 0) return false;
+        const base = basePosition(this);
+        return Boolean(base && !base.every(Number.isFinite)) || this.needsSafetyReset();
       };
     }
 
@@ -271,13 +279,6 @@
       demo.__optimizerVisualWrapped = true;
       demo.updateVisualScene = function updateVisualSceneOptimized() {
         originalUpdateVisualScene();
-        for (const mesh of this.geomPool || []) {
-          if (!mesh?.visible || mesh.userData?.isRayTerrain) continue;
-          mesh.material.color.setHex(0x263238);
-          mesh.material.opacity = 1;
-          mesh.material.transparent = false;
-          mesh.material.needsUpdate = true;
-        }
       };
     }
 
@@ -334,7 +335,9 @@
       demo.__optimizerFrameWrapped = true;
       demo.frame = function frameOptimized() {
         const startedAt = performance.now();
+        this.followCamera = true;
         const result = originalFrame();
+        this.followCamera = true;
         this.__lastFrameOptimizerDurationMs = performance.now() - startedAt;
         return result;
       };
