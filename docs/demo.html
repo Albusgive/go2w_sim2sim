@@ -116,10 +116,10 @@
       window.Worker = function go2wWorker(url, options) {
         const workerUrl = String(url);
         if (workerUrl.includes('policy-worker.js?v=visual-sru-1')) {
-          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-15', options);
+          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-16', options);
         }
         if (workerUrl.includes('policy-worker.js?v=preload-ray-1')) {
-          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-15', options);
+          return new NativeWorker('assets/js/policy-worker.js?v=preload-ray-16', options);
         }
         return new NativeWorker(url, options);
       };

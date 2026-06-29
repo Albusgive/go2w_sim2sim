@@ -222,6 +222,60 @@ async function preloadSim({ throwOn, userSetTo } = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// 5. Recurrent-state epoch guard (policy-worker.js)
+//
+// The worker's async runSplit() reads hidden/cell state, awaits inference, then
+// writes next_hidden/next_cell back. A reset (or a newer run) that lands while
+// a run is suspended must prevent that stale write, otherwise the LSTM/GRU
+// state stays corrupted until a reset happens to land with no run in flight
+// ("must press N before it walks"). Modeled here: a split policy with a
+// stateEpoch; runSplit snapshots the epoch at entry and only writes if it is
+// unchanged.
+// ---------------------------------------------------------------------------
+console.log('Recurrent-state epoch guard:');
+
+function makePolicy() {
+  return { kind: 'split', stateEpoch: 0, hiddenState: 'H0', cellState: 'C0' };
+}
+function resetState(policy) {
+  policy.hiddenState = 'ZERO';
+  policy.cellState = 'ZERO';
+  policy.stateEpoch += 1;
+}
+// Simulate a runSplit: capture epoch, run `mid` (which may reset/advance), then
+// conditionally write. Returns the would-be next state label.
+function runSplit(policy, nextLabel, mid) {
+  const startEpoch = policy.stateEpoch; // captured before "await"
+  if (mid) mid(policy);                 // reset or newer run happens during await
+  if (startEpoch === policy.stateEpoch) {
+    policy.hiddenState = nextLabel;
+    policy.cellState = nextLabel;
+    return true;
+  }
+  return false;
+}
+
+// Happy path: nothing intervenes -> state advances normally.
+{
+  const p = makePolicy();
+  const wrote = runSplit(p, 'H1');
+  check('undisturbed split run advances state', wrote === true && p.hiddenState === 'H1');
+}
+// Reset clobber: reset lands mid-flight -> stale write is refused, zeros survive.
+{
+  const p = makePolicy();
+  const wrote = runSplit(p, 'H1', (pol) => resetState(pol));
+  check('reset mid-flight blocks stale state write', wrote === false);
+  check('reset zeros survive the in-flight run', p.hiddenState === 'ZERO' && p.cellState === 'ZERO');
+}
+// Run interleave: a newer run claims the epoch -> older run refuses to write.
+{
+  const p = makePolicy();
+  const wrote = runSplit(p, 'H_old', (pol) => { pol.stateEpoch += 1; pol.hiddenState = 'H_new'; });
+  check('older interleaved run does not overwrite newer state', wrote === false && p.hiddenState === 'H_new');
+}
+
+// ---------------------------------------------------------------------------
 console.log('');
 console.log(`Passed: ${passed}, Failed: ${failed}`);
 process.exit(failed === 0 ? 0 : 1);

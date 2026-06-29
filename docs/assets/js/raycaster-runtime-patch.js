@@ -1,5 +1,5 @@
 (function installGo2WRaycasterRuntimePatch() {
-  const VERSION = 'preload-ray-15';
+  const VERSION = 'preload-ray-16';
   const SCRIPT_URL = document.currentScript?.src || window.location.href;
   const RAY_WIDTH = 32;
   const RAY_HEIGHT = 18;

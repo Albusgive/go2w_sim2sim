@@ -91,6 +91,12 @@ function resetPolicyState(policy) {
   const stateSize = policy.config.numLayers * policy.batchSize * policy.config.hiddenDim;
   policy.hiddenState = zeros(stateSize);
   policy.cellState = zeros(stateSize);
+  // Bump the recurrent-state epoch so any runSplit() that started before this
+  // reset and is still suspended at an await will refuse to write its (now
+  // stale, pre-reset) next_hidden/next_cell over the freshly-zeroed state.
+  // Without this, an in-flight inference clobbers the reset and the hidden
+  // state stays corrupted until a reset happens to land with no run in flight.
+  policy.stateEpoch = (policy.stateEpoch || 0) + 1;
 }
 
 async function loadPolicy(policyId) {
@@ -153,6 +159,11 @@ function pickOutput(results, names, fallbackIndex = 0) {
 }
 
 async function runSplit(policy, obs, dims) {
+  // Snapshot the recurrent-state epoch before any await. If a reset (or a newer
+  // run, see onmessage) advances the epoch while we are suspended, we must not
+  // write this run's state back — it was computed from the pre-reset state and
+  // a stale observation.
+  const startEpoch = policy.stateEpoch || 0;
   const encoderInputName = policy.encoder.inputNames[0];
   const encoderOutputName = policy.encoder.outputNames[0];
   const encoderResults = await policy.encoder.run({
@@ -186,8 +197,13 @@ async function runSplit(policy, obs, dims) {
   const nextHidden = pickOutput(memoryResults, ['next_hidden_state'], 1);
   const nextCell = pickOutput(memoryResults, ['next_cell_state'], 2);
   if (!latent) throw new Error(`${policy.config.name} memory returned no latent`);
-  if (nextHidden) policy.hiddenState = new Float32Array(nextHidden);
-  if (nextCell) policy.cellState = new Float32Array(nextCell);
+  // Only advance the recurrent state if no reset/newer run intervened while we
+  // were awaiting. Otherwise drop this stale state update so a reset's zeros
+  // (or the newest run's state) survive.
+  if (startEpoch === (policy.stateEpoch || 0)) {
+    if (nextHidden) policy.hiddenState = new Float32Array(nextHidden);
+    if (nextCell) policy.cellState = new Float32Array(nextCell);
+  }
 
   const actorFeeds = {};
   const actorInputName = policy.actor.inputNames[0];
@@ -258,9 +274,17 @@ self.onmessage = async (event) => {
       if (seq < latestRunSeq) return;
       const startedAt = performance.now();
       const obs = new Float32Array(data.obs);
-      const raw = policy.kind === 'split'
-        ? await runSplit(policy, obs, data.dims)
-        : await runMlp(policy, obs, data.dims);
+      let raw;
+      if (policy.kind === 'split') {
+        // Claim recurrent-state ownership for this run: bump the epoch so any
+        // older split run still suspended at an await will refuse to write its
+        // state, leaving the newest run (this one) as the sole writer. runSplit
+        // snapshots the epoch AFTER this bump.
+        policy.stateEpoch = (policy.stateEpoch || 0) + 1;
+        raw = await runSplit(policy, obs, data.dims);
+      } else {
+        raw = await runMlp(policy, obs, data.dims);
+      }
       const action = sanitizeAction(raw);
       self.postMessage({
         type: 'result',
