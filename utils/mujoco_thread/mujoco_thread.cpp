@@ -22,7 +22,10 @@ mujoco_thread::mujoco_thread(std::string model_file, double max_FPS, int width,
 }
 
 mujoco_thread::~mujoco_thread() {
+  request_simulation_stop();
+  join_simulation();
   stop_video_recording();
+  close_render();
   destroyRender();
   // free MuJoCo model and data
   mj_deleteData(d);
@@ -67,6 +70,24 @@ void mujoco_thread::reset_callback(const mjModel *m, mjData *d) {
 
 void mujoco_thread::connect_windows_sim() { connect_windows.store(true); }
 
+void mujoco_thread::request_simulation_stop() { is_sim.store(false); }
+
+bool mujoco_thread::simulation_running() const { return is_sim.load(); }
+
+void mujoco_thread::set_simulation_paused(bool paused) {
+  is_step.store(!paused);
+}
+
+bool mujoco_thread::simulation_paused() const { return !is_step.load(); }
+
+std::unique_lock<std::mutex> mujoco_thread::lock_model_data() {
+  return std::unique_lock<std::mutex>(m_mtx);
+}
+
+double mujoco_thread::simulation_loop_period_seconds() const {
+  return m ? m->opt.timestep * _sub_step : 0.0;
+}
+
 void mujoco_thread::load_model(std::string model_file) {
   char error[1000] = "Could not load binary model";
   if (model_file.size() > 4 &&
@@ -100,14 +121,16 @@ void mujoco_thread::sim() {
     if (is_step.load()) {
       std::unique_lock<std::mutex> lk(m_mtx);
       step();
-      for (int i = 0; i < _sub_step; i++) {
-        mju_zero(d->xfrc_applied, 6 * m->nbody);
-        mjv_applyPerturbPose(m, d, &pert, 0);
-        mjv_applyPerturbForce(m, d, &pert);
-        mj_step(m, d);
-        // 记录轨迹
-        track();
-        sub_step();
+      if (integrate_physics_after_step()) {
+        for (int i = 0; i < _sub_step; i++) {
+          mju_zero(d->xfrc_applied, 6 * m->nbody);
+          mjv_applyPerturbPose(m, d, &pert, 0);
+          mjv_applyPerturbForce(m, d, &pert);
+          mj_step(m, d);
+          // 记录轨迹
+          track();
+          sub_step();
+        }
       }
       lk.unlock();
       step_unlock();
@@ -116,7 +139,8 @@ void mujoco_thread::sim() {
     auto current_time = std::chrono::high_resolution_clock::now();
     double elapsed_sec =
         std::chrono::duration<double>(current_time - step_start).count();
-    double time_until_next_step = m->opt.timestep * _sub_step - elapsed_sec;
+    double time_until_next_step =
+        simulation_loop_period_seconds() - elapsed_sec;
     if (time_until_next_step > 0.0) {
       auto sleep_duration = std::chrono::duration<double>(time_until_next_step);
       std::this_thread::sleep_for(sleep_duration / realtime.load());
@@ -125,8 +149,23 @@ void mujoco_thread::sim() {
 }
 
 void mujoco_thread::sim2thread() {
+  if (sim_thread.joinable()) {
+    return;
+  }
   sim_thread = std::thread([this]() { sim(); });
-  sim_thread.detach();
+}
+
+void mujoco_thread::join_simulation() {
+  if (!sim_thread.joinable()) {
+    return;
+  }
+  if (sim_thread.get_id() == std::this_thread::get_id()) {
+    // A self-join is impossible.  This is only a destructor backstop; normal
+    // owners stop and join the simulation from their controlling thread.
+    sim_thread.detach();
+    return;
+  }
+  sim_thread.join();
 }
 
 void mujoco_thread::sub_step() {}
@@ -194,27 +233,54 @@ void mujoco_thread::render() {
   if (is_show.load())
     return;
 
+  if (render_thread.joinable()) {
+    render_thread.join();
+  }
+
+  is_render_close.store(false);
+  render_ready_.store(false);
+  render_started_.store(true);
   is_show.store(true);
   render_thread = std::thread([this]() {
     initRender(width, height, title.c_str());
+    if (!render_ready_.load() && connect_windows.load()) {
+      request_simulation_stop();
+    }
     while (is_show.load()) {
       updateRender();
     }
-    std::cout << "out render" << std::endl;
-    is_render_close.store(true);
     destroyRender();
+    render_started_.store(false);
+    is_render_close.store(true);
   });
-  render_thread.detach();
 }
 
 void mujoco_thread::close_render() {
-  if (!is_show.load())
+  if (!render_started_.load() && !render_thread.joinable())
     return;
   is_show.store(false);
-  while (!is_render_close.load()) {
+  if (render_thread.joinable() &&
+      render_thread.get_id() != std::this_thread::get_id()) {
+    render_thread.join();
   }
-  destroyRender();
-  std::cout << "close render" << std::endl;
+}
+
+bool mujoco_thread::wait_for_render_ready(double timeout_seconds) const {
+  if (!(timeout_seconds > 0.0)) {
+    return render_ready_.load();
+  }
+  const auto deadline = std::chrono::steady_clock::now() +
+                        std::chrono::duration<double>(timeout_seconds);
+  while (std::chrono::steady_clock::now() < deadline) {
+    if (render_ready_.load()) {
+      return true;
+    }
+    if (!is_show.load()) {
+      return false;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  return render_ready_.load();
 }
 
 void mujoco_thread::set_render_capture_enabled(bool enabled) {
@@ -651,19 +717,16 @@ void mujoco_thread::video_writer_loop() {
 }
 
 void mujoco_thread::destroyRender() {
-  if (is_render_close.load() && !is_show.load()) {
-    std::lock_guard<std::mutex> lock(m_mtx);
-    if (window != nullptr) {
-      // 销毁 OpenGL 资源
-      mjr_freeContext(&con);
-      mjv_freeScene(&scn);
-      // 销毁窗口
-      glfwDestroyWindow(window);
-      window = nullptr;
-      is_render_close.store(false);
-      // std::cout << "close render" << std::endl;
-    }
+  std::lock_guard<std::mutex> lock(m_mtx);
+  if (window != nullptr) {
+    // OpenGL resources are normally released by the render thread that owns
+    // the context. A second call from the destructor is a no-op.
+    mjr_freeContext(&con);
+    mjv_freeScene(&scn);
+    glfwDestroyWindow(window);
+    window = nullptr;
   }
+  render_ready_.store(false);
 }
 
 void mujoco_thread::initRender(int width, int height, std::string title) {
@@ -673,13 +736,16 @@ void mujoco_thread::initRender(int width, int height, std::string title) {
 
   // init GLFW
   if (!glfwInit()) {
-    mju_error("Could not initialize GLFW");
+    std::cerr << "Could not initialize GLFW" << std::endl;
+    is_show.store(false);
+    return;
   }
   // create window, make OpenGL context current, request v-sync
   window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
   if (window == nullptr) {
     std::cerr << "Failed to create GLFW window" << std::endl;
     glfwTerminate(); // 终止 GLFW
+    is_show.store(false);
     return;
   }
   glfwMakeContextCurrent(window);
@@ -706,6 +772,7 @@ void mujoco_thread::initRender(int width, int height, std::string title) {
   glfwSetMouseButtonCallback(window, static_mouse_button);
   glfwSetScrollCallback(window, static_scroll);
   vis_cfg();
+  render_ready_.store(true);
 }
 
 void mujoco_thread::static_keyboard(GLFWwindow *window, int key, int scancode,
@@ -746,6 +813,9 @@ void mujoco_thread::static_scroll(GLFWwindow *window, double xoffset,
 
 // keyboard callback
 void mujoco_thread::keyboard(int key, int scancode, int act, int mods) {
+  if (keyboard_event(key, act, mods)) {
+    return;
+  }
   // backspace: reset simulation
   if (act == GLFW_PRESS) {
     const char *keyname = glfwGetKeyName(key, scancode);
@@ -954,6 +1024,7 @@ void mujoco_thread::scroll(double xoffset, double yoffset) {
 }
 
 void mujoco_thread::select_body(mjrRect &viewport, bool camera_target) {
+  std::lock_guard<std::mutex> lock(m_mtx);
   mjtNum selpnt[3];
   int selgeom, selflex, selskin;
   int selbody = mjv_select(

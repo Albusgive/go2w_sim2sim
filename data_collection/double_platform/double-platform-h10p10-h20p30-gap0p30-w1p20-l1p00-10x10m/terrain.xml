@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="data collection double-platform-h10p10-h20p30-gap0p30-w1p20-l1p00-10x10m">
+  <include file="../../go2w/mjcf/go2w.xml" />
+  <compiler angle="radian" autolimits="true" meshdir="../../go2w/mjcf/assets" />
+  <statistic center="2 0 0.5" extent="6" />
+  <visual>
+    <headlight diffuse="0.7 0.7 0.7" ambient="0.3 0.3 0.3" specular="0 0 0" />
+    <rgba haze="0.15 0.22 0.30 1" />
+    <global azimuth="-125" elevation="-20" />
+  </visual>
+  <asset>
+    <texture name="terrain_checker" type="2d" builtin="checker" mark="edge" rgb1="0.22 0.30 0.38" rgb2="0.12 0.18 0.24" markrgb="0.75 0.82 0.88" width="512" height="512" />
+    <material name="terrain_floor" texture="terrain_checker" texuniform="true" texrepeat="10 10" reflectance="0.05" />
+    <material name="terrain_obstacle" rgba="0.42 0.62 0.82 1" />
+    <material name="terrain_obstacle_low" rgba="0.55 0.72 0.88 1" />
+  </asset>
+  <default>
+    <default class="terrain_collision">
+      <geom friction="0.8 0.02 0.01" condim="6" solimp="0.9 0.95 0.001" solref="0.02 1" />
+    </default>
+  </default>
+  <worldbody>
+    <light pos="2 0 5" dir="0 0 -1" directional="true" />
+    <geom name="terrain_floor" type="box" pos="2 0 -0.05" size="5 5 0.05" material="terrain_floor" class="terrain_collision" />
+    <geom name="first_platform" type="box" pos="3.5 0 0.05" size="0.5 0.6 0.05" material="terrain_obstacle_low" class="terrain_collision" />
+    <geom name="second_platform" type="box" pos="4.8 0 0.15" size="0.5 0.6 0.15" material="terrain_obstacle" class="terrain_collision" />
+  </worldbody>
+</mujoco>

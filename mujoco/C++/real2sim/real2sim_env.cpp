@@ -51,6 +51,12 @@ Real2SimEnv::Real2SimEnv(std::string model_file,
   init_image_topic();
 }
 
+Real2SimEnv::~Real2SimEnv() {
+  request_simulation_stop();
+  join_simulation();
+  close_render();
+}
+
 void Real2SimEnv::vis_cfg() {
   opt.flags[mjtVisFlag::mjVIS_CONTACTPOINT] = true;
   opt.flags[mjtVisFlag::mjVIS_CONTACTFORCE] = true;

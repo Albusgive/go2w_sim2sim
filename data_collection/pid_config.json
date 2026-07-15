@@ -1,0 +1,43 @@
+{
+  "calibration": {
+    "candidate_count": 36,
+    "distance_m": 4.0,
+    "final_heading_threshold_deg": 10.0,
+    "max_cross_track_threshold_m": 0.2,
+    "passing_candidate_count": 9,
+    "speeds_m_s": [
+      0.5,
+      0.75,
+      1.0
+    ],
+    "terrain_id": "plane-flat-10x10m",
+    "trials": [
+      {
+        "final_heading_error_deg": 2.450291471264778,
+        "max_abs_cross_track_m": 0.127802680259839,
+        "speed_m_s": 0.5
+      },
+      {
+        "final_heading_error_deg": 5.775550967612679,
+        "max_abs_cross_track_m": 0.04099038338274539,
+        "speed_m_s": 0.75
+      },
+      {
+        "final_heading_error_deg": 2.4060161190692297,
+        "max_abs_cross_track_m": 0.12719637260019934,
+        "speed_m_s": 1.0
+      }
+    ]
+  },
+  "control_period_s": 0.02,
+  "controller": "path_heading_pid",
+  "cross_track_gain": 1.75,
+  "derivative_alpha": 0.2,
+  "heading_limit_rad": 0.35,
+  "integral_limit_rad_s": 0.5,
+  "kd": 0.1,
+  "ki": 0.0,
+  "kp": 1.2,
+  "schema_version": 1,
+  "yaw_cmd_limit_rad_s": 0.5
+}

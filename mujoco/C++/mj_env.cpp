@@ -83,6 +83,9 @@ MJ_ENV::MJ_ENV(std::string model_file,
 }
 
 MJ_ENV::~MJ_ENV() {
+  request_simulation_stop();
+  join_simulation();
+  close_render();
   stop_policy_video_recording();
   if (ray_caster_camera_img)
     delete[] ray_caster_camera_img;

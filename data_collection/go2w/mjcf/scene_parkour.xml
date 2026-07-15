@@ -1,0 +1,141 @@
+<mujoco model="go2w scene">
+
+  <include file="go2w.xml" />
+  <statistic center="0 0 0.1" extent="0.8" />
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0" />
+    <rgba haze="0.95 0.97 1.0 1" />
+    <global azimuth="-130" elevation="-20" />
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.78 0.84 0.90" rgb2="0.58 0.66 0.75" width="512"
+      height="3072" />
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.58 0.74 0.90"
+      rgb2="0.50 0.66 0.82"
+      markrgb="0.06 0.14 0.24" width="512" height="512" />
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="42 28"
+      reflectance="0.06" />
+    <mesh name="flag" vertex="0 0 0  0.6 0 0  0 0 0.3 0 0.01 0 0 -0.01 0" />
+
+    <mesh name="multi_motion_float_box_terrain_mesh1"
+      file="multi_motion_float_box_terrain_mesh1.stl" />
+    <mesh name="multi_motion_float_box_terrain_mesh2"
+      file="multi_motion_float_box_terrain_mesh2.stl" />
+    <mesh name="multi_motion_float_box_terrain_mesh3"
+      file="multi_motion_float_box_terrain_mesh3.stl" />
+    <mesh name="multi_motion_float_box_terrain_mesh4"
+      file="multi_motion_float_box_terrain_mesh4.stl" />
+    <mesh name="multi_motion_float_box_terrain_mesh5"
+      file="multi_motion_float_box_terrain_mesh5.stl" />
+    <mesh name="multi_motion_float_box_terrain_mesh6"
+      file="multi_motion_float_box_terrain_mesh6.stl" />
+    <mesh name="multi_motion_float_box_terrain_mesh7"
+      file="multi_motion_float_box_terrain_mesh7.stl" />
+    <mesh name="multi_motion_float_box_terrain_mesh8"
+      file="multi_motion_float_box_terrain_mesh8.stl" />
+  </asset>
+
+  <default>
+    <default class="collision_">
+      <geom solimp="0.1 0.9 0.001 0.5 2" solref="-100 -20" condim="6" solmix="1" />
+    </default>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true" />
+    <geom name="plane" size="60 25 0.05" type="plane" material="groundplane" />
+
+    <!-- Section 1: isolated climb-up/climb-down boxes, height 0.10m to 0.60m. -->
+    <geom name="climb_box_010" type="box" size="0.6 0.75 0.05" pos="1.8 0 0.05" class="collision_" rgba="0.86 0.94 0.86 1" />
+    <geom name="climb_box_015" type="box" size="0.6 0.75 0.075" pos="4.4 0 0.075" class="collision_" rgba="0.85 0.93 0.85 1" />
+    <geom name="climb_box_020" type="box" size="0.6 0.75 0.10" pos="7.0 0 0.10" class="collision_" rgba="0.84 0.92 0.84 1" />
+    <geom name="climb_box_025" type="box" size="0.6 0.75 0.125" pos="9.6 0 0.125" class="collision_" rgba="0.83 0.91 0.83 1" />
+    <geom name="climb_box_030" type="box" size="0.6 0.75 0.15" pos="12.2 0 0.15" class="collision_" rgba="0.82 0.90 0.82 1" />
+    <geom name="climb_box_035" type="box" size="0.6 0.75 0.175" pos="14.8 0 0.175" class="collision_" rgba="0.81 0.89 0.81 1" />
+    <geom name="climb_box_040" type="box" size="0.6 0.75 0.20" pos="17.4 0 0.20" class="collision_" rgba="0.80 0.88 0.80 1" />
+    <geom name="climb_box_045" type="box" size="0.6 0.75 0.225" pos="20.0 0 0.225" class="collision_" rgba="0.79 0.87 0.79 1" />
+    <geom name="climb_box_050" type="box" size="0.6 0.75 0.25" pos="22.6 0 0.25" class="collision_" rgba="0.78 0.86 0.78 1" />
+    <geom name="climb_box_055" type="box" size="0.6 0.75 0.275" pos="25.2 0 0.275" class="collision_" rgba="0.77 0.85 0.77 1" />
+    <geom name="climb_box_060" type="box" size="0.6 0.75 0.30" pos="27.8 0 0.30" class="collision_" rgba="0.76 0.84 0.76 1" />
+
+    <!-- Section 2: right-side U-turn, then climb a 0.4m ramp while heading back. -->
+    <geom name="right_turn_pad" type="box" size="1.8 1.5 0.02" pos="29.5 -2.0 0.02" class="collision_" rgba="0.80 0.86 0.90 1" />
+    <geom name="ramp_040_30deg" type="box" size="0.40 0.60 0.035" pos="27.2 -4.0 0.17" euler="0 0.523599 0" class="collision_" rgba="0.78 0.90 0.88 1" />
+    <geom name="ramp_top_platform" type="box" size="0.93 0.75 0.20" pos="25.93 -4.0 0.20" class="collision_" rgba="0.78 0.90 0.88 1" />
+    <geom name="ramp_to_ditch_connector" type="box" size="0.30 0.75 0.20" pos="24.75 -4.0 0.20" class="collision_" rgba="0.76 0.88 0.86 1" />
+
+    <!-- Section 3: independent ditch gaps with 1.5m same-height recovery platforms, heading in -x. -->
+    <geom name="ditch_020_a" type="box" size="0.35 0.75 0.20" pos="24.20 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_020_b" type="box" size="0.35 0.75 0.20" pos="23.30 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_recovery_020_025" type="box" size="0.75 0.75 0.20" pos="22.20 -4.0 0.20" class="collision_" rgba="0.86 0.91 0.94 1" />
+    <geom name="ditch_025_a" type="box" size="0.35 0.75 0.20" pos="21.10 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_025_b" type="box" size="0.35 0.75 0.20" pos="20.15 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_recovery_025_030" type="box" size="0.75 0.75 0.20" pos="19.05 -4.0 0.20" class="collision_" rgba="0.86 0.91 0.94 1" />
+    <geom name="ditch_030_a" type="box" size="0.35 0.75 0.20" pos="17.95 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_030_b" type="box" size="0.35 0.75 0.20" pos="16.95 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_recovery_030_035" type="box" size="0.75 0.75 0.20" pos="15.85 -4.0 0.20" class="collision_" rgba="0.86 0.91 0.94 1" />
+    <geom name="ditch_035_a" type="box" size="0.35 0.75 0.20" pos="14.75 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_035_b" type="box" size="0.35 0.75 0.20" pos="13.70 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_recovery_035_040" type="box" size="0.75 0.75 0.20" pos="12.60 -4.0 0.20" class="collision_" rgba="0.86 0.91 0.94 1" />
+    <geom name="ditch_040_a" type="box" size="0.35 0.75 0.20" pos="11.50 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_040_b" type="box" size="0.35 0.75 0.20" pos="10.40 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_recovery_040_045" type="box" size="0.75 0.75 0.20" pos="9.30 -4.0 0.20" class="collision_" rgba="0.86 0.91 0.94 1" />
+    <geom name="ditch_045_a" type="box" size="0.35 0.75 0.20" pos="8.20 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_045_b" type="box" size="0.35 0.75 0.20" pos="7.05 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_recovery_045_050" type="box" size="0.75 0.75 0.20" pos="5.95 -4.0 0.20" class="collision_" rgba="0.86 0.91 0.94 1" />
+    <geom name="ditch_050_a" type="box" size="0.35 0.75 0.20" pos="4.85 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_050_b" type="box" size="0.35 0.75 0.20" pos="3.65 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_recovery_050_055" type="box" size="0.75 0.75 0.20" pos="2.55 -4.0 0.20" class="collision_" rgba="0.86 0.91 0.94 1" />
+    <geom name="ditch_055_a" type="box" size="0.35 0.75 0.20" pos="1.45 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_055_b" type="box" size="0.35 0.75 0.20" pos="0.20 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_recovery_055_060" type="box" size="0.75 0.75 0.20" pos="-0.90 -4.0 0.20" class="collision_" rgba="0.86 0.91 0.94 1" />
+    <geom name="ditch_060_a" type="box" size="0.35 0.75 0.20" pos="-2.00 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+    <geom name="ditch_060_b" type="box" size="0.35 0.75 0.20" pos="-3.30 -4.0 0.20" class="collision_" rgba="0.78 0.88 0.92 1" />
+
+    <!-- Section 4: left-side U-turn, then low-to-high jumps heading +x. -->
+    <geom name="jump_turn_pad" type="box" size="1.8 1.5 0.02" pos="-4.8 -6.0 0.02" class="collision_" rgba="0.80 0.86 0.90 1" />
+    <geom name="jump_low_005" type="box" size="0.50 0.75 0.15" pos="-3.0 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_005" type="box" size="0.50 0.75 0.175" pos="-1.7 -8.0 0.175" class="collision_" rgba="0.82 0.88 0.94 1" />
+    <geom name="jump_low_010" type="box" size="0.50 0.75 0.15" pos="0.8 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_010" type="box" size="0.50 0.75 0.20" pos="2.1 -8.0 0.20" class="collision_" rgba="0.82 0.88 0.94 1" />
+    <geom name="jump_low_015" type="box" size="0.50 0.75 0.15" pos="4.6 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_015" type="box" size="0.50 0.75 0.225" pos="5.9 -8.0 0.225" class="collision_" rgba="0.82 0.88 0.94 1" />
+    <geom name="jump_low_020" type="box" size="0.50 0.75 0.15" pos="8.4 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_020" type="box" size="0.50 0.75 0.25" pos="9.7 -8.0 0.25" class="collision_" rgba="0.82 0.88 0.94 1" />
+    <geom name="jump_low_025" type="box" size="0.50 0.75 0.15" pos="12.2 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_025" type="box" size="0.50 0.75 0.275" pos="13.5 -8.0 0.275" class="collision_" rgba="0.82 0.88 0.94 1" />
+    <geom name="jump_low_030" type="box" size="0.50 0.75 0.15" pos="16.0 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_030" type="box" size="0.50 0.75 0.30" pos="17.3 -8.0 0.30" class="collision_" rgba="0.82 0.88 0.94 1" />
+    <geom name="jump_low_035" type="box" size="0.50 0.75 0.15" pos="19.8 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_035" type="box" size="0.50 0.75 0.325" pos="21.1 -8.0 0.325" class="collision_" rgba="0.82 0.88 0.94 1" />
+    <geom name="jump_low_040" type="box" size="0.50 0.75 0.15" pos="23.6 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_040" type="box" size="0.50 0.75 0.35" pos="24.9 -8.0 0.35" class="collision_" rgba="0.82 0.88 0.94 1" />
+    <geom name="jump_low_045" type="box" size="0.50 0.75 0.15" pos="27.4 -8.0 0.15" class="collision_" rgba="0.92 0.92 0.90 1" />
+    <geom name="jump_high_045" type="box" size="0.50 0.75 0.375" pos="28.7 -8.0 0.375" class="collision_" rgba="0.82 0.88 0.94 1" />
+
+    <!-- Section 5: right-side U-turn, then suspended boxes to crawl under heading -x. -->
+    <geom name="crawl_turn_pad" type="box" size="1.8 1.5 0.02" pos="30.4 -10.0 0.02" class="collision_" rgba="0.80 0.86 0.90 1" />
+    <geom name="crawl_overhead_040" type="box" size="0.35 0.60 0.075" pos="28.9 -12.0 0.475" class="collision_" rgba="0.80 0.88 0.96 1" />
+    <geom name="crawl_support_040_l" type="box" size="0.04 0.04 0.20" pos="28.9 -11.32 0.20" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_support_040_r" type="box" size="0.04 0.04 0.20" pos="28.9 -12.68 0.20" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_overhead_039" type="box" size="0.475 0.725 0.075" pos="26.1 -12.0 0.465" class="collision_" rgba="0.80 0.88 0.96 1" />
+    <geom name="crawl_support_039_l" type="box" size="0.04 0.04 0.195" pos="26.1 -11.195 0.195" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_support_039_r" type="box" size="0.04 0.04 0.195" pos="26.1 -12.805 0.195" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_overhead_038" type="box" size="0.275 0.50 0.075" pos="23.3 -12.0 0.455" class="collision_" rgba="0.80 0.88 0.96 1" />
+    <geom name="crawl_support_038_l" type="box" size="0.04 0.04 0.19" pos="23.3 -11.42 0.19" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_support_038_r" type="box" size="0.04 0.04 0.19" pos="23.3 -12.58 0.19" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_overhead_037" type="box" size="0.425 0.675 0.075" pos="20.5 -12.0 0.445" class="collision_" rgba="0.80 0.88 0.96 1" />
+    <geom name="crawl_support_037_l" type="box" size="0.04 0.04 0.185" pos="20.5 -11.245 0.185" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_support_037_r" type="box" size="0.04 0.04 0.185" pos="20.5 -12.755 0.185" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_overhead_036" type="box" size="0.325 0.55 0.075" pos="17.7 -12.0 0.435" class="collision_" rgba="0.80 0.88 0.96 1" />
+    <geom name="crawl_support_036_l" type="box" size="0.04 0.04 0.18" pos="17.7 -11.37 0.18" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_support_036_r" type="box" size="0.04 0.04 0.18" pos="17.7 -12.63 0.18" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_overhead_035" type="box" size="0.50 0.75 0.075" pos="14.9 -12.0 0.425" class="collision_" rgba="0.80 0.88 0.96 1" />
+    <geom name="crawl_support_035_l" type="box" size="0.04 0.04 0.175" pos="14.9 -11.17 0.175" class="collision_" rgba="0.55 0.66 0.78 1" />
+    <geom name="crawl_support_035_r" type="box" size="0.04 0.04 0.175" pos="14.9 -12.83 0.175" class="collision_" rgba="0.55 0.66 0.78 1" />
+
+  </worldbody>
+
+</mujoco>

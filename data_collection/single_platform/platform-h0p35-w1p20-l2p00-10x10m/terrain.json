@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "terrain_id": "platform-h0p35-w1p20-l2p00-10x10m",
+  "task_name": "single_platform",
+  "collect": true,
+  "description": "A 0.35 m high platform with its near edge 3.00 m in front of the robot.",
+  "footprint": {
+    "x_min": -3.0,
+    "x_max": 7.0,
+    "y_min": -5.0,
+    "y_max": 5.0,
+    "unit": "m"
+  },
+  "params": {
+    "height_m": 0.35,
+    "width_m": 1.2,
+    "length_m": 2.0,
+    "near_edge_x_m": 3.0
+  },
+  "command": {
+    "name": "linv_x",
+    "min": 0.5,
+    "max": 1.0,
+    "step": 0.05,
+    "unit": "m/s"
+  },
+  "terminal": {
+    "target_x": 4.0,
+    "x_tolerance": 0.4,
+    "min_base_z": 0.6,
+    "max_abs_y": 0.6,
+    "stop_duration_s": 1.0
+  },
+  "geometry": [
+    {
+      "name": "terrain_floor",
+      "type": "box",
+      "role": "floor",
+      "pos_m": [
+        2.0,
+        0.0,
+        -0.05
+      ],
+      "size_half_extents_m": [
+        5.0,
+        5.0,
+        0.05
+      ]
+    },
+    {
+      "name": "platform",
+      "type": "box",
+      "role": "platform",
+      "pos_m": [
+        4.0,
+        0.0,
+        0.175
+      ],
+      "size_half_extents_m": [
+        1.0,
+        0.6,
+        0.175
+      ]
+    }
+  ]
+}

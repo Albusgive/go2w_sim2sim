@@ -18,7 +18,7 @@ public:
               const std::vector<PolicySpec> &policy_specs,
               InferenceDevice device = InferenceDevice::CPU,
               double max_FPS = 60);
-  ~Real2SimEnv() override = default;
+  ~Real2SimEnv() override;
 
   void vis_cfg() override;
   void step() override;

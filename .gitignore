@@ -6,6 +6,13 @@
 utils/mujoco_ray_caster/
 /split_records
 /policy_videos/
+/data_collection/**/*-cmd_linv_x_*.xml
+/data_collection/**/.collector-*.xml
+/data_collection/**/result-*.json
+/data_collection/**/status-*.json
+/data_collection/**/.collection_status/
+/data_collection/collection_report.md
+/data_collection/report_assets/
 split_records/vtm_sru_20260325_202429/
 split_records/vtm_sru_20260325_202554/
 /ros2/build/
@@ -14,3 +21,5 @@ split_records/vtm_sru_20260325_202554/
 /ros2/.vscode
 /ros2/.cache/
 history_policy/
+__pycache__/
+*.py[cod]

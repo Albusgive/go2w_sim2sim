@@ -25,7 +25,7 @@ public:
   mujoco_thread() = default;
   mujoco_thread(std::string model_file, double max_FPS = 60, int width = 1200,
                 int height = 900, std::string title = "MUJOCO");
-  ~mujoco_thread();
+  virtual ~mujoco_thread();
 
   void load_model(std::string model_file);
   void load_model(mjModel *m);
@@ -39,6 +39,11 @@ public:
 
   // 键盘回调,继承后可重载后接收键盘事件，可用于自定义cmd
   virtual void keyboard_press(std::string key) {};
+  // Raw GLFW callback. Returning true suppresses built-in handling for that
+  // event, which lets specialized viewers own Space/arrow playback controls.
+  virtual bool keyboard_event(int key, int action, int mods) {
+    return false;
+  }
   // lable value 绘制在左侧中间位置
 
   // 调用之后关闭窗口会停止仿真
@@ -46,7 +51,13 @@ public:
   void sim();
   // 在子线程使用sim
   void sim2thread();
+  void join_simulation();
   std::thread sim_thread;
+  void request_simulation_stop();
+  bool simulation_running() const;
+  void set_simulation_paused(bool paused);
+  bool simulation_paused() const;
+  std::unique_lock<std::mutex> lock_model_data();
   virtual void step() = 0;
   virtual void sub_step();
   // 在step之后 不影响渲染线程的操作建议在这执行
@@ -89,6 +100,7 @@ public:
   void render();
   int id = 0;
   void close_render();
+  bool wait_for_render_ready(double timeout_seconds) const;
   void set_render_capture_enabled(bool enabled);
   bool render_capture_enabled() const;
   bool get_latest_render_frame_info(int &width, int &height,
@@ -143,6 +155,12 @@ public:
   mjvFigure figure;
   int cam_id = 0;
   std::vector<mjtCamera> cam_type;
+
+protected:
+  // Replay restores recorded keyframes verbatim and therefore opts out of the
+  // normal post-step physics integration while retaining the same render loop.
+  virtual bool integrate_physics_after_step() const { return true; }
+  virtual double simulation_loop_period_seconds() const;
 
 private:
   // mouse interaction
@@ -216,6 +234,8 @@ private:
 
   // 可视化
   std::atomic_bool is_show{false};
+  std::atomic_bool render_ready_{false};
+  std::atomic_bool render_started_{false};
   // 可以销毁信号
   std::atomic_bool is_render_close{false};
   void destroyRender();

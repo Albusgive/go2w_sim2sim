@@ -22,7 +22,12 @@ Sim2SimEnv::Sim2SimEnv(std::string model_file,
   _sub_step = physics_substeps;
 }
 
-Sim2SimEnv::~Sim2SimEnv() { stop_split_recording("destructor"); }
+Sim2SimEnv::~Sim2SimEnv() {
+  request_simulation_stop();
+  join_simulation();
+  close_render();
+  stop_split_recording("destructor");
+}
 
 void Sim2SimEnv::reset_callback(const mjModel *m, mjData *d) {
   {

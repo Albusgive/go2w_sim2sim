@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "terrain_id": "double-platform-h10p20-h20p30-gap0p10-w1p20-l1p00-10x10m",
+  "task_name": "double_platform",
+  "collect": true,
+  "description": "Two 1.00 m platforms separated by 0.10 m: heights 0.20 m and 0.30 m.",
+  "footprint": {
+    "x_min": -3.0,
+    "x_max": 7.0,
+    "y_min": -5.0,
+    "y_max": 5.0,
+    "unit": "m"
+  },
+  "params": {
+    "first_height_m": 0.2,
+    "height_delta_m": 0.1,
+    "second_height_m": 0.3,
+    "gap_m": 0.1,
+    "platform_width_m": 1.2,
+    "platform_length_m": 1.0,
+    "near_edge_x_m": 3.0
+  },
+  "command": {
+    "name": "linv_x",
+    "min": 0.5,
+    "max": 1.0,
+    "step": 0.05,
+    "unit": "m/s"
+  },
+  "terminal": {
+    "target_x": 4.6,
+    "x_tolerance": 0.3,
+    "min_base_z": 0.55,
+    "max_abs_y": 0.6,
+    "stop_duration_s": 1.0
+  },
+  "geometry": [
+    {
+      "name": "terrain_floor",
+      "type": "box",
+      "role": "floor",
+      "pos_m": [
+        2.0,
+        0.0,
+        -0.05
+      ],
+      "size_half_extents_m": [
+        5.0,
+        5.0,
+        0.05
+      ]
+    },
+    {
+      "name": "first_platform",
+      "type": "box",
+      "role": "first_platform",
+      "pos_m": [
+        3.5,
+        0.0,
+        0.1
+      ],
+      "size_half_extents_m": [
+        0.5,
+        0.6,
+        0.1
+      ]
+    },
+    {
+      "name": "second_platform",
+      "type": "box",
+      "role": "second_platform",
+      "pos_m": [
+        4.6,
+        0.0,
+        0.15
+      ],
+      "size_half_extents_m": [
+        0.5,
+        0.6,
+        0.15
+      ]
+    }
+  ]
+}

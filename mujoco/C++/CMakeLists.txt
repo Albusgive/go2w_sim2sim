@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 project(MUJOCO_T)
 
+include(CTest)
+
+if(POLICY CMP0144)
+    cmake_policy(SET CMP0144 NEW)
+endif()
+
 # =============================================================================
 # 1. 添加配置选项 (默认为 OFF，即使用 LibTorch)
 # =============================================================================
@@ -9,18 +15,48 @@ set(ONNXRUNTIME_ROOT "" CACHE PATH "Root directory of ONNX Runtime")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/simulate)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+# MuJoCo 3.9 folded mjtnum.h into mjtype.h.  Keep source and the external
+# ray-caster compatible with both the older deployment SDK and current SDKs.
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/compat)
 
 set(CMAKE_CXX_STANDARD 17)
 
 # =============================================================================
 # 2. 基础依赖 (MuJoCo, Eigen, ROS2, OpenCV)
 # =============================================================================
-# 编译安装，从cmake安装位置opt使用
-set(MUJOCO_FOLDER /opt/mujoco/lib/cmake)
-find_package(mujoco REQUIRED PATHS ${MUJOCO_FOLDER} NO_DEFAULT_PATH)
-if (mujoco_FOUND)
-    message(STATUS "Find mujoco:  ${mujoco_INCLUDE_DIRS}, ${mujoco_LIBRARIES}")
+# Prefer the installed MuJoCo CMake package, while allowing release archives
+# (which contain include/ and lib/ but no package config) for headless workers.
+set(MUJOCO_FOLDER "/opt/mujoco/lib/cmake" CACHE PATH
+    "Directory containing mujocoConfig.cmake")
+set(MUJOCO_ROOT "" CACHE PATH "Root of a MuJoCo release archive")
+find_package(mujoco QUIET CONFIG PATHS ${MUJOCO_FOLDER} NO_DEFAULT_PATH)
+if(NOT mujoco_FOUND)
+    find_path(MUJOCO_INCLUDE_DIR
+        NAMES mujoco/mujoco.h
+        HINTS ${MUJOCO_ROOT} $ENV{MUJOCO_ROOT}
+        PATH_SUFFIXES include
+    )
+    find_library(MUJOCO_LIBRARY
+        NAMES mujoco
+        HINTS ${MUJOCO_ROOT} $ENV{MUJOCO_ROOT}
+        PATH_SUFFIXES lib lib64
+    )
+    if(MUJOCO_INCLUDE_DIR AND MUJOCO_LIBRARY)
+        add_library(mujoco::mujoco SHARED IMPORTED)
+        set_target_properties(mujoco::mujoco PROPERTIES
+            IMPORTED_LOCATION "${MUJOCO_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${MUJOCO_INCLUDE_DIR}"
+        )
+        set(mujoco_FOUND TRUE)
+        set(mujoco_INCLUDE_DIRS "${MUJOCO_INCLUDE_DIR}")
+        set(mujoco_LIBRARIES "${MUJOCO_LIBRARY}")
+    else()
+        message(FATAL_ERROR
+            "Could not find MuJoCo. Install its CMake package, set "
+            "MUJOCO_FOLDER, or set MUJOCO_ROOT to a release archive.")
+    endif()
 endif()
+message(STATUS "Find mujoco: ${mujoco_INCLUDE_DIRS}, ${mujoco_LIBRARIES}")
 
 find_package(Eigen3 REQUIRED)
 find_package(ament_cmake REQUIRED)
@@ -125,7 +161,14 @@ set(ray_caster_path ${CMAKE_CURRENT_SOURCE_DIR}/../../utils/mujoco_ray_caster/ra
 include_directories(${ray_caster_path})
 file(GLOB ray_caster ${ray_caster_path}/*.cpp)
 
-file(GLOB SRC ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+set(LAB2MJ_CORE_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/mj_env.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/sim2sim_env.cpp
+)
+set(LAB2MJ_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/lab2mj.cpp
+  ${LAB2MJ_CORE_SRC}
+)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/real2sim)
 file(GLOB REAL2SIM_SRC ${CMAKE_CURRENT_SOURCE_DIR}/real2sim/*.cpp)
@@ -136,8 +179,43 @@ set(REAL2SIM_CORE_SRC ${CMAKE_CURRENT_SOURCE_DIR}/sim2sim_env.cpp)
 # 5. 生成可执行文件
 # =============================================================================
 
-add_executable(lab2mj ${SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
+add_executable(lab2mj ${LAB2MJ_SRC} ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
 target_link_libraries(lab2mj ${LIB_LIST})
+
+add_executable(mujoco_data_collector
+  ${CMAKE_CURRENT_SOURCE_DIR}/data_collection/mujoco_data_collector.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/data_collection/collector_env.cpp
+  ${LAB2MJ_CORE_SRC}
+  ${mujoco_thread}
+  ${gamepad}
+  ${cpp_manager_env}
+  ${ray_caster}
+)
+target_include_directories(mujoco_data_collector PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/data_collection
+)
+target_link_libraries(mujoco_data_collector ${LIB_LIST})
+
+if(BUILD_TESTING)
+  add_executable(mujoco_heading_pid_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/data_collection/heading_pid_test.cpp
+  )
+  target_include_directories(mujoco_heading_pid_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/data_collection
+  )
+  add_test(NAME mujoco_heading_pid_test COMMAND mujoco_heading_pid_test)
+endif()
+
+add_executable(mujoco_key_replayer
+  ${CMAKE_CURRENT_SOURCE_DIR}/data_collection/key_replayer.cpp
+  ${mujoco_thread}
+)
+target_include_directories(mujoco_key_replayer PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/data_collection
+)
+# Key replay restores recorded MuJoCo state directly and does not load a
+# policy, so it intentionally avoids linking the inference backend.
+target_link_libraries(mujoco_key_replayer ${BASE_LIBS})
 
 add_executable(camera_test ${CMAKE_CURRENT_SOURCE_DIR}/camera_test/camera_test.cpp ${mujoco_thread} ${gamepad} ${cpp_manager_env} ${ray_caster})
 target_link_libraries(camera_test ${LIB_LIST})

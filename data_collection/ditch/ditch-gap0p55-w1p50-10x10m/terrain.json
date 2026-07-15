@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "terrain_id": "ditch-gap0p55-w1p50-10x10m",
+  "task_name": "ditch",
+  "collect": true,
+  "description": "A 0.55 m opening along +x and 1.50 m across y, with its near edge 3.00 m in front of the robot. The surrounding floor boxes extend 2.00 m downward.",
+  "footprint": {
+    "x_min": -3.0,
+    "x_max": 7.0,
+    "y_min": -5.0,
+    "y_max": 5.0,
+    "unit": "m"
+  },
+  "params": {
+    "gap_m": 0.55,
+    "transverse_width_m": 1.5,
+    "near_edge_x_m": 3.0,
+    "floor_box_depth_m": 2.0
+  },
+  "command": {
+    "name": "linv_x",
+    "min": 0.5,
+    "max": 1.0,
+    "step": 0.05,
+    "unit": "m/s"
+  },
+  "terminal": {
+    "target_x": 4.55,
+    "min_base_z": 0.25,
+    "max_abs_y": 0.75,
+    "stop_duration_s": 1.0
+  },
+  "geometry": [
+    {
+      "name": "floor_before_ditch",
+      "type": "box",
+      "role": "floor_before_ditch",
+      "pos_m": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "size_half_extents_m": [
+        3.0,
+        5.0,
+        1.0
+      ]
+    },
+    {
+      "name": "floor_after_ditch",
+      "type": "box",
+      "role": "floor_after_ditch",
+      "pos_m": [
+        5.275,
+        0.0,
+        -1.0
+      ],
+      "size_half_extents_m": [
+        1.725,
+        5.0,
+        1.0
+      ]
+    },
+    {
+      "name": "floor_ditch_negative_y",
+      "type": "box",
+      "role": "floor_beside_ditch",
+      "pos_m": [
+        3.275,
+        -2.875,
+        -1.0
+      ],
+      "size_half_extents_m": [
+        0.275,
+        2.125,
+        1.0
+      ]
+    },
+    {
+      "name": "floor_ditch_positive_y",
+      "type": "box",
+      "role": "floor_beside_ditch",
+      "pos_m": [
+        3.275,
+        2.875,
+        -1.0
+      ],
+      "size_half_extents_m": [
+        0.275,
+        2.125,
+        1.0
+      ]
+    }
+  ]
+}
